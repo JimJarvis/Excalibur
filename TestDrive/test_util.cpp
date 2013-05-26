@@ -4,10 +4,10 @@
 void dispboard(Bit cb)
 {
 	bitset<64> bs(cb);
-	for (int i = 0; i < 8; i++)
+	for (int i = 7; i >= 0; i--)
 	{
-		cout << i << "  ";
-		for (int j = 7; j >= 0; j--)
+		cout << i+1 << "  ";
+		for (int j = 0; j < 8; j++)
 		{
 			cout << bs[j + 8*i] << " ";
 		}

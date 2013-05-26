@@ -34,12 +34,17 @@ public:
 	Board();
 
 	
-	// used to set 1 at a particular square and 0 at anything else. a1 the most significant and h8 the least.
-	Bit onemask(int pos) { return Bit(1)<<(N-1-pos); }
+	// used to set 1 at a particular square and 0 at anything else. a1 the LEAST significant bit and h8 the MOST.
+	Bit onemask(int pos) { return Bit(1) << pos; }
 
 private:
-	// intialize *_attack[][] table
+	// initialize *_attack[][] table
 	void init_attack_table();
+	// Get the attacked square (for horizontal, vertical, diag_a1-h8, diag_a8-h1 sliding pieces)
+	Bit rank_slider(int pos, unsigned int rank);
+	Bit file_slider(int pos, unsigned int file); 
+	Bit d45_slider(int pos, unsigned int d45);
+	Bit d135_slider(int pos, unsigned int d135);
 };
 
 // convert a square to its string pos representation, and vice versa
@@ -47,10 +52,8 @@ private:
 string pos2str(unsigned int pos);
 unsigned int str2pos(string str);
 
-// Get the attacked square (for sliding pieces) from 8 bits
-unsigned int slider(int pos, unsigned int rowmap);
 
 // inline truncate the least and most significant bit, for generating *_attack[][] tables
-inline unsigned int truncate(unsigned int status) { 	return (status >> 1) & 63;	} // 00111111
+inline unsigned int attackIndex(unsigned int status) { 	return (status >> 1) & 63;	} // 00111111
 
 #endif // __board_h__
