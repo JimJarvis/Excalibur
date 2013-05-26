@@ -2,11 +2,11 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Excalibur", "Excalibur\Excalibur.vcxproj", "{142FD761-661D-4930-A1FA-95606474D3C0}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C76AB603-4A24-4E0C-905E-52C1FE8458F3} = {C76AB603-4A24-4E0C-905E-52C1FE8458F3}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestDrive", "TestDrive\TestDrive.vcxproj", "{C76AB603-4A24-4E0C-905E-52C1FE8458F3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{142FD761-661D-4930-A1FA-95606474D3C0} = {142FD761-661D-4930-A1FA-95606474D3C0}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

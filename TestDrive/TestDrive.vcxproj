@@ -19,11 +19,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="tests.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="system.cpp" />
-    <ClCompile Include="system_test.cpp" />
+    <ClCompile Include="..\Excalibur\board.cpp" />
+    <ClCompile Include="board_test.cpp" />
+    <ClCompile Include="test_util.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
+      <Project>{142fd761-661d-4930-a1fa-95606474d3c0}</Project>
+      <Private>true</Private>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C76AB603-4A24-4E0C-905E-52C1FE8458F3}</ProjectGuid>
@@ -73,12 +84,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>E:\Dropbox\Programming\C\gtest\include;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Dropbox\Programming\C\gtest\x32\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>E:\Dropbox\Programming\C\JarvisC\Excalibur\Excalibur;E:\Dropbox\Programming\C\Google Test\gtest\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Dropbox\Programming\C\Google Test\gtest\x32\lib;$(LibraryPath)</LibraryPath>
+    <SourcePath>E:\Dropbox\Programming\C\JarvisC\Excalibur\Excalibur;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\include;E:\Dropbox\Programming\C\gtest\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\lib\Win64;E:\Dropbox\Programming\C\gtest\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>E:\Dropbox\Programming\C\JarvisC\Excalibur\Excalibur;C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\include;E:\Dropbox\Programming\C\Google Test\gtest\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\lib\Win64;E:\Dropbox\Programming\C\Google Test\gtest\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
