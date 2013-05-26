@@ -14,6 +14,7 @@ void dispboard(Bit cb)
 		cout << endl;
 	}
 	cout << "   a b c d e f g h" << endl;
+	cout << "BitMap: " << cb << endl;
 	displine();
 }
 
