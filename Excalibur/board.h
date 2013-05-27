@@ -64,8 +64,8 @@ const int d3[64] = {0,   1,8,   2,9,16,   3,10,17,24,   4,11,18,25,32,
 39,46,53,60,   47,54,61,   55,62,   63};
 
 
-// Rotate the board 90 degrees counter-clockwise
-Bit rotate90(Bit orig);
+// display a bitmap as 8*8
+Bit dispbit(Bit, bool = 1);
 
 // convert a square to its string pos representation, and vice versa
 // a1 is 0 and h8 is 63

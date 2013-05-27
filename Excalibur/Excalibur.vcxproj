@@ -22,11 +22,13 @@
     <Text Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="algor.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="Excalibur.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{142FD761-661D-4930-A1FA-95606474D3C0}</ProjectGuid>

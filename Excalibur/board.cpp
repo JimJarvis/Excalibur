@@ -205,30 +205,27 @@ void Board::pawn_init(int pos, int x, int y, int color)
 }
 
 
-// http://chessprogramming.wikispaces.com/Flipping+Mirroring+and+Rotating
-Bit rotate90(Bit x)
+
+// display the bitmap. For testing purposes
+// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
+Bit dispbit(Bit cb, bool flag)
 {
-	// First, mirror flip the board vertically, about the central rank
-	x = (x << 56) |
-		( (x << 40) & Bit(0x00ff000000000000) ) |
-		( (x << 24) & Bit(0x0000ff0000000000) ) |
-		( (x <<  8) & Bit(0x000000ff00000000) ) |
-		( (x >>  8) & Bit(0x00000000ff000000) ) |
-		( (x >> 24) & Bit(0x0000000000ff0000) ) |
-		( (x >> 40) & Bit(0x000000000000ff00) ) |
-		(x >> 56);
-	// Second, mirror flip the board about the main diagonal (a1-h8)
-	Bit t;
-	const Bit k1 = Bit(0x5500550055005500);
-	const Bit k2 = Bit(0x3333000033330000);
-	const Bit k4 = Bit(0x0f0f0f0f00000000);
-	t  = k4 & (x ^ (x << 28));
-	x ^= t ^ (t >> 28) ;
-	t  = k2 & (x ^ (x << 14));
-	x ^= t ^ (t >> 14) ;
-	t  = k1 & (x ^ (x <<  7));
-	x ^= t ^ (t >>  7) ;
-	return x;
+	if (!flag)
+		return cb;
+	bitset<64> bs(cb);
+	for (int i = 7; i >= 0; i--)
+	{
+		cout << i+1 << "  ";
+		for (int j = 0; j < 8; j++)
+		{
+			cout << bs[j + 8*i] << " ";
+		}
+		cout << endl;
+	}
+	cout << "   a b c d e f g h" << endl;
+	cout << "BitMap: " << cb << endl;
+	cout << "-------------" << endl;
+	return cb;
 }
 
 string pos2str(unsigned int pos)

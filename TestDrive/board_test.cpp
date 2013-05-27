@@ -80,5 +80,12 @@ TEST(Board, Pawn)
 	ASSERT_EQ(p("g8", 1), 0);
 	ASSERT_EQ(p("c5", 0), 10995116277760);
 	ASSERT_EQ(p("h6", 1), 274877906944);
+}
 
+TEST(Board, Flip)
+{
+	Bit b = r("b6", 0);
+	dispbit(b);
+	dispbit(rotate90(b));
+	cout << "Bit count = " << bitCount(b) << endl;
 }

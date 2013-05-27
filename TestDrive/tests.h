@@ -16,9 +16,9 @@ using namespace std;
 
 // include headers in Excalibur
 #include "board.h"
+#include "utils.h"
 
 // test-oriented functions
-Bit dispboard(Bit, bool = 1);
-void displine();
+void blank();
 
 #endif // __alltest_h__
