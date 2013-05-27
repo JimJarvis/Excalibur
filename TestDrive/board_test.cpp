@@ -84,6 +84,11 @@ TEST(Board, Pawn)
 
 TEST(Board, FEN)
 {
-	cb.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R ");
+	cb.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	cb.dispboard();
+	ASSERT_EQ(cb.castle_b, 2);
+	ASSERT_EQ(cb.castle_w, 3);
+	ASSERT_EQ(cb.fiftyMove, 21);
+	ASSERT_EQ(cb.fullMove, 33);
+	ASSERT_EQ(cb.epSquare, 42);
 }

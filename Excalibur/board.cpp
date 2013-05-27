@@ -30,6 +30,12 @@ void Board::init_default()
 	bKnight = 0x4200000000000000;
 	bPawn = 0x00ff000000000000;
 	refresh_pieces();
+	castle_w = 3;
+	castle_b = 3;
+	fiftyMove = 0;
+	fullMove = 1;
+	turn = 0;  // white goes first
+	epSquare = 0;
 }
 
 // refresh the pieces
@@ -66,9 +72,9 @@ void Board::init_attack_table()
 }
 
 // int x and y are for speed only. Can be easily deduced from pos. 
-void Board::rank_slider_init(int pos, int x, int y, unsigned int rank)
+void Board::rank_slider_init(int pos, int x, int y, uint rank)
 {
-	unsigned int index = rank;
+	uint index = rank;
 	rank <<= 1; // shift to make it 8 bits
 	Bit ans = 0;
 	bool flag = 1;
@@ -90,9 +96,9 @@ void Board::rank_slider_init(int pos, int x, int y, unsigned int rank)
 	rank_attack[pos][index] = ans << ((y) << 3);  // shift to the correct rank: pos/8 * 8
 }
 
-void Board::file_slider_init(int pos, int x, int y, unsigned int file)	
+void Board::file_slider_init(int pos, int x, int y, uint file)	
 {
-	unsigned int index = file;
+	uint index = file;
 	file <<= 1; // shift to make it 8 bits
 	Bit ans = 0;
 	bool flag = 1;
@@ -116,9 +122,9 @@ void Board::file_slider_init(int pos, int x, int y, unsigned int file)
 }
 
 // a1-h8 diagonal. The first few bits of d1 will tell us the diagonal status. Orientation: SW to NE
-void Board::d1_slider_init(int pos, int x, int y, unsigned int d1)
+void Board::d1_slider_init(int pos, int x, int y, uint d1)
 {
-	unsigned int index = d1;
+	uint index = d1;
 	d1 <<= 1; // shift to make 8 bits
 	//cout << bitset<8>(d1).to_string() << endl;
 	int i, j, i0, j0; // create copies
@@ -147,9 +153,9 @@ void Board::d1_slider_init(int pos, int x, int y, unsigned int d1)
 }
 
 // a8-h1 diagonal. The first few bits of d3 will tell us the diagonal status. Orientation: SE to NW
-void Board::d3_slider_init(int pos, int x, int y, unsigned int d3)
+void Board::d3_slider_init(int pos, int x, int y, uint d3)
 {
-	unsigned int index = d3;
+	uint index = d3;
 	d3 <<= 1; // shift to make 8 bits
 	//cout << bitset<8>(d3).to_string() << endl;
 	int i, j, i0, j0; // create copies
@@ -283,6 +289,28 @@ void Board::parseFEN(string fen0)
 		}
 	}
 	refresh_pieces();
+	turn = fen.get()=='w' ? 0 : 1;  // indicate active part
+	fen.get(); // consume the space
+	castle_w = castle_b = 0;
+	while ((ch = fen.get()) != ' ')  // castle status. '-' if none available
+	{
+		switch (ch)
+		{
+		case 'K': castle_w |= 1; break;
+		case 'Q': castle_w |= 2; break;
+		case 'k': castle_b |= 1; break;
+		case 'q': castle_b |= 2; break;
+		case '-': continue;
+		}
+	}
+	string ep; // en passent square
+	fen >> ep;  // see if there's an en passent square. '-' if none.
+	if (ep != "-")
+		epSquare = str2pos(ep);
+	else
+		epSquare = 0;
+	fen >> fiftyMove;
+	fen >> fullMove;
 }
 
 
@@ -342,7 +370,7 @@ void Board::dispboard()
 	cout << "************************" << endl;
 }
 
-string pos2str(unsigned int pos)
+string pos2str(uint pos)
 {
 	char alpha = 'a' + (pos & 7);
 	char num = (pos >> 3) + '1';
@@ -350,7 +378,7 @@ string pos2str(unsigned int pos)
 	return string(str);
 }
 
-unsigned int str2pos(string str)
+uint str2pos(string str)
 {
 	return 8* (str[1] -'1') + (tolower(str[0]) - 'a');
 }

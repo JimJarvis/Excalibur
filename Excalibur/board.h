@@ -8,6 +8,8 @@
 #include <string>
 using namespace std; 
 typedef unsigned long long Bit; // U64
+typedef unsigned int uint;
+typedef unsigned char uchar;
 #define N 64
 #define setbit(x) Bit(1)<<(x)
 
@@ -17,18 +19,18 @@ typedef unsigned long long Bit; // U64
  * major pieces (without color bits set), are > 5
  * minor and major pieces (without color bits set), are > 2
  */
-const unsigned char WP = 1;         //  0001
-const unsigned char WK= 2;         //  0010
-const unsigned char WN= 3;         //  0011
-const unsigned char WB=  5;        //  0101
-const unsigned char WR= 6;         //  0110
-const unsigned char WQ= 7;         //  0111
-const unsigned char BP= 9;          //  1001
-const unsigned char BK= 10;        //  1010
-const unsigned char BN= 11;        //  1011
-const unsigned char BB= 13;        //  1101
-const unsigned char BR= 14;        //  1110
-const unsigned char BQ= 15;        //  1111
+const uchar WP = 1;         //  0001
+const uchar WK= 2;         //  0010
+const uchar WN= 3;         //  0011
+const uchar WB=  5;        //  0101
+const uchar WR= 6;         //  0110
+const uchar WQ= 7;         //  0111
+const uchar BP= 9;          //  1001
+const uchar BK= 10;        //  1010
+const uchar BN= 11;        //  1011
+const uchar BB= 13;        //  1101
+const uchar BR= 14;        //  1110
+const uchar BQ= 15;        //  1111
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
@@ -44,6 +46,15 @@ public:
 	* Occup135: a8-h1 north-west diag */
 	Bit occup0, occup90, occup45, occup135;
 
+	// additional important var's
+	uchar castle_w; // &1: O-O, &2: O-O-O
+	uchar castle_b; 
+	uchar turn; // white(0) or black(1)
+	uint epSquare; // en passent square
+	uint fiftyMove; // move since last pawn move or capture
+	uint fullMove;  // starts at 1 and increments after black moves
+	
+
 	/* precalculated attack lookup tables
 	* [pos][content] where content is an 8-bit status of a particular rank or file. 
 	* here we only make use of 6 bits because the least and most significant bit does not affect the table info
@@ -52,6 +63,7 @@ public:
 	*/
 	Bit rank_attack[N][N], file_attack[N][N], d1_attack[N][N], d3_attack[N][N];
 	Bit knight_attack[N], king_attack[N], pawn_attack[N][2];
+	
 
 	Board(); // Default constructor
 	Board(string fen); // construct by FEN
@@ -73,10 +85,10 @@ private:
 	void init_attack_table();
 	// used in the above. For sliding pieces on rank, file, 2 diagonals.
 	// int x and y can be easily got from pos. They are passed only for clarity and speed
-	void rank_slider_init(int pos, int x, int y, unsigned int rank);
-	void file_slider_init(int pos, int x, int y, unsigned int file); 
-	void d1_slider_init(int pos, int x, int y, unsigned int d1);
-	void d3_slider_init(int pos, int x, int y, unsigned int d3);
+	void rank_slider_init(int pos, int x, int y, uint rank);
+	void file_slider_init(int pos, int x, int y, uint file); 
+	void d1_slider_init(int pos, int x, int y, uint d1);
+	void d3_slider_init(int pos, int x, int y, uint d3);
 	// for none-sliding pieces
 	void knight_init(int pos, int x, int y);
 	void king_init(int pos, int x, int y);
@@ -101,10 +113,10 @@ Bit dispbit(Bit, bool = 1);
 
 // convert a square to its string pos representation, and vice versa
 // a1 is 0 and h8 is 63
-string pos2str(unsigned int pos);
-unsigned int str2pos(string str);
+string pos2str(uint pos);
+uint str2pos(string str);
 
 // inline truncate the least and most significant bit, for generating *_attack[][] tables
-inline unsigned int attackIndex(unsigned int status) { 	return (status >> 1) & 63;	} // 00111111
+inline uint attackIndex(uint status) { 	return (status >> 1) & 63;	} // 00111111
 
 #endif // __board_h__
