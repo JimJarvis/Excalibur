@@ -1,10 +1,43 @@
 #include "board.h"
 
-// Constructor
+// Default constructor
 Board::Board()
 {
-	// initialize rank_attack
+	init_default();
 	init_attack_table();
+}
+
+// Construct by FEN
+Board::Board(string fen)
+{
+	parseFEN(fen);
+	init_attack_table();
+}
+
+// initialize the default position bitmaps
+void Board::init_default()
+{
+	wKing = 0x10;
+	wQueen = 0x8;
+	wRook = 0x81;
+	wBishop = 0x24;
+	wKnight = 0x42;
+	wPawn = 0xff00;
+	bKing= 0x1000000000000000;
+	bQueen = 0x800000000000000;
+	bRook = 0x8100000000000000;
+	bBishop= 0x2400000000000000;
+	bKnight = 0x4200000000000000;
+	bPawn = 0x00ff000000000000;
+	refresh_pieces();
+}
+
+// refresh the pieces
+void Board::refresh_pieces()
+{
+	wPieces = wPawn | wKing | wKnight | wBishop | wRook | wQueen;
+	bPieces = bPawn | bKing | bKnight | bBishop | bRook | bQueen;
+	occup0 = wPieces | bPieces;
 }
 
 // initialize *_attack[][] tables
@@ -52,7 +85,7 @@ void Board::rank_slider_init(int pos, int x, int y, unsigned int rank)
 	{
 		if (rank & 1<< (7-p))// is zero
 			flag = 0;
-		ans |= Bit(1) << p;
+		ans |= setbit(p);
 	}
 	rank_attack[pos][index] = ans << ((y) << 3);  // shift to the correct rank: pos/8 * 8
 }
@@ -70,14 +103,14 @@ void Board::file_slider_init(int pos, int x, int y, unsigned int file)
 	{
 		if (file & 1<< (7-p0))// is 1
 			flag = 0;
-		ans |= Bit(1) << (rankoff + (p0 << 3)); // i0 * 8
+		ans |= setbit(rankoff + (p0 << 3)); // i0 * 8
 	}
 	flag = 1; 
 	while (flag && ++p < 8)
 	{
 		if (file & 1<< (7-p))// is 1
 			flag = 0;
-		ans |= Bit(1) << (rankoff + (p << 3));
+		ans |= setbit(rankoff + (p << 3));
 	}
 	file_attack[pos][index] = ans;
 }
@@ -101,14 +134,14 @@ void Board::d1_slider_init(int pos, int x, int y, unsigned int d1)
 	{
 		if (d1 & 1<< (7-p0))// is 1
 			flag = 0;
-		ans |= Bit(1) << (((--i0) << 3) + --j0); // (--i)*8 + (--j)
+		ans |= setbit(((--i0) << 3) + --j0); // (--i)*8 + (--j)
 	}
 	flag = 1; 
 	while (flag && ++p < len)
 	{
 		if (d1 & 1<< (7-p))// is 1
 			flag = 0;
-		ans |= Bit(1) << (((++i) << 3) + ++j); // (++i)*8 + (++j)
+		ans |= setbit(((++i) << 3) + ++j); // (++i)*8 + (++j)
 	}
 	d1_attack[pos][index] = ans;
 }
@@ -132,14 +165,14 @@ void Board::d3_slider_init(int pos, int x, int y, unsigned int d3)
 	{
 		if (d3 & 1<< (7-p0))// is 1
 			flag = 0;
-		ans |= Bit(1) << (((--i0) << 3) + ++j0); // (--i)*8 + (++j)
+		ans |= setbit(((--i0) << 3) + ++j0); // (--i)*8 + (++j)
 	}
 	flag = 1; 
 	while (flag && ++p < len)
 	{
 		if (d3 & 1<< (7-p))// is 1
 			flag = 0;
-		ans |= Bit(1) << (((++i) << 3) + --j); // (++i)*8 + (--j)
+		ans |= setbit(((++i) << 3) + --j); // (++i)*8 + (--j)
 	}
 	d3_attack[pos][index] = ans;
 }
@@ -159,7 +192,7 @@ void Board::knight_init(int pos, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= Bit(1) << (destx + (desty << 3));
+				ans |= setbit(destx + (desty << 3));
 			}
 		}
 	}
@@ -181,7 +214,7 @@ void Board::king_init(int pos, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= Bit(1) << (destx + (desty << 3));
+			ans |= setbit(destx + (desty << 3));
 		}
 	}
 	king_attack[pos] = ans;
@@ -198,34 +231,115 @@ void Board::pawn_init(int pos, int x, int y, int color)
 	Bit ans = 0;
 	int offset = (color == 0) ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= Bit(1) << (x-1 + ((y+ offset) << 3)); // white color = 0, black = 1
+		ans |= setbit(x-1 + ((y+ offset) << 3)); // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= Bit(1) << (x+1 + ((y+ offset) << 3)); // white color = 0, black = 1
+		ans |= setbit(x+1 + ((y+ offset) << 3)); // white color = 0, black = 1
 	pawn_attack[pos][color] = ans;
 }
 
 
+/* Parse an FEN string
+ * FEN format:
+ * positions active_color castle_status en_passant halfmoves fullmoves
+ */
+void Board::parseFEN(string fen0)
+{
+	wPawn = wKing = wKnight = wBishop = wRook = wQueen = 0;
+	bPawn = bKing = bKnight = bBishop = bRook = bQueen = 0;
+	istringstream fen(fen0);
+	// Read up until the first space
+	int rank = 7; // FEN starts from the top rank
+	int file = 0;  // leftmost file
+	char ch;
+	Bit mask;
+	while ((ch = fen.get()) != ' ')
+	{
+		if (ch == '/') // move down a rank
+		{
+			rank --;
+			file = 0;
+		}
+		else if (isdigit(ch))
+			file += ch - '0';
+		else // number means blank square. Pass
+		{
+			mask = setbit((rank<<3) + file);  // r*8 + f
+			switch (ch)
+			{
+			case 'P': wPawn |= mask; break;
+			case 'N': wKnight |= mask; break;
+			case 'B': wBishop |= mask; break;
+			case 'R': wRook |= mask; break;
+			case 'Q': wQueen |= mask; break;
+			case 'K': wKing |= mask; break;
+			case 'p': bPawn |= mask; break;
+			case 'n': bKnight |= mask; break;
+			case 'b': bBishop |= mask; break;
+			case 'r': bRook |= mask; break;
+			case 'q': bQueen |= mask; break;
+			case 'k': bKing |= mask; break;
+			}
+			file ++;
+		}
+	}
+	refresh_pieces();
+}
+
 
 // display the bitmap. For testing purposes
 // set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
-Bit dispbit(Bit cb, bool flag)
+Bit dispbit(Bit bitmap, bool flag)
 {
 	if (!flag)
-		return cb;
-	bitset<64> bs(cb);
+		return bitmap;
+	bitset<64> bs(bitmap);
 	for (int i = 7; i >= 0; i--)
 	{
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			cout << bs[j + 8*i] << " ";
+			cout << bs[j + (i << 3)] << " ";  // j + 8*i
 		}
 		cout << endl;
 	}
 	cout << "   a b c d e f g h" << endl;
-	cout << "BitMap: " << cb << endl;
+	cout << "BitMap: " << bitmap << endl;
 	cout << "-------------" << endl;
-	return cb;
+	return bitmap;
+}
+
+// Display the full board with letters
+void Board::dispboard()
+{
+	bitset<64> wk(wKing), wq(wQueen), wr(wRook), wb(wBishop), wn(wKnight), wp(wPawn);
+	bitset<64> bk(bKing), bq(bQueen), br(bRook), bb(bBishop), bn(bKnight), bp(bPawn);
+	for (int i = 7; i >= 0; i--)
+	{
+		cout << i+1 << "  ";
+		for (int j = 0; j < 8; j++)
+		{
+			int n = j + (i << 3);
+			char c;
+			if (wk[n]) c = 'K';
+			else if (wq[n]) c = 'Q';
+			else if (wr[n])	 c = 'R';
+			else if (wb[n]) c = 'B';
+			else if (wn[n]) c = 'N';
+			else if (wp[n]) c = 'P';
+			else if (bk[n]) c = 'k';
+			else if (bq[n]) c = 'q';
+			else if (br[n])	 c = 'r';
+			else if (bb[n]) c = 'b';
+			else if (bn[n]) c = 'n';
+			else if (bp[n]) c = 'p';
+			else c = '.';
+			cout << c << " ";
+		}
+		cout << endl;
+	}
+	cout << "   ----------------" << endl;
+	cout << "   a b c d e f g h" << endl;
+	cout << "************************" << endl;
 }
 
 string pos2str(unsigned int pos)

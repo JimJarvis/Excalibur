@@ -82,10 +82,8 @@ TEST(Board, Pawn)
 	ASSERT_EQ(p("h6", 1), 274877906944);
 }
 
-TEST(Board, Flip)
+TEST(Board, FEN)
 {
-	Bit b = r("b6", 0);
-	dispbit(b);
-	dispbit(rotate90(b));
-	cout << "Bit count = " << bitCount(b) << endl;
+	cb.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R ");
+	cb.dispboard();
 }

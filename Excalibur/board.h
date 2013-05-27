@@ -2,20 +2,41 @@
 #define __board_h__
 
 #include <iostream>
+#include <sstream>
 #include <bitset>
+#include <cctype>
 #include <string>
 using namespace std; 
 typedef unsigned long long Bit; // U64
 #define N 64
+#define setbit(x) Bit(1)<<(x)
+
+/* Piece identifiers, 4 bits each.
+ * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
+ * pawns and kings (without color bits), are < 3
+ * major pieces (without color bits set), are > 5
+ * minor and major pieces (without color bits set), are > 2
+ */
+const unsigned char WP = 1;         //  0001
+const unsigned char WK= 2;         //  0010
+const unsigned char WN= 3;         //  0011
+const unsigned char WB=  5;        //  0101
+const unsigned char WR= 6;         //  0110
+const unsigned char WQ= 7;         //  0111
+const unsigned char BP= 9;          //  1001
+const unsigned char BK= 10;        //  1010
+const unsigned char BN= 11;        //  1011
+const unsigned char BB= 13;        //  1101
+const unsigned char BR= 14;        //  1110
+const unsigned char BQ= 15;        //  1111
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
 {
 public:
 	// Bitmaps for all 12 kinds of pieces
-	Bit wKing, wQueen, wRook, wBishop, wKnight, wPawn;
-	Bit bKing, bQueen, bRook, bBishop, bKnight, bPawn;
-	// All black or white pieces
+	Bit wPawn, wKing, wKnight, wBishop, wRook, wQueen;
+	Bit bPawn, bKing, bKnight, bBishop, bRook, bQueen;
 	Bit wPieces, bPieces;
 
 	/* 4 Occupied Squares, each for a rotated bitmap. Counter clockwise
@@ -32,11 +53,22 @@ public:
 	Bit rank_attack[N][N], file_attack[N][N], d1_attack[N][N], d3_attack[N][N];
 	Bit knight_attack[N], king_attack[N], pawn_attack[N][2];
 
-	// Constructor
-	Board();
+	Board(); // Default constructor
+	Board(string fen); // construct by FEN
 
+	// parse a FEN position
+	void parseFEN(string fen);
 	
+	// display the full board with letters as pieces. For testing
+	void dispboard();
+
 private:
+	// initialize the default piece positions
+	void init_default();
+
+	// refresh the wPieces, bPieces, occup0
+	void refresh_pieces();
+
 	// initialize *_attack[][] table
 	void init_attack_table();
 	// used in the above. For sliding pieces on rank, file, 2 diagonals.
@@ -64,7 +96,7 @@ const int d3[64] = {0,   1,8,   2,9,16,   3,10,17,24,   4,11,18,25,32,
 39,46,53,60,   47,54,61,   55,62,   63};
 
 
-// display a bitmap as 8*8
+// display a bitmap as 8*8. For testing
 Bit dispbit(Bit, bool = 1);
 
 // convert a square to its string pos representation, and vice versa
