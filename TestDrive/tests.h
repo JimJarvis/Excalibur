@@ -18,7 +18,7 @@ using namespace std;
 #include "board.h"
 
 // test-oriented functions
-void dispboard(Bit);
+Bit dispboard(Bit, bool = 1);
 void displine();
 
 #endif // __alltest_h__

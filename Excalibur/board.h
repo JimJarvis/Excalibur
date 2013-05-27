@@ -30,6 +30,7 @@ public:
 	* d1 for 1/4*pi rotation: a1-h8 diagonal; d3 for 3/4*pi rotation: a8-h1 diagonal
 	*/
 	Bit rank_attack[N][N], file_attack[N][N], d1_attack[N][N], d3_attack[N][N];
+	Bit knight_attack[N], king_attack[N], pawn_attack[N][2];
 
 	// Constructor
 	Board();
@@ -38,11 +39,16 @@ public:
 private:
 	// initialize *_attack[][] table
 	void init_attack_table();
-	// Get the attacked square (for horizontal, vertical, diag_a1-h8, diag_a8-h1 sliding pieces)
-	Bit rank_slider(int pos, unsigned int rank);
-	Bit file_slider(int pos, unsigned int file); 
-	Bit d1_slider(int pos, unsigned int d1);
-	Bit d3_slider(int pos, unsigned int d3);
+	// used in the above. For sliding pieces on rank, file, 2 diagonals.
+	// int x and y can be easily got from pos. They are passed only for clarity and speed
+	void rank_slider_init(int pos, int x, int y, unsigned int rank);
+	void file_slider_init(int pos, int x, int y, unsigned int file); 
+	void d1_slider_init(int pos, int x, int y, unsigned int d1);
+	void d3_slider_init(int pos, int x, int y, unsigned int d3);
+	// for none-sliding pieces
+	void knight_init(int pos, int x, int y);
+	void king_init(int pos, int x, int y);
+	void pawn_init(int pos, int x, int y, int color);
 };
 
 // a1-h8 diagonal: counter clockwise 1/4*pi degrees
@@ -58,12 +64,13 @@ const int d3[64] = {0,   1,8,   2,9,16,   3,10,17,24,   4,11,18,25,32,
 39,46,53,60,   47,54,61,   55,62,   63};
 
 
+// Rotate the board 90 degrees counter-clockwise
+Bit rotate90(Bit orig);
 
 // convert a square to its string pos representation, and vice versa
 // a1 is 0 and h8 is 63
 string pos2str(unsigned int pos);
 unsigned int str2pos(string str);
-
 
 // inline truncate the least and most significant bit, for generating *_attack[][] tables
 inline unsigned int attackIndex(unsigned int status) { 	return (status >> 1) & 63;	} // 00111111
