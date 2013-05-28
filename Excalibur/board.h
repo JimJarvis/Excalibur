@@ -85,7 +85,7 @@ private:
 	void init_bishop_key(int pos, int x, int y);
 
 	Bit rook_tbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
-	Bit bishop_tbl[1428]; // Bishop attack table
+	Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
 	void init_rook_tbl(int pos, int x, int y);
 	void init_bishop_tbl(int pos, int x, int y);
 
@@ -143,5 +143,7 @@ const U64 BISHOP_MAGIC[64] = {
 	0x940c0204030020d4ULL, 0x619204000210826aULL, 0x2010438002b00a2ULL, 0x884042004005802ULL, 0xa90240000006404ULL, 0x500d082244010008ULL, 0x28190d00040014e0ULL, 0x825201600c082444ULL
 };
 
+#define rhash(sq, rook) ((rook) * ROOK_MAGIC[sq])>>52  // get the hash value of a rook &-result, shift 64-12
+#define rhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
 #endif // __board_h__

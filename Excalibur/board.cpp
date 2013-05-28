@@ -64,7 +64,7 @@ void Board::init_attack_tables()
 		//init_rook_key(pos, x, y);
 		//init_rook_tbl(pos, x, y);  
 
-		//init_bishop_magics(pos, x, y);
+		init_bishop_magics(pos, x, y);
 		//init_bishop_key(pos, x, y);
 		//init_bishop_tbl(pos, x, y); 
 
@@ -192,11 +192,11 @@ void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].magic = ROOK_MAGIC[pos];
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | diagFlip(126ULL << (x << 3)) ) ^ setbit(pos);  // ( rank | diagFlip(file)) ^ pos
-	uint lastoffset = (pos==0) ? 0 : rook_magics[pos-1].offset;
+	uint lastoffset = (pos==0) ? 0 : rook_magics[pos-1].offset;  // offset of the lookup table
 	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
 	{
-		rook_magics[pos].offset = lastoffset + 49;  // a0 square, the rook has 7*7 possible attack ranges.
-		rook_magics[pos].mask ^= setbit(pos);  // at corners, we set back the bit
+		rook_magics[pos].offset = lastoffset + 49;  // a1, h1, a8, h8 squares, the rook has 7*7 possible attack ranges.
+		rook_magics[pos].mask ^= setbit(pos);  // at corners, we get rid of the central bit
 	}
 	else if (x == 0 || x == 7)  // at the margin
 		rook_magics[pos].offset = lastoffset + y * (7-y) * 7;
@@ -205,6 +205,40 @@ void Board::init_rook_magics(int pos, int x, int y)
 	else
 		rook_magics[pos].offset = lastoffset + x * (7-x) * y * (7-y);
 }
+
+
+
+
+void Board::init_bishop_magics(int pos, int x, int y)
+{
+	bishop_magics[pos].magic = BISHOP_MAGIC[pos];
+	// set the bishop masks: directions NE+9, NW+7, SE-7, SW-9
+	uint pne, pnw, pse, psw, ne, nw, se, sw;
+	pne = pnw = pse = psw = pos;
+	ne = nw = se = sw = 0;
+	Bit mask = 0;
+	while (pne < N && (pne&7) != 7 && (pne >> 3) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
+	while (pnw < N && (pnw&7) != 0 && (pnw >> 3) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
+	while (pse >= 0 && (pse&7) != 7 && (pse >> 3) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
+	while (psw >= 0 && (psw&7) != 0 && (psw >> 3) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
+	mask ^= setbit(pos);  // get rid of the central bit
+	bishop_magics[pos].mask = mask;
+	uint lastoffset = (pos==0) ? 0 : bishop_magics[pos-1].offset; // offset of the lookup table
+	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
+		bishop_magics[pos].offset = lastoffset + 7;  // a1, h1, a8, h8 square, the bishop has 7 possible attack ranges.
+	else if (x == 0)  // at the margin
+		bishop_magics[pos].offset = lastoffset + ne * se;
+	else if (x == 7)
+		bishop_magics[pos].offset = lastoffset + nw * sw;
+	else if (y == 0)
+		bishop_magics[pos].offset = lastoffset + nw * ne;
+	else if (y == 7)
+		bishop_magics[pos].offset = lastoffset + sw * se;
+	else
+		bishop_magics[pos].offset = lastoffset + nw * ne * sw * se;
+}
+
+
 
 // knight attack table
 void Board::init_knight_tbl(int pos, int x, int y)
@@ -353,9 +387,10 @@ Bit dispbit(Bit bitmap, bool flag)
 		}
 		cout << endl;
 	}
+	cout << "   ----------------" << endl;
 	cout << "   a b c d e f g h" << endl;
 	cout << "BitMap: " << bitmap << endl;
-	cout << "-------------" << endl;
+	cout << "************************" << endl;
 	return bitmap;
 }
 
