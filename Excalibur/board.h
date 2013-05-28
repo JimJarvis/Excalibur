@@ -7,7 +7,8 @@
 #include <cctype>
 #include <string>
 using namespace std; 
-typedef unsigned long long Bit; // U64
+typedef unsigned long long Bit;  // Bitboard
+typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
 typedef unsigned char uchar;
 #define N 64
@@ -53,17 +54,6 @@ public:
 	uint epSquare; // en passent square
 	uint fiftyMove; // move since last pawn move or capture
 	uint fullMove;  // starts at 1 and increments after black moves
-	
-
-	/* precalculated attack lookup tables
-	* [pos][content] where content is an 8-bit status of a particular rank or file. 
-	* here we only make use of 6 bits because the least and most significant bit does not affect the table info
-	* ex: a1 or h1 are attacked if and only if b1 and g1 are attacked. 
-	* d1 for 1/4*pi rotation: a1-h8 diagonal; d3 for 3/4*pi rotation: a8-h1 diagonal
-	*/
-	Bit rank_attack[N][N], file_attack[N][N], d1_attack[N][N], d3_attack[N][N];
-	Bit knight_attack[N], king_attack[N], pawn_attack[N][2];
-	
 
 	Board(); // Default constructor
 	Board(string fen); // construct by FEN
@@ -74,38 +64,51 @@ public:
 	// display the full board with letters as pieces. For testing
 	void dispboard();
 
+	// Get the attack masks, based on precalculated tables and current board status
+	Bit knight_attack(int pos) { return knight_tbl[pos]; }
+	Bit king_attack(int pos) { return king_tbl[pos]; }
+	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
+
 private:
 	// initialize the default piece positions
 	void init_default();
-
 	// refresh the wPieces, bPieces, occup0
 	void refresh_pieces();
 
 	// initialize *_attack[][] table
-	void init_attack_table();
-	// used in the above. For sliding pieces on rank, file, 2 diagonals.
-	// int x and y can be easily got from pos. They are passed only for clarity and speed
-	void rank_slider_init(int pos, int x, int y, uint rank);
-	void file_slider_init(int pos, int x, int y, uint file); 
-	void d1_slider_init(int pos, int x, int y, uint d1);
-	void d3_slider_init(int pos, int x, int y, uint d3);
+	void init_attack_tables();
+
+	// Precalculated attack tables for sliding pieces. 
+	uchar rook_key[N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
+	uchar bishop_key[N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
+	void init_rook_key(int pos, int x, int y);
+	void init_bishop_key(int pos, int x, int y);
+
+	Bit rook_tbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
+	Bit bishop_tbl[1428]; // Bishop attack table
+	void init_rook_tbl(int pos, int x, int y);
+	void init_bishop_tbl(int pos, int x, int y);
+
+	// for the magics parameters. Will be precalculated
+	struct Magics
+	{
+		Bit mask;  // &-mask
+		Bit magic; // magic U64 multiplier
+		uint offset;  // attack_key + offset == real attack lookup table index
+	};
+	Magics rook_magics[N];  // for each square
+	Magics bishop_magics[N]; 
+	void init_rook_magics(int pos, int x, int y);
+	void init_bishop_magics(int pos, int x, int y);
+
+	// Precalculated attack tables for non-sliding pieces
+	Bit knight_tbl[N], king_tbl[N], pawn_tbl[N][2];
 	// for none-sliding pieces
-	void knight_init(int pos, int x, int y);
-	void king_init(int pos, int x, int y);
-	void pawn_init(int pos, int x, int y, int color);
+	void init_knight_tbl(int pos, int x, int y);
+	void init_king_tbl(int pos, int x, int y);
+	void init_pawn_tbl(int pos, int x, int y, int color);
 };
 
-// a1-h8 diagonal: counter clockwise 1/4*pi degrees
-const int d1[64] = {56,   57,48,   58,49,40,   59,50,41,32,   60,51,42,33,24,
-61,52,43,34,25,16,   62,53,44,35,26,17,8,   63,54,45,36,27,18,9,0,
-55,46,37,28,19,10,1,   47,38,29,20,11,2,   39,30,21,12,3,
-31,22,13,4,   23,14,5,   15,6,   7};
-
-// a8-h1 diagonal: counter clockwise 3/4*pi degrees
-const int d3[64] = {0,   1,8,   2,9,16,   3,10,17,24,   4,11,18,25,32,  
-5,12,19,26,33,40,   6,13,20,27,34,41,48,   7,14,21,28,35,42,49,56,
-15,22,29,36,43,50,57,   23,30,37,44,51,58,   31,38,45,52,59,  
-39,46,53,60,   47,54,61,   55,62,   63};
 
 
 // display a bitmap as 8*8. For testing
@@ -116,7 +119,29 @@ Bit dispbit(Bit, bool = 1);
 string pos2str(uint pos);
 uint str2pos(string str);
 
-// inline truncate the least and most significant bit, for generating *_attack[][] tables
-inline uint attackIndex(uint status) { 	return (status >> 1) & 63;	} // 00111111
+// Constants for magics
+const U64 ROOK_MAGIC[64] = {
+	0x2080020500400f0ULL, 0x28444000400010ULL, 0x20000a1004100014ULL, 0x20010c090202006ULL, 0x8408008200810004ULL, 0x1746000808002ULL, 0x2200098000808201ULL,
+	0x12c0002080200041ULL, 0x104000208e480804ULL, 0x8084014008281008ULL, 0x4200810910500410ULL, 0x100014481c20400cULL, 0x4014a4040020808ULL, 0x401002001010a4ULL,
+	0x202000500010001ULL, 0x8112808005810081ULL, 0x40902108802020ULL, 0x42002101008101ULL, 0x459442200810c202ULL, 0x81001103309808ULL, 0x8110000080102ULL,
+	0x8812806008080404ULL, 0x104020000800101ULL, 0x40a1048000028201ULL, 0x4100ba0000004081ULL, 0x44803a4003400109ULL, 0xa010a00000030443ULL, 0x91021a000100409ULL,
+	0x4201e8040880a012ULL, 0x22a000440201802ULL, 0x30890a72000204ULL, 0x10411402a0c482ULL, 0x40004841102088ULL, 0x40230000100040ULL, 0x40100010000a0488ULL,
+	0x1410100200050844ULL, 0x100090808508411ULL, 0x1410040024001142ULL, 0x8840018001214002ULL, 0x410201000098001ULL, 0x8400802120088848ULL, 0x2060080000021004ULL,
+	0x82101002000d0022ULL, 0x1001101001008241ULL, 0x9040411808040102ULL, 0x600800480009042ULL, 0x1a020000040205ULL, 0x4200404040505199ULL, 0x2020081040080080ULL,
+	0x40a3002000544108ULL, 0x4501100800148402ULL, 0x81440280100224ULL, 0x88008000000804ULL, 0x8084060000002812ULL, 0x1840201000108312ULL, 0x5080202000000141ULL,
+	0x1042a180880281ULL, 0x900802900c01040ULL, 0x8205104104120ULL, 0x9004220000440aULL, 0x8029510200708ULL, 0x8008440100404241ULL, 0x2420001111000bdULL, 0x4000882304000041ULL
+};
+const U64 BISHOP_MAGIC[64] = {
+	0x100420000431024ULL, 0x280800101073404ULL, 0x42000a00840802ULL, 0xca800c0410c2ULL, 0x81004290941c20ULL, 0x400200450020250ULL, 0x444a019204022084ULL,
+	0x88610802202109aULL, 0x11210a0800086008ULL, 0x400a08c08802801ULL, 0x1301a0500111c808ULL, 0x1280100480180404ULL, 0x720009020028445ULL, 0x91880a9000010a01ULL,
+	0x31200940150802b2ULL, 0x5119080c20000602ULL, 0x242400a002448023ULL, 0x4819006001200008ULL, 0x222c10400020090ULL, 0x302008420409004ULL, 0x504200070009045ULL,
+	0x210071240c02046ULL, 0x1182219000022611ULL, 0x400c50000005801ULL, 0x4004010000113100ULL, 0x2008121604819400ULL, 0xc4a4010000290101ULL, 0x404a000888004802ULL,
+	0x8820c004105010ULL, 0x28280100908300ULL, 0x4c013189c0320a80ULL, 0x42008080042080ULL, 0x90803000c080840ULL, 0x2180001028220ULL, 0x1084002a040036ULL,
+	0x212009200401ULL, 0x128110040c84a84ULL, 0x81488020022802ULL, 0x8c0014100181ULL, 0x2222013020082ULL, 0xa00100002382c03ULL, 0x1000280001005c02ULL,
+	0x84801010000114cULL, 0x480410048000084ULL, 0x21204420080020aULL, 0x2020010000424a10ULL, 0x240041021d500141ULL, 0x420844000280214ULL, 0x29084a280042108ULL,
+	0x84102a8080a20a49ULL, 0x104204908010212ULL, 0x40a20280081860c1ULL, 0x3044000200121004ULL, 0x1001008807081122ULL, 0x50066c000210811ULL, 0xe3001240f8a106ULL,
+	0x940c0204030020d4ULL, 0x619204000210826aULL, 0x2010438002b00a2ULL, 0x884042004005802ULL, 0xa90240000006404ULL, 0x500d082244010008ULL, 0x28190d00040014e0ULL, 0x825201600c082444ULL
+};
+
 
 #endif // __board_h__

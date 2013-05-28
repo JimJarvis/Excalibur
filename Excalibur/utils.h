@@ -7,13 +7,9 @@
 
 /* some borrowed algorithms */
 
-// Rotate the board 90 degrees counter-clockwise
-Bit rotate90(Bit bitmap);
-
-// Count the bits in a bitmap
-uint bitCount(Bit bitmap);
-
-// BitScan
-uint firstOne(Bit bitmap);
+Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise
+Bit diagFlip(Bit board);  // Flip the board by the main a1-h8 diagonal
+uint bitCount(Bit bitmap); // Count the bits in a bitmap
+uint firstOne(Bit bitmap); // BitScan
 
 #endif // __utils_h__
