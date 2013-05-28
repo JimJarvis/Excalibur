@@ -11,6 +11,9 @@
 Bit rotate90(Bit bitmap);
 
 // Count the bits in a bitmap
-unsigned int bitCount(Bit bitmap);
+uint bitCount(Bit bitmap);
+
+// BitScan
+uint firstOne(Bit bitmap);
 
 #endif // __utils_h__

@@ -27,7 +27,7 @@ Bit rotate90(Bit bitmap)
 }
 
 // MIT HAKMEM algorithm, see http://graphics.stanford.edu/~seander/bithacks.html
-unsigned int bitCount(Bit bitmap)
+uint bitCount(Bit bitmap)
 {
 	static const Bit m1 = 0x5555555555555555; // 1 zero, 1 one ...
 	static const Bit m2 = 0x3333333333333333; // 2 zeros, 2 ones ...
@@ -42,4 +42,36 @@ unsigned int bitCount(Bit bitmap)
 	bitmap = (bitmap & m16) + ((bitmap >> 16) & m16); //put count of each 32 bits into those 32 bits
 	bitmap = (bitmap & m32) + ((bitmap >> 32) & m32); //put count of each 64 bits into those 64 bits
 	return unsigned int(bitmap);
+}
+
+/* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
+ * count from the LSB
+ * bitmap = 0 would be undefined for this func */
+uint firstOne(Bit bitmap)
+{
+	static const Bit BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
+	/* Here's the algorithm that generates the following table:
+	void initializeFirstINDEX64()
+	{
+		unsigned char bit = 1;
+		char i = 0;
+		do 
+		{
+			INDEX64[(bit * BITSCAN_MAGIC) >>5] = i;
+			i++;
+			bit <<= 1;
+		} while (bit);
+	}
+	*/
+	static const int INDEX64[64] = {
+		63, 0, 58, 1, 59, 47, 53, 2,
+		60, 39, 48, 27, 54, 33, 42, 3,
+		61, 51, 37, 40, 49, 18, 28, 20,
+		55, 30, 34, 11, 43, 14, 22, 4,
+		62, 57, 46, 52, 38, 26, 32, 41,
+		50, 36, 17, 19, 29, 10, 13, 21,
+		56, 45, 25, 31, 35, 16, 9, 12,
+		44, 24, 15, 8, 23, 7, 6, 5 };
+	// x&-x is equivalent to the more readable form x&(-x+1), which gives the LSB due to 2's complement encoding. 
+	return INDEX64[((bitmap & (-bitmap)) * BITSCAN_MAGIC) >> 58]; 
 }

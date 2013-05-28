@@ -11,7 +11,7 @@ typedef unsigned long long Bit; // U64
 typedef unsigned int uint;
 typedef unsigned char uchar;
 #define N 64
-#define setbit(x) Bit(1)<<(x)
+#define setbit(x) 1ULL<<(x)
 
 /* Piece identifiers, 4 bits each.
  * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
