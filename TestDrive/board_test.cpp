@@ -94,3 +94,8 @@ TEST(Board, FEN)
 	ASSERT_EQ(cb.fullMove, 33);
 	ASSERT_EQ(cb.epSquare, 42);
 }
+
+TEST(Board, Other)
+{
+	dispbit( dMask(45) );
+}

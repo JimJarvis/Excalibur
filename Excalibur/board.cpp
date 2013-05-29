@@ -60,11 +60,14 @@ void Board::init_attack_tables()
 		init_knight_tbl(pos, x, y);
 		init_king_tbl(pos, x, y);
 
+		cout << pos2str(pos) << endl;
 		init_rook_magics(pos, x, y);
+		//dispbit(rook_magics[pos].mask);
 		//init_rook_key(pos, x, y);
 		//init_rook_tbl(pos, x, y);  
 
 		init_bishop_magics(pos, x, y);
+		//dispbit(bishop_magics[pos].mask);
 		//init_bishop_key(pos, x, y);
 		//init_bishop_tbl(pos, x, y); 
 
@@ -191,7 +194,7 @@ void Board::init_attack_tables()
 void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].magic = ROOK_MAGIC[pos];
-	rook_magics[pos].mask = ( (126ULL << (y << 3)) | diagFlip(126ULL << (x << 3)) ) ^ setbit(pos);  // ( rank | diagFlip(file)) ^ pos
+	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) ^ setbit(pos);  // ( rank | file) ^ pos
 	uint lastoffset = (pos==0) ? 0 : rook_magics[pos-1].offset;  // offset of the lookup table
 	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
 	{
@@ -206,21 +209,62 @@ void Board::init_rook_magics(int pos, int x, int y)
 		rook_magics[pos].offset = lastoffset + x * (7-x) * y * (7-y);
 }
 
+// Using a unique recoverable coding scheme
+void Board::init_rook_key(int pos, int x, int y)
+{
+	// generate all 2^bits permutations of the rook cross bitmap
+	int n = bitCount(rook_magics[pos].mask);
+	uint possibility = 1 << n; // 2^n
+	Bit mask, ans; uint lsb, perm, x0, y0, north, south, east, west;
+	for (perm = 0; perm < possibility; perm++) 
+	{
+		ans = 0;  // records one particular permutation, which is an occupancy state
+		mask = rook_magics[pos].mask;
+		for (int i = 0; i < n; i++)
+		{
+			lsb = firstOne(mask);  // loop through the mask bits, at most 12
+			mask ^= setbit(lsb);
+			if ((perm & (1 << i)) == 1) // if that bit in the perm_key is set
+				ans |= setbit(lsb);
+		}
+		// now we need to calculate the key out of the occupancy state
+		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
+		north = south = east = west = 0;
+		x0 = x; 
+		while ((ans & setbit(pos-west))==0 && (x0--)!=0) { west++; }
+		x0 = x;
+		while ((ans & setbit(pos+east))==0 && (x0++)!=7) { east++; }
+		y0 = y;
+		while ((ans & setbit(pos+(north<<3)))==0 && (y0++)!=7) { north++;}
+		y0 = y;
+		while ((ans & setbit(pos-(south<<3)))==0 && (y0--)!=0) { south++;}
 
+		// second, we map the number to a 1-byte key
+		// General idea: code = , counterclockwise with S most signfiant
+		//uchar key;
+		//if (pos == 0) key = 
+
+		//else if (x == 0 || x == 7)  // at the margin
+		//	rook_magics[pos].offset = lastoffset + y * (7-y) * 7;
+		//else if (y == 0 || y == 7)
+		//	rook_magics[pos].offset = lastoffset + x * (7-x) * 7;
+		//else
+		//	rook_magics[pos].offset = lastoffset + x * (7-x) * y * (7-y);
+	}
+}
 
 
 void Board::init_bishop_magics(int pos, int x, int y)
 {
 	bishop_magics[pos].magic = BISHOP_MAGIC[pos];
 	// set the bishop masks: directions NE+9, NW+7, SE-7, SW-9
-	uint pne, pnw, pse, psw, ne, nw, se, sw;
-	pne = pnw = pse = psw = pos;
-	ne = nw = se = sw = 0;
+	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
+	pne = pnw = pse = psw = pos; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
 	Bit mask = 0;
-	while (pne < N && (pne&7) != 7 && (pne >> 3) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
-	while (pnw < N && (pnw&7) != 0 && (pnw >> 3) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
-	while (pse >= 0 && (pse&7) != 7 && (pse >> 3) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
-	while (psw >= 0 && (psw&7) != 0 && (psw >> 3) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
+	while (pne < N && (xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
+	while (pnw < N && (xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
+	while (pse >= 0 && (xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
+	while (psw >= 0 && (xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
 	mask ^= setbit(pos);  // get rid of the central bit
 	bishop_magics[pos].mask = mask;
 	uint lastoffset = (pos==0) ? 0 : bishop_magics[pos-1].offset; // offset of the lookup table

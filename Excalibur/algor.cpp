@@ -32,6 +32,23 @@ Bit diagFlip(Bit bitmap)
 	return bitmap;
 }
 
+// with 1's extended all the way to the border. No zeros at both ends
+// http://chessprogramming.wikispaces.com/On+an+empty+Board
+Bit d1Mask(uint pos) {
+	static const U64 maindia = 0x8040201008040201;
+	int diag = ((pos & 7) << 3) - (pos & 56);
+	int north = -diag & ( diag >> 31);
+	int south =  diag & (-diag >> 31);
+	return (maindia >> south) << north;
+}
+Bit d3Mask(uint pos) {
+	static const U64 maindia = 0x0102040810204080;
+	int diag =56- ((pos&7) << 3) - (pos&56);
+	int north = -diag & ( diag >> 31);
+	int south =  diag & (-diag >> 31);
+	return (maindia >> south) << north;
+}
+
 // MIT HAKMEM algorithm, see http://graphics.stanford.edu/~seander/bithacks.html
 uint bitCount(U64 bitmap)
 {
