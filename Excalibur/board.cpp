@@ -79,17 +79,11 @@ void Board::init_attack_tables()
 void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
-	if (pos == 0) { rook_magics[0].offset = 0; }
-	if (pos == 63) return;
-	int current_off =  rook_magics[pos].offset;  // offset of the lookup table. offset[0] == 0
-	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
-		rook_magics[pos+1].offset = current_off + 49;  // a1, h1, a8, h8 squares, the rook has 7*7 possible attack ranges.
-	else if (x == 0 || x == 7)  // at the margin
-		rook_magics[pos+1].offset = current_off + y * (7-y) * 7;
-	else if (y == 0 || y == 7)
-		rook_magics[pos+1].offset = current_off + x * (7-x) * 7;
-	else
-		rook_magics[pos+1].offset = current_off + x * (7-x) * y * (7-y);
+	if (pos == 0) rook_magics[0].offset = 0;	else if (pos == 63) return;
+	int current_offset =  rook_magics[pos].offset;  // offset of the lookup table. offset[0] == 0
+	int west = x, east = 7-x, south = y, north = 7-y;
+	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
+	rook_magics[pos+1].offset = current_offset + west * east * north * south;
 }
 
 // Using a unique recoverable coding scheme
@@ -190,19 +184,12 @@ void Board::init_bishop_magics(int pos, int x, int y)
 	while (psw >= 0 && (xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
 	mask &= unsetbit(pos);  // get rid of the central bit
 	bishop_magics[pos].mask = mask;
-	uint lastoffset =  pos==0 ? -7 : bishop_magics[pos-1].offset; // offset of the lookup table
-	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
-		bishop_magics[pos].offset = lastoffset + 7;  // a1, h1, a8, h8 square, the bishop has 7 possible attack ranges.
-	else if (x == 0)  // at the margin
-		bishop_magics[pos].offset = lastoffset + ne * se;
-	else if (x == 7)
-		bishop_magics[pos].offset = lastoffset + nw * sw;
-	else if (y == 0)
-		bishop_magics[pos].offset = lastoffset + nw * ne;
-	else if (y == 7)
-		bishop_magics[pos].offset = lastoffset + sw * se;
-	else
-		bishop_magics[pos].offset = lastoffset + nw * ne * sw * se;
+
+	if (pos == 0)  bishop_magics[0].offset = 0;	else if (pos == 63)   return;
+	uint current_offset =  bishop_magics[pos].offset; // current offset of the lookup table
+	if (ne == 0) ne = 1;  if (nw == 0) nw = 1;  if (se == 0) se = 1;  if (sw == 0) sw = 1;
+
+	bishop_magics[pos+1].offset = current_offset + nw * ne * sw * se;
 }
 
 
