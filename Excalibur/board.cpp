@@ -240,18 +240,6 @@ void Board::init_rook_key(int pos, int x, int y)
 		// second, we map the number to a 1-byte key
 		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
 		key = (east - 1) + (north - 1) *em + (west - 1) *nm*em + (south - 1) *wm*nm*em;
-		if (pos == 9 && ans == 562949953453056)
-		{
-			cout << "e=" << east << "; n=" << north << "; w=" << west << "; s=" << south << endl;
-			cout << "em=" << em << "; nm=" << nm << "; wm=" << wm << "; sm="  << sm << endl;
-				cout << "key = " << (int) key << endl;
-				cout << "hash=" << (rhash(pos, ans)) << endl;
-		}
-		if (pos == 9 && rhash(pos, ans) == 823)
-		{
-			cout << "Non-unque key = " << (int)key << endl;
-			dispbit(ans);
-		}
 		rook_key[pos][ rhash(pos, ans) ] = key; // store the key to the key_table
 	}
 }
@@ -280,14 +268,8 @@ void Board::init_rook_tbl(int pos, int x, int y)
 					if (!wjug)  { while (wii)  mask |= setbit(pos - wii--); } 
 					if (!njug)  { while (nii)  mask |= setbit(pos + (nii-- << 3)); } // +8*nii
 					if (!sjug)  { while (sii)  mask |= setbit(pos - (sii-- << 3)); } // -8*sii
+
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
-if ( pos == 9 && mask == 565157600298242) 
-{
-	cout << "In Table ---------------" << endl;
-	dispbit(mask);
-	cout << "ei=" << ei << "; ni=" << ni << "; wi=" << wi << "; si=" << si << endl;
-	cout << "em=" << em << "; nm=" << nm << "; wm=" << wm << "; sm=" << sm << endl;
-}
 					rook_tbl[ offset + key ] = mask;
 				}
 			}
@@ -299,12 +281,6 @@ if ( pos == 9 && mask == 565157600298242)
 Bit Board::rook_attack(int pos)
 {
 	Magics mag = rook_magics[pos];
-	cout << "loooooooooooooking up" << endl;
-	cout << "rhash = " << ( rhash(pos, occupancy & mag.mask)) << endl;
-	cout << "offset = " << mag.offset << endl;
-	cout << "key = " << (int) rook_key[pos][rhash(pos, occupancy & mag.mask)] << endl;
-	dispbit(occupancy & mag.mask);
-
 	return rook_tbl[ rook_key[pos][rhash(pos, occupancy & mag.mask)] + mag.offset ];
 }
 
