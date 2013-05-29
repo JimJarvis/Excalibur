@@ -94,10 +94,9 @@ void Board::init_rook_key(int pos, int x, int y)
 	uint possibility = 1 << n; // 2^n
 	Bit mask, ans; uint lsb, perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
 	// Xm stands for the maximum possible range along that direction. Counterclockwise with S most significant
-	// If any of Xm is zero, map both Xm to 1
 	wm = x; em = 7-x; nm = 7-y; sm = y;
 	wjug = ejug = njug = sjug = 0;  // to indicate whether we are on the border or not.
-	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;
+	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;  // set 0's to 1, for multiplying purposes
 	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
 
 	uchar key; // will be stored as the table entry
@@ -178,10 +177,10 @@ void Board::init_bishop_magics(int pos, int x, int y)
 	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
 	pne = pnw = pse = psw = pos; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
 	Bit mask = 0;
-	while (pne < N && (xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
-	while (pnw < N && (xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
-	while (pse >= 0 && (xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
-	while (psw >= 0 && (xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
+	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
+	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
+	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
+	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
 	mask &= unsetbit(pos);  // get rid of the central bit
 	bishop_magics[pos].mask = mask;
 
@@ -192,6 +191,91 @@ void Board::init_bishop_magics(int pos, int x, int y)
 	bishop_magics[pos+1].offset = current_offset + nw * ne * sw * se;
 }
 
+void Board::init_bishop_key(int pos, int x, int y)
+{
+	// generate all 2^bits permutations of the bishop cross bitmap
+	int n = bitCount(bishop_magics[pos].mask);
+	uint possibility = 1 << n; // 2^n
+	Bit mask, ans; uint lsb, perm, x0, y0, ne, nw, se, sw, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
+	// Xm stands for the maximum possible range along that diag direction. Counterclockwise with SE most significant
+	//int max = (x > y) ? x : y;
+	auto min = [](int x, int y) { return (x < y) ? x : y; };  // lambda!
+	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y);
+	nejug = nwjug = sejug = swjug = 0;
+	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
+	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
+
+	uchar key; // will be stored as the table entry
+	for (perm = 0; perm < possibility; perm++) 
+	{
+		ans = 0;  // records one particular permutation, which is an occupancy state
+		mask = bishop_magics[pos].mask;
+		for (int i = 0; i < n; i++)
+		{
+			lsb = LSB(mask);  // loop through the mask bits, at most 12
+			mask &= unsetbit(lsb);  // unset this bit
+			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
+				ans |= setbit(lsb);
+		}
+		// now we need to calculate the key out of the occupancy state
+		// first, we get the 4 distances (NE, NW, SE, SW) from the nearest blocker in all 4 directions
+		ne = nejug;  se = sejug; nw = nwjug; sw = swjug;  // if we are on the border, change 0 to 1
+		if (!nejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0++)!=7 && (ans & setbit(pos + ne*9))==0 )  ne++; }
+		if (!nwjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0++)!=7 && (ans & setbit(pos + nw*7))==0 )  nw++; }
+		if (!sejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0--)!=0 && (ans & setbit(pos - se*7))==0 )  se++; }
+		if (!swjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0--)!=0 && (ans & setbit(pos - sw*9))==0 )  sw++; }
+
+		// second, we map the number to a 1-byte key
+		// General idea: code = (NE-1) + (NW-1)*NEm + (SW-1)*NWm*NEm + (SE-1)*SWm*NWm*NEm
+		key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
+		bishop_key[pos][ bhash(pos, ans) ] = key; // store the key to the key_table
+	}
+}
+
+// use the bishop_key + offset to lookup this table (maximally compacted, size = 1428)
+void Board::init_bishop_tbl(int pos, int x, int y)
+{
+	// get the maximum possible range along 4 directions
+	uint ne, nw, se, sw, nei, nwi, sei, swi, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
+	auto min = [](int x, int y) { return (x < y) ? x : y; };  // lambda!
+	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y);
+	nejug = nwjug = sejug = swjug = 0;
+	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
+	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
+	// restore the attack_map from the 1-byte key. The offset is cumulative
+	uchar key;  Bit mask;
+	uint offset = bishop_magics[pos].offset;  // constant for one pos.
+	// loop through all 4 directions, starting from E and go counterclockwise
+	for (ne = 1; ne <= nem; ne++)		{
+		for (nw = 1; nw <= nwm; nw++)		{
+			for (sw = 1; sw <= swm; sw++)	{
+				for (se = 1; se <= sem; se++)		{
+					// make the standard mask
+					mask = 0;
+					nei = ne; nwi = nw; swi = sw; sei = se;
+					if (!nejug) { while(nei) mask |= setbit(pos + (nei--)*9); }
+					if (!nwjug) { while(nwi) mask |= setbit(pos + (nwi--)*7); }
+					if (!sejug) { while(sei) mask |= setbit(pos - (sei--)*7); }
+					if (!swjug) { while(swi) mask |= setbit(pos - (swi--)*9); }
+					key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
+					bishop_tbl[ offset + key ] = mask;
+				}
+			}
+		}
+	}
+}
+
+// public function, get the attack mask based on current board occupancy
+Bit Board::bishop_attack(int pos)
+{
+	Magics mag = bishop_magics[pos];
+	return bishop_tbl[ bishop_key[pos][bhash(pos, occupancy & mag.mask)] + mag.offset ];
+}
+Bit Board::bishop_attack(int pos, Bit occup)
+{
+	Magics mag = bishop_magics[pos];
+	return bishop_tbl[ bishop_key[pos][bhash(pos, occup & mag.mask)] + mag.offset ];
+}
 
 
 // knight attack table

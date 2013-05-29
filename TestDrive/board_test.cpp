@@ -14,6 +14,11 @@ TEST(Board, Rook)
 		ASSERT_EQ(cb.rook_attack(i), assertion[i]);
 }
 
+TEST(Board, Bishop)
+{
+
+}
+
 TEST(Board, Knight)
 {
 	ASSERT_EQ(kn("b4"), 5531918402816);
