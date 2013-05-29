@@ -74,133 +74,22 @@ void Board::init_attack_tables()
 			init_pawn_tbl(pos, x, y, color);
 	}
 }
-//
-//// int x and y are for speed only. Can be easily deduced from pos. 
-//void Board::rank_slider_init(int pos, int x, int y, uint rank)
-//{
-//	uint index = rank;
-//	rank <<= 1; // shift to make it 8 bits
-//	Bit ans = 0;
-//	bool flag = 1;
-//	int p, p0; // 2 copies of the current rank position
-//	p = p0 = x; // pos%8
-//	while (flag && --p0 >= 0)
-//	{
-//		if (rank & 1<< (7-p0))// is 1
-//			flag = 0;
-//		ans |= Bit(1) << p0;
-//	}
-//	flag = 1; 
-//	while (flag && ++p < 8)
-//	{
-//		if (rank & 1<< (7-p))// is zero
-//			flag = 0;
-//		ans |= setbit(p);
-//	}
-//	rank_attack[pos][index] = ans << ((y) << 3);  // shift to the correct rank: pos/8 * 8
-//}
-//
-//void Board::file_slider_init(int pos, int x, int y, uint file)	
-//{
-//	uint index = file;
-//	file <<= 1; // shift to make it 8 bits
-//	Bit ans = 0;
-//	bool flag = 1;
-//	int p, p0; // 2 copies of the current file position
-//	p = p0 = y;  // pos/8
-//	int rankoff = x; // rank offset: pos%8
-//	while (flag && --p0 >= 0)
-//	{
-//		if (file & 1<< (7-p0))// is 1
-//			flag = 0;
-//		ans |= setbit(rankoff + (p0 << 3)); // i0 * 8
-//	}
-//	flag = 1; 
-//	while (flag && ++p < 8)
-//	{
-//		if (file & 1<< (7-p))// is 1
-//			flag = 0;
-//		ans |= setbit(rankoff + (p << 3));
-//	}
-//	file_attack[pos][index] = ans;
-//}
-//
-//// a1-h8 diagonal. The first few bits of d1 will tell us the diagonal status. Orientation: SW to NE
-//void Board::d1_slider_init(int pos, int x, int y, uint d1)
-//{
-//	uint index = d1;
-//	d1 <<= 1; // shift to make 8 bits
-//	//cout << bitset<8>(d1).to_string() << endl;
-//	int i, j, i0, j0; // create copies
-//	i = i0 = y; // (i,j) coordinate
-//	j = j0 = x;
-//	int p, p0;
-//	int len = 8 -((i > j) ? (i - j) : (j - i));  //get the length of the diagonal
-//	p = p0 = (i < j) ? i : j; // get min(i, j). p slides from southwest to northeast 
-//	d1 &=  255 <<  (8-len); // get rid of the extra bits from other irrelevant diag
-//	bool flag = 1;
-//	Bit ans = 0;
-//	while (flag && --p0 >= 0)
-//	{
-//		if (d1 & 1<< (7-p0))// is 1
-//			flag = 0;
-//		ans |= setbit(((--i0) << 3) + --j0); // (--i)*8 + (--j)
-//	}
-//	flag = 1; 
-//	while (flag && ++p < len)
-//	{
-//		if (d1 & 1<< (7-p))// is 1
-//			flag = 0;
-//		ans |= setbit(((++i) << 3) + ++j); // (++i)*8 + (++j)
-//	}
-//	d1_attack[pos][index] = ans;
-//}
-//
-//// a8-h1 diagonal. The first few bits of d3 will tell us the diagonal status. Orientation: SE to NW
-//void Board::d3_slider_init(int pos, int x, int y, uint d3)
-//{
-//	uint index = d3;
-//	d3 <<= 1; // shift to make 8 bits
-//	//cout << bitset<8>(d3).to_string() << endl;
-//	int i, j, i0, j0; // create copies
-//	i = i0 = y; // (i,j) coordinate
-//	j = j0 = x;
-//	int p, p0;
-//	int len = (i+j > 7) ? (15-i-j) : (i+j+1);  //get the length of the diagonal
-//	p = p0 = (i+j > 7) ? (7-j) : i; // p slides from southeast to northwest 
-//	d3 &=  255 <<  (8-len); // get rid of the extra bits from other irrelevant diag
-//	bool flag = 1;
-//	Bit ans = 0;
-//	while (flag && --p0 >= 0)
-//	{
-//		if (d3 & 1<< (7-p0))// is 1
-//			flag = 0;
-//		ans |= setbit(((--i0) << 3) + ++j0); // (--i)*8 + (++j)
-//	}
-//	flag = 1; 
-//	while (flag && ++p < len)
-//	{
-//		if (d3 & 1<< (7-p))// is 1
-//			flag = 0;
-//		ans |= setbit(((++i) << 3) + --j); // (++i)*8 + (--j)
-//	}
-//	d3_attack[pos][index] = ans;
-//}
-//
 
 
 void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
-	int lastoffset =  pos==0 ? -49 : rook_magics[pos-1].offset;  // offset of the lookup table. offset[0] == 0
+	if (pos == 0) { rook_magics[0].offset = 0; }
+	if (pos == 63) return;
+	int current_off =  rook_magics[pos].offset;  // offset of the lookup table. offset[0] == 0
 	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
-		rook_magics[pos].offset = lastoffset + 49;  // a1, h1, a8, h8 squares, the rook has 7*7 possible attack ranges.
+		rook_magics[pos+1].offset = current_off + 49;  // a1, h1, a8, h8 squares, the rook has 7*7 possible attack ranges.
 	else if (x == 0 || x == 7)  // at the margin
-		rook_magics[pos].offset = lastoffset + y * (7-y) * 7;
+		rook_magics[pos+1].offset = current_off + y * (7-y) * 7;
 	else if (y == 0 || y == 7)
-		rook_magics[pos].offset = lastoffset + x * (7-x) * 7;
+		rook_magics[pos+1].offset = current_off + x * (7-x) * 7;
 	else
-		rook_magics[pos].offset = lastoffset + x * (7-x) * y * (7-y);
+		rook_magics[pos+1].offset = current_off + x * (7-x) * y * (7-y);
 }
 
 // Using a unique recoverable coding scheme
@@ -232,7 +121,7 @@ void Board::init_rook_key(int pos, int x, int y)
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
 		north = njug;  south = sjug; east = ejug; west = wjug;  // if we are on the border, change 0 to 1
-		if (!wjug) { x0 = x; 		while ((x0--)!=0 && (ans & setbit(pos-west))==0 )  west++; }
+		if (!wjug) { x0 = x; 	while ((x0--)!=0 && (ans & setbit(pos-west))==0 )  west++; }
 		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit(pos+east))==0 )   east++; }
 		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit(pos+(north<<3)))==0)  north++;}
 		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit(pos-(south<<3)))==0 )  south++;}
@@ -268,7 +157,6 @@ void Board::init_rook_tbl(int pos, int x, int y)
 					if (!wjug)  { while (wii)  mask |= setbit(pos - wii--); } 
 					if (!njug)  { while (nii)  mask |= setbit(pos + (nii-- << 3)); } // +8*nii
 					if (!sjug)  { while (sii)  mask |= setbit(pos - (sii-- << 3)); } // -8*sii
-
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
 					rook_tbl[ offset + key ] = mask;
 				}
@@ -282,6 +170,11 @@ Bit Board::rook_attack(int pos)
 {
 	Magics mag = rook_magics[pos];
 	return rook_tbl[ rook_key[pos][rhash(pos, occupancy & mag.mask)] + mag.offset ];
+}
+Bit Board::rook_attack(int pos, Bit occup)
+{
+	Magics mag = rook_magics[pos];
+	return rook_tbl[ rook_key[pos][rhash(pos, occup & mag.mask)] + mag.offset ];
 }
 
 

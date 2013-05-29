@@ -70,11 +70,15 @@ public:
 	Bit knight_attack(int pos) { return knight_tbl[pos]; }
 	Bit king_attack(int pos) { return king_tbl[pos]; }
 	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
+	Bit pawn_attack(int pos, int turn) { return pawn_tbl[pos][turn]; }
 
 	// sliding pieces: only 1 lookup is needed. Efficiency maximized
 	Bit rook_attack(int pos);
+	Bit rook_attack(int pos, Bit occup);
 	Bit bishop_attack(int pos);
+	Bit bishop_attack(int pos, Bit occup);
 	Bit queen_attack(int pos) { return rook_attack(pos) | bishop_attack(pos); }
+	Bit queen_attack(int pos, Bit occup) { return rook_attack(pos, occup) | bishop_attack(pos, occup); }
 
 
 	// Generate the U64 magic multipliers. Won't actually be run. Pretabulated literals

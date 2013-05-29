@@ -6,17 +6,17 @@ Board cb;
 #define k(str) cb.king_attack(str2pos(str))
 #define p(str) cb.pawn_attack(str2pos(str))
 
-//TEST(Board, StrPos)
-//{
-//	ASSERT_EQ(str2pos("A3"), 16);
-//	ASSERT_EQ(str2pos("e7"), 52);
-//	ASSERT_EQ(pos2str(30), "g4");
-//	ASSERT_EQ(pos2str(61), "f8");
-//}
-
 TEST(Board, Rook)
 {
-	for (int i = 9; i < 20; i++)
+	cb.parseFEN("r1bqk3/pp1p1p1p/8/2N3p1/1q1bP2b/8/P1P1PPPP/2BQKB1R w Kq - 30 17");
+	ASSERT_EQ(cb.castle_b, 2);
+	ASSERT_EQ(cb.castle_w, 1);
+	ASSERT_EQ(cb.turn, 0);
+	ASSERT_EQ(cb.fiftyMove, 30);
+	ASSERT_EQ(cb.fullMove, 17);
+	ASSERT_EQ(cb.epSquare, 0);
+	cb.dispboard();
+	for (int i = 0; i < N; i++)
 	{
 		cout << pos2str(i) << endl;
 		dispbit(cb.rook_attack(i));
@@ -67,9 +67,4 @@ TEST(Board, FEN)
 	ASSERT_EQ(cb.fiftyMove, 21);
 	ASSERT_EQ(cb.fullMove, 33);
 	ASSERT_EQ(cb.epSquare, 42);
-}
-
-TEST(Board, Bitcount)
-{
-	ASSERT_EQ(bitCount(cb.occupancy), 32);
 }
