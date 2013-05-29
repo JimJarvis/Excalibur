@@ -68,9 +68,9 @@ uint bitCount(U64 bitmap)
 }
 
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
- * count from the LSB
+ * get the least siginficant 1. 
  * bitmap = 0 would be undefined for this func */
-uint firstOne(U64 bitmap)
+uint LSB(U64 bitmap)
 {
 	static const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
 	/* Here's the algorithm that generates the following table:
