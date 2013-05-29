@@ -63,7 +63,6 @@ void Board::init_attack_tables()
 		init_rook_magics(pos, x, y);
 		init_rook_key(pos, x, y);
 		init_rook_tbl(pos, x, y);  
-		//dispbit(rook_magics[pos].mask);
 
 		init_bishop_magics(pos, x, y);
 		//dispbit(bishop_magics[pos].mask);
@@ -192,7 +191,6 @@ void Board::init_attack_tables()
 
 void Board::init_rook_magics(int pos, int x, int y)
 {
-	rook_magics[pos].magic = ROOK_MAGIC[pos];
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
 	int lastoffset =  pos==0 ? -49 : rook_magics[pos-1].offset;  // offset of the lookup table. offset[0] == 0
 	if (pos == 0 || pos == 7 || pos == 56 || pos == 63)
@@ -252,10 +250,6 @@ void Board::init_rook_key(int pos, int x, int y)
 		if (pos == 9 && rhash(pos, ans) == 823)
 		{
 			cout << "Non-unque key = " << (int)key << endl;
-			Bit occ = ans;
-			occ *= rook_magics[pos].magic;
-			occ >>= 64-12;
-			cout << "another hash = " << occ << endl;
 			dispbit(ans);
 		}
 		rook_key[pos][ rhash(pos, ans) ] = key; // store the key to the key_table
@@ -317,7 +311,6 @@ Bit Board::rook_attack(int pos)
 
 void Board::init_bishop_magics(int pos, int x, int y)
 {
-	bishop_magics[pos].magic = BISHOP_MAGIC[pos];
 	// set the bishop masks: directions NE+9, NW+7, SE-7, SW-9
 	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
 	pne = pnw = pse = psw = pos; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
@@ -546,59 +539,52 @@ uint str2pos(string str)
 	return 8* (str[1] -'1') + (tolower(str[0]) - 'a');
 }
 
-
-void Board::rook_magic_generator(int pos, int x, int y)
+// Rook magicU64 multiplier generator. Will be pretabulated literals.
+void rook_magicU64_generator()
 {
-	// generate all 2^bits permutations of the rook cross bitmap
-	int n = bitCount(rook_magics[pos].mask);
-	uint possibility = 1 << n; // 2^n
-	Bit mask, ans; uint lsb, perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
-	// Xm stands for the maximum possible range along that direction. Counterclockwise with S most significant
-	// If any of Xm is zero, map both Xm to 1
-	wm = x; em = 7-x; nm = 7-y; sm = y;
-	wjug = ejug = njug = sjug = 0;  // to indicate whether we are on the border or not.
-	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;
-	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
+	Board bd;  // a default initialized empty board
 
-	uchar key; // will be stored as the table entry
-	for (perm = 0; perm < possibility; perm++) 
+	Bit mask, ans; uint lsb, perm, possibility, n, jug, tries, i; bool fail;
+	U64 hashcheck[4096];  // table used to check hash collision
+	U64 allstates[4096];
+	U64 magic;
+	cout << "const U64 ROOK_MAGIC[64] = {" << endl;
+	for (int pos = 0; pos < N; pos++)
 	{
-		ans = 0;  // records one particular permutation, which is an occupancy state
-		mask = rook_magics[pos].mask;
-		for (int i = 0; i < n; i++)
+		// generate all 2^bits permutations of the rook cross bitmap
+		n = bitCount(bd.rook_magics[pos].mask);
+		possibility = 1 << n; // 2^n
+		srand(time(NULL));  // reset random seed
+		for (perm = 0; perm < possibility; perm++) 
 		{
-			lsb = LSB(mask);  // loop through the mask bits, at most 12
-			mask &= unsetbit(lsb);  // unset this bit
-			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit(lsb);
+			ans = 0;  // records one particular permutation, which is an occupancy state
+			mask = bd.rook_magics[pos].mask;
+			for (i = 0; i < n; i++)
+			{
+				lsb = LSB(mask);  // loop through the mask bits, at most 12
+				mask &= unsetbit(lsb);  // unset this bit
+				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
+					ans |= setbit(lsb);
+			}
+			allstates[perm] = ans;
 		}
-		// now we need to calculate the key out of the occupancy state
-		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
-		north = njug;  south = sjug; east = ejug; west = wjug;  // if we are on the border, change 0 to 1
-		if (!wjug) { x0 = x; 		while ((x0--)!=0 && (ans & setbit(pos-west))==0 )  west++; }
-		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit(pos+east))==0 )   east++; }
-		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit(pos+(north<<3)))==0)  north++;}
-		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit(pos-(south<<3)))==0 )  south++;}
 
-		// second, we map the number to a 1-byte key
-		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
-		key = (east - 1) + (north - 1) *em + (west - 1) *nm*em + (south - 1) *wm*nm*em;
-		if (pos == 9 && ans == 562949953453056)
+		// for pretty display
+		string endchar = pos==63 ? "\n};\n" : ((pos&7)==7 ? ",\n" : ", ");
+		//mask = bd.rook_magics[pos].mask;
+		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
-			cout << "e=" << east << "; n=" << north << "; w=" << west << "; s=" << south << endl;
-			cout << "em=" << em << "; nm=" << nm << "; wm=" << wm << "; sm="  << sm << endl;
-			cout << "key = " << (int) key << endl;
-			cout << "hash=" << (rhash(pos, ans)) << endl;
+			magic = rand_U64();
+			//if (bitCount((mask * magic) & 0xFF00000000000000ULL) < 6) continue;
+			for (i = 0; i < 4096; i++)	{ hashcheck[i] = 0ULL; } // init
+			for (i = 0, fail = 0; i < possibility && !fail; i++)
+			{
+				jug = (allstates[i] * magic) >> 52;
+				if (hashcheck[jug] == 0)  hashcheck[jug] = allstates[i];
+				else if (hashcheck[jug] != allstates[i]) fail = 1;
+			}
+			if (!fail)  {  cout << "0x" << hex << magic << "ULL" << endchar; break; }
 		}
-		if (pos == 9 && rhash(pos, ans) == 823)
-		{
-			cout << "Non-unque key = " << (int)key << endl;
-			Bit occ = ans;
-			occ *= rook_magics[pos].magic;
-			occ >>= 64-12;
-			cout << "another hash = " << occ << endl;
-			dispbit(ans);
-		}
-		rook_key[pos][ rhash(pos, ans) ] = key; // store the key to the key_table
+		if (fail) {  cout << "FAILURE" << endchar;  }
 	}
 }

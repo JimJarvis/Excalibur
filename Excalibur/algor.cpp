@@ -98,3 +98,14 @@ uint LSB(U64 bitmap)
 	// x&-x is equivalent to the more readable form x&(-x+1), which gives the LSB due to 2's complement encoding. 
 	return INDEX64[((bitmap & (-bitmap)) * BITSCAN_MAGIC) >> 58]; 
 }
+
+// helper to generate a random U64
+U64 rand_U64_helper() 
+{
+	U64 u1, u2, u3, u4;
+	u1 = U64(rand()) & 0xFFFF; u2 = U64(rand()) & 0xFFFF;
+	u3 = U64(rand()) & 0xFFFF; u4 = U64(rand()) & 0xFFFF;
+	return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
+}
+// a sparse random U64. The more & the sparser
+U64 rand_U64()  { return rand_U64_helper() & rand_U64_helper(); }
