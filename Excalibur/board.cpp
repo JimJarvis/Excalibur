@@ -65,9 +65,8 @@ void Board::init_attack_tables()
 		init_rook_tbl(pos, x, y);  
 
 		init_bishop_magics(pos, x, y);
-		//dispbit(bishop_magics[pos].mask);
-		//init_bishop_key(pos, x, y);
-		//init_bishop_tbl(pos, x, y); 
+		init_bishop_key(pos, x, y);
+		init_bishop_tbl(pos, x, y); 
 
 		// pawn has different colors
 		for (int color = 0; color < 2; ++color)
@@ -80,10 +79,9 @@ void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
 	if (pos == 0) rook_magics[0].offset = 0;	else if (pos == 63) return;
-	int current_offset =  rook_magics[pos].offset;  // offset of the lookup table. offset[0] == 0
 	int west = x, east = 7-x, south = y, north = 7-y;
 	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
-	rook_magics[pos+1].offset = current_offset + west * east * north * south;
+	rook_magics[pos+1].offset = rook_magics[pos].offset + west * east * north * south;
 }
 
 // Using a unique recoverable coding scheme
@@ -185,10 +183,8 @@ void Board::init_bishop_magics(int pos, int x, int y)
 	bishop_magics[pos].mask = mask;
 
 	if (pos == 0)  bishop_magics[0].offset = 0;	else if (pos == 63)   return;
-	uint current_offset =  bishop_magics[pos].offset; // current offset of the lookup table
 	if (ne == 0) ne = 1;  if (nw == 0) nw = 1;  if (se == 0) se = 1;  if (sw == 0) sw = 1;
-
-	bishop_magics[pos+1].offset = current_offset + nw * ne * sw * se;
+	bishop_magics[pos+1].offset = bishop_magics[pos].offset + nw * ne * sw * se;
 }
 
 void Board::init_bishop_key(int pos, int x, int y)
@@ -511,15 +507,61 @@ void rook_magicU64_generator()
 
 		// for pretty display
 		string endchar = pos==63 ? "\n};\n" : ((pos&7)==7 ? ",\n" : ", ");
-		//mask = bd.rook_magics[pos].mask;
 		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
 			magic = rand_U64();
-			//if (bitCount((mask * magic) & 0xFF00000000000000ULL) < 6) continue;
 			for (i = 0; i < 4096; i++)	{ hashcheck[i] = 0ULL; } // init
 			for (i = 0, fail = 0; i < possibility && !fail; i++)
 			{
 				jug = (allstates[i] * magic) >> 52;
+				if (hashcheck[jug] == 0)  hashcheck[jug] = allstates[i];
+				else if (hashcheck[jug] != allstates[i]) fail = 1;
+			}
+			if (!fail)  {  cout << "0x" << hex << magic << "ULL" << endchar; break; }
+		}
+		if (fail) {  cout << "FAILURE" << endchar;  }
+	}
+}
+
+// Bishop magicU64 multiplier generator. Will be pretabulated literals.
+void bishop_magicU64_generator()
+{
+	Board bd;  // a default initialized empty board
+
+	Bit mask, ans; uint lsb, perm, possibility, n, jug, tries, i; bool fail;
+	U64 hashcheck[512];  // table used to check hash collision
+	U64 allstates[512];
+	U64 magic;
+	cout << "const U64 BISHOP_MAGIC[64] = {" << endl;
+	for (int pos = 0; pos < N; pos++)
+	{
+		// generate all 2^bits permutations of the bishop cross bitmap
+		n = bitCount(bd.bishop_magics[pos].mask);
+		possibility = 1 << n; // 2^n
+		srand(time(NULL));  // reset random seed
+		for (perm = 0; perm < possibility; perm++) 
+		{
+			ans = 0;  // records one particular permutation, which is an occupancy state
+			mask = bd.bishop_magics[pos].mask;
+			for (i = 0; i < n; i++)
+			{
+				lsb = LSB(mask);  // loop through the mask bits, at most 12
+				mask &= unsetbit(lsb);  // unset this bit
+				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
+					ans |= setbit(lsb);
+			}
+			allstates[perm] = ans;
+		}
+
+		// for pretty display
+		string endchar = pos==63 ? "\n};\n" : ((pos&7)==7 ? ",\n" : ", ");
+		for (tries = 0; tries < 10000000; tries++)  // trial and error
+		{
+			magic = rand_U64();
+			for (i = 0; i < 512; i++)	{ hashcheck[i] = 0ULL; } // init
+			for (i = 0, fail = 0; i < possibility && !fail; i++)
+			{
+				jug = (allstates[i] * magic) >> 55;
 				if (hashcheck[jug] == 0)  hashcheck[jug] = allstates[i];
 				else if (hashcheck[jug] != allstates[i]) fail = 1;
 			}
