@@ -77,7 +77,7 @@ void Board::init_attack_tables()
 /* Rook magic bitboard */
 void Board::init_rook_magics(int pos, int x, int y)
 {
-	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
+	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit[pos];  // ( rank | file) unset center bit
 	if (pos == 0) rook_magics[0].offset = 0;	else if (pos == 63) return;
 	int west = x, east = 7-x, south = y, north = 7-y;
 	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
@@ -105,17 +105,17 @@ void Board::init_rook_key(int pos, int x, int y)
 		for (int i = 0; i < n; i++)
 		{
 			lsb = LSB(mask);  // loop through the mask bits, at most 12
-			mask &= unsetbit(lsb);  // unset this bit
+			mask &= unsetbit[lsb];  // unset this bit
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit(lsb);
+				ans |= setbit[lsb];
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
 		north = njug;  south = sjug; east = ejug; west = wjug;  // if we are on the border, change 0 to 1
-		if (!wjug) { x0 = x; 	while ((x0--)!=0 && (ans & setbit(pos-west))==0 )  west++; }
-		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit(pos+east))==0 )   east++; }
-		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit(pos+(north<<3)))==0)  north++;}
-		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit(pos-(south<<3)))==0 )  south++;}
+		if (!wjug) { x0 = x; 	while ((x0--)!=0 && (ans & setbit[pos-west])==0 )  west++; }
+		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit[pos+east])==0 )   east++; }
+		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit[pos+(north<<3)])==0)  north++;}
+		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit[pos-(south<<3)])==0 )  south++;}
 
 		// second, we map the number to a 1-byte key
 		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
@@ -144,10 +144,10 @@ void Board::init_rook_tbl(int pos, int x, int y)
 					// make the standard mask
 					mask = 0;
 					eii = ei; wii = wi; nii = ni; sii = si;
-					if (!ejug)  { while (eii)  mask |= setbit(pos + eii--); } 
-					if (!wjug)  { while (wii)  mask |= setbit(pos - wii--); } 
-					if (!njug)  { while (nii)  mask |= setbit(pos + (nii-- << 3)); } // +8*nii
-					if (!sjug)  { while (sii)  mask |= setbit(pos - (sii-- << 3)); } // -8*sii
+					if (!ejug)  { while (eii)  mask |= setbit[pos + eii--]; } 
+					if (!wjug)  { while (wii)  mask |= setbit[pos - wii--]; } 
+					if (!njug)  { while (nii)  mask |= setbit[pos + (nii-- << 3)]; } // +8*nii
+					if (!sjug)  { while (sii)  mask |= setbit[pos - (sii-- << 3)]; } // -8*sii
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
 					rook_tbl[ offset + key ] = mask;
 				}
@@ -163,11 +163,11 @@ void Board::init_bishop_magics(int pos, int x, int y)
 	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
 	pne = pnw = pse = psw = pos; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
 	Bit mask = 0;
-	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
-	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
-	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
-	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
-	mask &= unsetbit(pos);  // get rid of the central bit
+	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit[pne]; pne += 9;  ne++; }   // ne isn't at the east border
+	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit[pnw]; pnw += 7; nw++; }   // nw isn't at the west border
+	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit[pse]; pse -= 7; se++; }   // se isn't at the east border
+	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit[psw]; psw -= 9; sw++; }   // sw isn't at the west border
+	mask &= unsetbit[pos];  // get rid of the central bit
 	bishop_magics[pos].mask = mask;
 
 	if (pos == 0)  bishop_magics[0].offset = 0;	else if (pos == 63)   return;
@@ -197,17 +197,17 @@ void Board::init_bishop_key(int pos, int x, int y)
 		for (int i = 0; i < n; i++)
 		{
 			lsb = LSB(mask);  // loop through the mask bits, at most 12
-			mask &= unsetbit(lsb);  // unset this bit
+			mask &= unsetbit[lsb];  // unset this bit
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit(lsb);
+				ans |= setbit[lsb];
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (NE, NW, SE, SW) from the nearest blocker in all 4 directions
 		ne = nejug;  se = sejug; nw = nwjug; sw = swjug;  // if we are on the border, change 0 to 1
-		if (!nejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0++)!=7 && (ans & setbit(pos + ne*9))==0 )  ne++; }
-		if (!nwjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0++)!=7 && (ans & setbit(pos + nw*7))==0 )  nw++; }
-		if (!sejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0--)!=0 && (ans & setbit(pos - se*7))==0 )  se++; }
-		if (!swjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0--)!=0 && (ans & setbit(pos - sw*9))==0 )  sw++; }
+		if (!nejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0++)!=7 && (ans & setbit[pos + ne*9])==0 )  ne++; }
+		if (!nwjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0++)!=7 && (ans & setbit[pos + nw*7])==0 )  nw++; }
+		if (!sejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0--)!=0 && (ans & setbit[pos - se*7])==0 )  se++; }
+		if (!swjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0--)!=0 && (ans & setbit[pos - sw*9])==0 )  sw++; }
 
 		// second, we map the number to a 1-byte key
 		// General idea: code = (NE-1) + (NW-1)*NEm + (SW-1)*NWm*NEm + (SE-1)*SWm*NWm*NEm
@@ -237,10 +237,10 @@ void Board::init_bishop_tbl(int pos, int x, int y)
 					// make the standard mask
 					mask = 0;
 					nei = ne; nwi = nw; swi = sw; sei = se;
-					if (!nejug) { while(nei) mask |= setbit(pos + (nei--)*9); }
-					if (!nwjug) { while(nwi) mask |= setbit(pos + (nwi--)*7); }
-					if (!sejug) { while(sei) mask |= setbit(pos - (sei--)*7); }
-					if (!swjug) { while(swi) mask |= setbit(pos - (swi--)*9); }
+					if (!nejug) { while(nei) mask |= setbit[pos + (nei--)*9]; }
+					if (!nwjug) { while(nwi) mask |= setbit[pos + (nwi--)*7]; }
+					if (!sejug) { while(sei) mask |= setbit[pos - (sei--)*7]; }
+					if (!swjug) { while(swi) mask |= setbit[pos - (swi--)*9]; }
 					key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
 					bishop_tbl[ offset + key ] = mask;
 				}
@@ -264,7 +264,7 @@ void Board::init_knight_tbl(int pos, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= setbit(destx + (desty << 3));
+				ans |= setbit[destx + (desty << 3)];
 			}
 		}
 	}
@@ -286,7 +286,7 @@ void Board::init_king_tbl(int pos, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= setbit(destx + (desty << 3));
+			ans |= setbit[destx + (desty << 3)];
 		}
 	}
 	king_tbl[pos] = ans;
@@ -303,9 +303,9 @@ void Board::init_pawn_tbl(int pos, int x, int y, int color)
 	Bit ans = 0;
 	int offset =  color==0 ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= setbit(x-1 + ((y+ offset) << 3)); // white color = 0, black = 1
+		ans |= setbit[x-1 + ((y+ offset) << 3)]; // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= setbit(x+1 + ((y+ offset) << 3)); // white color = 0, black = 1
+		ans |= setbit[x+1 + ((y+ offset) << 3)]; // white color = 0, black = 1
 	pawn_tbl[pos][color] = ans;
 }
 
@@ -335,7 +335,7 @@ void Board::parseFEN(string fen0)
 			file += ch - '0';
 		else // number means blank square. Pass
 		{
-			mask = setbit((rank<<3) + file);  // r*8 + f
+			mask = setbit[(rank<<3) + file];  // r*8 + f
 			switch (ch)
 			{
 			case 'P': wPawn |= mask; break;
@@ -473,9 +473,9 @@ void rook_magicU64_generator()
 			for (i = 0; i < n; i++)
 			{
 				lsb = LSB(mask);  // loop through the mask bits, at most 12
-				mask &= unsetbit(lsb);  // unset this bit
+				mask &= unsetbit[lsb];  // unset this bit
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit(lsb);
+					ans |= setbit[lsb];
 			}
 			allstates[perm] = ans;
 		}
@@ -521,9 +521,9 @@ void bishop_magicU64_generator()
 			for (i = 0; i < n; i++)
 			{
 				lsb = LSB(mask);  // loop through the mask bits, at most 12
-				mask &= unsetbit(lsb);  // unset this bit
+				mask &= unsetbit[lsb];  // unset this bit
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit(lsb);
+					ans |= setbit[lsb];
 			}
 			allstates[perm] = ans;
 		}
