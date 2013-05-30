@@ -74,7 +74,7 @@ void Board::init_attack_tables()
 	}
 }
 
-
+/* Rook magic bitboard */
 void Board::init_rook_magics(int pos, int x, int y)
 {
 	rook_magics[pos].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(pos);  // ( rank | file) unset center bit
@@ -156,19 +156,7 @@ void Board::init_rook_tbl(int pos, int x, int y)
 	}
 }
 
-// public function, get the attack mask based on current board occupancy
-Bit Board::rook_attack(int pos)
-{
-	Magics mag = rook_magics[pos];
-	return rook_tbl[ rook_key[pos][rhash(pos, occupancy & mag.mask)] + mag.offset ];
-}
-Bit Board::rook_attack(int pos, Bit occup)
-{
-	Magics mag = rook_magics[pos];
-	return rook_tbl[ rook_key[pos][rhash(pos, occup & mag.mask)] + mag.offset ];
-}
-
-
+/* Bishop magic bitboard */
 void Board::init_bishop_magics(int pos, int x, int y)
 {
 	// set the bishop masks: directions NE+9, NW+7, SE-7, SW-9
@@ -260,19 +248,6 @@ void Board::init_bishop_tbl(int pos, int x, int y)
 		}
 	}
 }
-
-// public function, get the attack mask based on current board occupancy
-Bit Board::bishop_attack(int pos)
-{
-	Magics mag = bishop_magics[pos];
-	return bishop_tbl[ bishop_key[pos][bhash(pos, occupancy & mag.mask)] + mag.offset ];
-}
-Bit Board::bishop_attack(int pos, Bit occup)
-{
-	Magics mag = bishop_magics[pos];
-	return bishop_tbl[ bishop_key[pos][bhash(pos, occup & mag.mask)] + mag.offset ];
-}
-
 
 // knight attack table
 void Board::init_knight_tbl(int pos, int x, int y)

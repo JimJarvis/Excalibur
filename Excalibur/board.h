@@ -37,6 +37,7 @@ const uchar BB= 13;        //  1101
 const uchar BR= 14;        //  1110
 const uchar BQ= 15;        //  1111
 
+
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
 {
@@ -72,11 +73,13 @@ public:
 	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
 	Bit pawn_attack(int pos, int turn) { return pawn_tbl[pos][turn]; }
 
-	// sliding pieces: only 1 lookup is needed. Efficiency maximized
+	// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
+	// The following 4 functions are inlined at the end of this header.
 	Bit rook_attack(int pos);
 	Bit rook_attack(int pos, Bit occup);
 	Bit bishop_attack(int pos);
 	Bit bishop_attack(int pos, Bit occup);
+
 	Bit queen_attack(int pos) { return rook_attack(pos) | bishop_attack(pos); }
 	Bit queen_attack(int pos, Bit occup) { return rook_attack(pos, occup) | bishop_attack(pos, occup); }
 
@@ -125,7 +128,6 @@ private:
 };
 
 
-
 // display a bitmap as 8*8. For testing
 Bit dispbit(Bit, bool = 1);
 
@@ -159,5 +161,14 @@ const U64 BISHOP_MAGIC[64] = {
 
 #define rhash(sq, rook) ((rook) * ROOK_MAGIC[sq])>>52  // get the hash value of a rook &-result, shift 64-12
 #define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
+
+inline Bit Board::rook_attack(int pos)
+	{ return rook_tbl[ rook_key[pos][rhash(pos, occupancy & rook_magics[pos].mask)] + rook_magics[pos].offset ]; }
+inline Bit Board::rook_attack(int pos, Bit occup)
+	{ return rook_tbl[ rook_key[pos][rhash(pos, occup & rook_magics[pos].mask)] + rook_magics[pos].offset ]; }
+inline Bit Board::bishop_attack(int pos)
+	{ return bishop_tbl[ bishop_key[pos][bhash(pos, occupancy & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
+inline Bit Board::bishop_attack(int pos, Bit occup)
+	{ return bishop_tbl[ bishop_key[pos][bhash(pos, occup & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
 
 #endif // __board_h__
