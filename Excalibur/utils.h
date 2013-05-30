@@ -3,10 +3,24 @@
 #ifndef __utils_h__
 #define __utils_h__
 
-#include "board.h"
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <bitset>
+#include <cctype>
+#include <cstdlib>  // for rand
+#include <ctime>
+using namespace std; 
+typedef unsigned long long Bit;  // Bitboard
+typedef unsigned long long U64; // Unsigned ULL
+typedef unsigned int uint;
+typedef unsigned char uchar;
+#define N 64
+#define setbit(x) 1ULL<<(x)
+#define unsetbit(x) ~(1ULL<<(x))
 
 /* some borrowed algorithms */
-
 Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise
 Bit diagFlip(Bit board);  // Flip the board by the main a1-h8 diagonal
 uint bitCount(U64 bitmap); // Count the bits in a bitmap

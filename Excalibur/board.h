@@ -1,22 +1,7 @@
 #ifndef __board_h__
 #define __board_h__
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <iomanip>
-#include <bitset>
-#include <cctype>
-#include <cstdlib>  // for rand
-#include <ctime>
-using namespace std; 
-typedef unsigned long long Bit;  // Bitboard
-typedef unsigned long long U64; // Unsigned ULL
-typedef unsigned int uint;
-typedef unsigned char uchar;
-#define N 64
-#define setbit(x) 1ULL<<(x)
-#define unsetbit(x) ~(1ULL<<(x))
+#include "utils.h"  // contains important macros and typedefs
 
 /* Piece identifiers, 4 bits each.
  * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
@@ -70,15 +55,15 @@ public:
 	// non-sliding pieces
 	Bit knight_attack(int pos) { return knight_tbl[pos]; }
 	Bit king_attack(int pos) { return king_tbl[pos]; }
-	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
 	Bit pawn_attack(int pos, int turn) { return pawn_tbl[pos][turn]; }
+	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
 
 	// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
 	// The following 4 functions are inlined at the end of this header.
-	Bit rook_attack(int pos);
-	Bit rook_attack(int pos, Bit occup);
-	Bit bishop_attack(int pos);
+	Bit rook_attack(int pos, Bit occup); // external occupancy state
+	Bit rook_attack(int pos); // internal state
 	Bit bishop_attack(int pos, Bit occup);
+	Bit bishop_attack(int pos);
 
 	Bit queen_attack(int pos) { return rook_attack(pos) | bishop_attack(pos); }
 	Bit queen_attack(int pos, Bit occup) { return rook_attack(pos, occup) | bishop_attack(pos, occup); }

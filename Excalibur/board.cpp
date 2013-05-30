@@ -1,5 +1,5 @@
-#include "board.h"
 #include "utils.h"
+#include "board.h"
 
 // Default constructor
 Board::Board()
