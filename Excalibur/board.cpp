@@ -54,8 +54,8 @@ void Board::init_attack_tables()
 	for (int pos = 0; pos < N; ++pos)
 	{
 		// pre-calculate the coordinate (x,y), which can be easily got from pos
-		int x = pos & 7; // pos % 8
-		int y = pos >> 3; // pos/8
+		int x = FILES[pos]; // pos % 8
+		int y = RANKS[pos]; // pos/8
 		// none-sliding pieces. Does not need any "current row" info
 		init_knight_tbl(pos, x, y);
 		init_king_tbl(pos, x, y);
@@ -264,7 +264,7 @@ void Board::init_knight_tbl(int pos, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= setbit[destx + (desty << 3)];
+				ans |= setbit[POS[destx][desty]];
 			}
 		}
 	}
@@ -286,7 +286,7 @@ void Board::init_king_tbl(int pos, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= setbit[destx + (desty << 3)];
+			ans |= setbit[POS[destx][desty]];
 		}
 	}
 	king_tbl[pos] = ans;
@@ -303,9 +303,9 @@ void Board::init_pawn_tbl(int pos, int x, int y, int color)
 	Bit ans = 0;
 	int offset =  color==0 ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= setbit[x-1 + ((y+ offset) << 3)]; // white color = 0, black = 1
+		ans |= setbit[POS[x-1][y+offset]]; // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= setbit[x+1 + ((y+ offset) << 3)]; // white color = 0, black = 1
+		ans |= setbit[POS[x+1][y+offset]]; // white color = 0, black = 1
 	pawn_tbl[pos][color] = ans;
 }
 
@@ -335,7 +335,7 @@ void Board::parseFEN(string fen0)
 			file += ch - '0';
 		else // number means blank square. Pass
 		{
-			mask = setbit[(rank<<3) + file];  // r*8 + f
+			mask = setbit[POS[file][rank]];  // r*8 + f
 			switch (ch)
 			{
 			case 'P': wPawn |= mask; break;
@@ -392,7 +392,7 @@ Bit dispbit(Bit bitmap, bool flag)
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			cout << bs[j + (i << 3)] << " ";  // j + 8*i
+			cout << bs[POS[j][i]] << " ";  // j + 8*i
 		}
 		cout << endl;
 	}
@@ -413,7 +413,7 @@ void Board::dispboard()
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			int n = j + (i << 3);
+			int n = POS[j][i];
 			char c;
 			if (wk[n]) c = 'K';
 			else if (wq[n]) c = 'Q';
@@ -439,8 +439,8 @@ void Board::dispboard()
 
 string pos2str(uint pos)
 {
-	char alpha = 'a' + (pos & 7);
-	char num = (pos >> 3) + '1';
+	char alpha = 'a' + FILES[pos];
+	char num = RANKS[pos] + '1';
 	char str[3] = {alpha, num, 0};
 	return string(str);
 }
