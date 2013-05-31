@@ -25,6 +25,7 @@
     <ClCompile Include="algor.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="Excalibur.cpp" />
+    <ClCompile Include="moveGen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />

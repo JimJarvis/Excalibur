@@ -27,6 +27,9 @@
     <ClCompile Include="algor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="moveGen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h">

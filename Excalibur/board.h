@@ -23,14 +23,19 @@ static const uchar BN= 11;        //  1011
 static const uchar BB= 13;        //  1101
 static const uchar BR= 14;        //  1110
 static const uchar BQ= 15;        //  1111
-
+static const uchar PAWN = 1;
+static const uchar KING = 2;
+static const uchar KNIGHT = 3;
+static const uchar BISHOP = 5;
+static const uchar ROOK = 6;
+static const uchar QUEEN = 7;
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
 {
 public:
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
-	Bit Pawn[2], King[2], Knight[2], Bishop[2], Rook[2], Queen[2];
+	Bit Pawns[2], Kings[2], Knights[2], Bishops[2], Rooks[2], Queens[2];
 	Bit Pieces[2];
 	Bit Occupied;  // everything
 
@@ -54,15 +59,19 @@ public:
 	// non-sliding pieces
 	Bit knight_attack(int pos) { return knight_tbl[pos]; }
 	Bit king_attack(int pos) { return king_tbl[pos]; }
-	Bit pawn_attack(int pos, int turn) { return pawn_tbl[pos][turn]; }
-	Bit pawn_attack(int pos) { return pawn_tbl[pos][turn]; }
+	Bit pawn_attack(int pos) { return pawn_atk_tbl[pos][turn]; }
+	Bit pawn_attack(int pos, int color) { return pawn_atk_tbl[pos][color]; }
+	Bit pawn_push(int pos) { return pawn_push_tbl[pos][turn]; }
+	Bit pawn_push(int pos, int color) { return pawn_push_tbl[pos][color]; }
+	Bit pawn_push2(int pos) { return pawn_push2_tbl[pos][turn]; }
+	Bit pawn_push2(int pos, int color) { return pawn_push2_tbl[pos][color]; }
 
 	// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
 	// The following 4 functions are inlined at the end of this header.
-	Bit rook_attack(int pos, Bit occup); // external occupancy state
 	Bit rook_attack(int pos); // internal state
-	Bit bishop_attack(int pos, Bit occup);
+	Bit rook_attack(int pos, Bit occup); // external occupancy state
 	Bit bishop_attack(int pos);
+	Bit bishop_attack(int pos, Bit occup);
 
 	Bit queen_attack(int pos) { return rook_attack(pos) | bishop_attack(pos); }
 	Bit queen_attack(int pos, Bit occup) { return rook_attack(pos, occup) | bishop_attack(pos, occup); }
@@ -104,11 +113,15 @@ private:
 	void init_bishop_magics(int pos, int x, int y);
 
 	// Precalculated attack tables for non-sliding pieces
-	Bit knight_tbl[N], king_tbl[N], pawn_tbl[N][2];
+	Bit knight_tbl[N], king_tbl[N];
+	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
+	Bit pawn_atk_tbl[N][2], pawn_push_tbl[N][2], pawn_push2_tbl[N][2];
 	// for none-sliding pieces
 	void init_knight_tbl(int pos, int x, int y);
 	void init_king_tbl(int pos, int x, int y);
-	void init_pawn_tbl(int pos, int x, int y, int color);
+	void init_pawn_atk_tbl(int pos, int x, int y, int color);
+	void init_pawn_push_tbl(int pos, int x, int y, int color);
+	void init_pawn_push2_tbl(int pos, int x, int y, int color);
 };
 
 

@@ -1,4 +1,3 @@
-#include "utils.h"
 #include "board.h"
 
 // Default constructor
@@ -18,18 +17,18 @@ Board::Board(string fen)
 // initialize the default position bitmaps
 void Board::init_default()
 {
-	King[W] = 0x10;
-	Queen[W]  = 0x8;
-	Rook[W]  = 0x81;
-	Bishop[W]  = 0x24;
-	Knight[W]  = 0x42;
-	Pawn[W]  = 0xff00;
-	King[B] = 0x1000000000000000;
-	Queen[B] = 0x800000000000000;
-	Rook[B] = 0x8100000000000000;
-	Bishop[B] = 0x2400000000000000;
-	Knight[B] = 0x4200000000000000;
-	Pawn[B] = 0x00ff000000000000;
+	Kings[W] = 0x10;
+	Queens[W]  = 0x8;
+	Rooks[W]  = 0x81;
+	Bishops[W]  = 0x24;
+	Knights[W]  = 0x42;
+	Pawns[W]  = 0xff00;
+	Kings[B] = 0x1000000000000000;
+	Queens[B] = 0x800000000000000;
+	Rooks[B] = 0x8100000000000000;
+	Bishops[B] = 0x2400000000000000;
+	Knights[B] = 0x4200000000000000;
+	Pawns[B] = 0x00ff000000000000;
 	refresh_pieces();
 	castle[W] = castle[B] = 3;
 	fiftyMove = 0;
@@ -42,7 +41,7 @@ void Board::init_default()
 void Board::refresh_pieces()
 {
 	for (int color = 0; color < 2; color++)
-		Pieces[color] = Pawn[color] | King[color] | Knight[color] | Bishop[color] | Rook[color] | Queen[color];
+		Pieces[color] = Pawns[color] | Kings[color] | Knights[color] | Bishops[color] | Rooks[color] | Queens[color];
 	Occupied = Pieces[W] | Pieces[B];
 }
 
@@ -69,7 +68,11 @@ void Board::init_attack_tables()
 
 		// pawn has different colors
 		for (int color = 0; color < 2; ++color)
-			init_pawn_tbl(pos, x, y, color);
+		{
+			init_pawn_atk_tbl(pos, x, y, color);
+			init_pawn_push_tbl(pos, x, y, color);
+			init_pawn_push2_tbl(pos, x, y, color);
+		}
 	}
 }
 
@@ -292,20 +295,34 @@ void Board::init_king_tbl(int pos, int x, int y)
 }
 
 // Pawn attack table - 2 colors
-void Board::init_pawn_tbl(int pos, int x, int y, int color)
+void Board::init_pawn_atk_tbl(int pos, int x, int y, int color)
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
 	{
-		pawn_tbl[pos][color] = 0;
+		pawn_atk_tbl[pos][color] = 0;
 		return;
 	}
 	Bit ans = 0;
-	int offset =  color==0 ? 1 : -1;
+	int offset =  color==W ? 1 : -1;
 	if (x - 1 >= 0)
 		ans |= setbit[POS[x-1][y+offset]]; // white color = 0, black = 1
 	if (x + 1 < 8)
 		ans |= setbit[POS[x+1][y+offset]]; // white color = 0, black = 1
-	pawn_tbl[pos][color] = ans;
+	pawn_atk_tbl[pos][color] = ans;
+}
+void Board::init_pawn_push_tbl(int pos, int x, int y, int color)
+{
+	if (y == 0 || y == 7) // pawns can never be on these squares
+		pawn_push_tbl[pos][color] = 0;
+	else
+		pawn_push_tbl[pos][color] = setbit[pos + (color==W ? 8 : -8)];
+}
+void Board::init_pawn_push2_tbl(int pos, int x, int y, int color) // double push
+{
+	if (y == (color==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
+		pawn_push2_tbl[pos][color] = setbit[pos + (color==W ? 16 : -16)];
+	else
+		pawn_push2_tbl[pos][color] = 0;
 }
 
 
@@ -316,7 +333,7 @@ void Board::init_pawn_tbl(int pos, int x, int y, int color)
 void Board::parseFEN(string fen0)
 {
 	for (int color = 0; color < 2; color++)
-		Pawn[color] = King[color] = Knight[color] = Bishop[color] = Rook[color] = Queen[color] = 0;
+		Pawns[color] = Kings[color] = Knights[color] = Bishops[color] = Rooks[color] = Queens[color] = 0;
 	istringstream fen(fen0);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
@@ -340,12 +357,12 @@ void Board::parseFEN(string fen0)
 			ch = tolower(ch);
 			switch (ch)
 			{
-			case 'p': Pawn[color] |= mask; break;
-			case 'n': Knight[color] |= mask; break;
-			case 'b': Bishop[color] |= mask; break;
-			case 'r': Rook[color] |= mask; break;
-			case 'q': Queen[color] |= mask; break;
-			case 'k': King[color] |= mask; break;
+			case 'p': Pawns[color] |= mask; break;
+			case 'n': Knights[color] |= mask; break;
+			case 'b': Bishops[color] |= mask; break;
+			case 'r': Rooks[color] |= mask; break;
+			case 'q': Queens[color] |= mask; break;
+			case 'k': Kings[color] |= mask; break;
 			}
 			file ++;
 		}
@@ -403,8 +420,8 @@ Bit dispBit(Bit bitmap, bool flag)
 // Display the full board with letters
 void Board::dispboard()
 {
-	bitset<64> wk(King[W]), wq(Queen[W]), wr(Rook[W]), wb(Bishop[W]), wn(Knight[W]), wp(Pawn[W]);
-	bitset<64> bk(King[B]), bq(Queen[B]), br(Rook[B]), bb(Bishop[B]), bn(Knight[B]), bp(Pawn[B]);
+	bitset<64> wk(Kings[W]), wq(Queens[W]), wr(Rooks[W]), wb(Bishops[W]), wn(Knights[W]), wp(Pawns[W]);
+	bitset<64> bk(Kings[B]), bq(Queens[B]), br(Rooks[B]), bb(Bishops[B]), bn(Knights[B]), bp(Pawns[B]);
 	for (int i = 7; i >= 0; i--)
 	{
 		cout << i+1 << "  ";

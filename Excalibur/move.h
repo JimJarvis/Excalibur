@@ -11,6 +11,8 @@ public:
 	Move(): mov(0) {}  // default ctor
 	Move(const Move& anotherMove) { mov = anotherMove.mov; } // copy ctor
 	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; }
+	bool operator==(const Move& anotherMove) { return mov == anotherMove.mov; }
+	void clear() { mov = 0; }
 
 	// bits 0 to 5
 	void setFrom(uint from) 	{ mov &= 0xffffffc0; mov |= (from & 0x0000003f); }
@@ -51,5 +53,7 @@ public:
 	bool isQCastle() { return (mov & 0x2000000) == 0x2000000; }
 	bool isEP() { return (mov & 0x3000000) == 0x3000000; }
 };
+
+
 
 #endif // __move_h__
