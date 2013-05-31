@@ -8,7 +8,8 @@ class Move
 public:
 	// The 32-bit word contains all the information about a specific move.
 	uint mov;
-	Move(): mov(0) {}  // default init
+	Move(): mov(0) {}  // default ctor
+	Move(const Move& anotherMove) { mov = anotherMove.mov; } // copy ctor
 	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; }
 
 	// bits 0 to 5

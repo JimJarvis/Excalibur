@@ -9,34 +9,33 @@
  * major pieces (without color bits set), are > 5
  * minor and major pieces (without color bits set), are > 2
  */
-const uchar WP = 1;         //  0001
-const uchar WK= 2;         //  0010
-const uchar WN= 3;         //  0011
-const uchar WB=  5;        //  0101
-const uchar WR= 6;         //  0110
-const uchar WQ= 7;         //  0111
-const uchar BP= 9;          //  1001
-const uchar BK= 10;        //  1010
-const uchar BN= 11;        //  1011
-const uchar BB= 13;        //  1101
-const uchar BR= 14;        //  1110
-const uchar BQ= 15;        //  1111
+static const uchar W = 0;  // color white
+static const uchar WP = 1;         //  0001
+static const uchar WK= 2;         //  0010
+static const uchar WN= 3;         //  0011
+static const uchar WB=  5;        //  0101
+static const uchar WR= 6;         //  0110
+static const uchar WQ= 7;         //  0111
+static const uchar B = 1;  // color black
+static const uchar BP= 9;          //  1001
+static const uchar BK= 10;        //  1010
+static const uchar BN= 11;        //  1011
+static const uchar BB= 13;        //  1101
+static const uchar BR= 14;        //  1110
+static const uchar BQ= 15;        //  1111
 
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
 {
 public:
-	// Bitmaps for all 12 kinds of pieces
-	Bit wPawn, wKing, wKnight, wBishop, wRook, wQueen;
-	Bit bPawn, bKing, bKnight, bBishop, bRook, bQueen;
-	Bit wPieces, bPieces;
-
-	Bit occupancy;  // everything
+	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
+	Bit Pawn[2], King[2], Knight[2], Bishop[2], Rook[2], Queen[2];
+	Bit Pieces[2];
+	Bit Occupied;  // everything
 
 	// additional important var's
-	uchar castle_w; // &1: O-O, &2: O-O-O
-	uchar castle_b; 
+	uchar castle[2]; // &1: O-O, &2: O-O-O
 	uchar turn; // white(0) or black(1)
 	uint epSquare; // en passent square
 	uint fiftyMove; // move since last pawn move or capture
@@ -114,7 +113,7 @@ private:
 
 
 // display a bitmap as 8*8. For testing
-Bit dispbit(Bit, bool = 1);
+Bit dispBit(Bit, bool = 1);
 
 // convert a square to its string pos representation, and vice versa
 // a1 is 0 and h8 is 63
@@ -147,11 +146,11 @@ static const U64 BISHOP_MAGIC[64] = {
 #define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
 inline Bit Board::rook_attack(int pos)
-	{ return rook_tbl[ rook_key[pos][rhash(pos, occupancy & rook_magics[pos].mask)] + rook_magics[pos].offset ]; }
+	{ return rook_tbl[ rook_key[pos][rhash(pos, Occupied & rook_magics[pos].mask)] + rook_magics[pos].offset ]; }
 inline Bit Board::rook_attack(int pos, Bit occup)
 	{ return rook_tbl[ rook_key[pos][rhash(pos, occup & rook_magics[pos].mask)] + rook_magics[pos].offset ]; }
 inline Bit Board::bishop_attack(int pos)
-	{ return bishop_tbl[ bishop_key[pos][bhash(pos, occupancy & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
+	{ return bishop_tbl[ bishop_key[pos][bhash(pos, Occupied & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
 inline Bit Board::bishop_attack(int pos, Bit occup)
 	{ return bishop_tbl[ bishop_key[pos][bhash(pos, occup & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
 
