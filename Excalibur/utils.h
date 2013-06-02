@@ -37,16 +37,9 @@ string pos2str(uint pos);
 uint str2pos(string str);
 
 // a few type queries
-inline bool isPawn(PieceType p) { return (p & 7) == WP; }
-inline bool isKing(PieceType p) { return (p & 7) == WK; }
-inline bool isKnight(PieceType p) { return (p & 7) == WN; }
-inline bool isBishop(PieceType p) { return (p & 7) == WB; }
-inline bool isRook(PieceType p) { return (p & 7) == WR; }
-inline bool isQueen(PieceType p) { return (p & 7) == WQ; }
 inline bool isSlider(PieceType p) { return (p & 4) == 4; }
 inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank
 inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  // slider along the diagonal
-inline Color getColor(PieceType p) { return Color((p & 8) == 8); }
 
 /* some borrowed algorithms */
 Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise

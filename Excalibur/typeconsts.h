@@ -24,36 +24,17 @@ static const enum Color : byte
 	B = 1
 };
 static const Color COLORS[2] = {W, B}; // for iterator
+
 static const enum PieceType : byte
 {
-	  WP = 1,         //  0001
-	  WK= 2,         //  0010
-	  WN= 3,         //  0011
-	  WB=  5,        //  0101
-	  WR= 6,         //  0110
-	  WQ= 7,         //  0111
-	  BP= 9,          //  1001
-	  BK= 10,        //  1010
-	  BN= 11,        //  1011
-	  BB= 13,        //  1101
-	  BR= 14,        //  1110
-	  BQ= 15        //  1111
+	NON = 0,
+	PAWN = 1,        //  001
+	KING = 2,         //  010
+	KNIGHT = 3,     //  011
+	BISHOP =  5,     //  101
+	ROOK = 6,        //  110
+	QUEEN = 7,      //  111
 };
-//static const PieceType PAWN[COLOR_N] = {WP, BP};
-//static const PieceType KING[COLOR_N] = {WK, BK};
-//static const PieceType KNIGHT[COLOR_N] = {WN, BN};
-//static const PieceType BISHOP[COLOR_N] = {WB, BB};
-//static const PieceType ROOK[COLOR_N] = {WR, BR};
-//static const PieceType QUEEN[COLOR_N] = {WQ, BQ};
-//static const enum PieceType : byte
-//{
-//	PAWN = 1,        //  001
-//	KING = 2,         //  010
-//	KNIGHT = 3,     //  011
-//	BISHOP =  5,     //  101
-//	ROOK = 6,        //  110
-//	QUEEN = 7,      //  111
-//};
 
 // single-bit masks
 static const U64 setbit[64] = {0x1ull, 0x2ull, 0x4ull, 0x8ull, 0x10ull, 0x20ull, 0x40ull, 0x80ull, 0x100ull, 0x200ull, 0x400ull, 0x800ull, 0x1000ull, 0x2000ull, 0x4000ull, 0x8000ull, 0x10000ull, 0x20000ull, 0x40000ull, 0x80000ull, 0x100000ull, 0x200000ull, 0x400000ull, 0x800000ull, 0x1000000ull, 0x2000000ull, 0x4000000ull, 0x8000000ull, 0x10000000ull, 0x20000000ull, 0x40000000ull, 0x80000000ull, 0x100000000ull, 0x200000000ull, 0x400000000ull, 0x800000000ull, 0x1000000000ull, 0x2000000000ull, 0x4000000000ull, 0x8000000000ull, 0x10000000000ull, 0x20000000000ull, 0x40000000000ull, 0x80000000000ull, 0x100000000000ull, 0x200000000000ull, 0x400000000000ull, 0x800000000000ull, 0x1000000000000ull, 0x2000000000000ull, 0x4000000000000ull, 0x8000000000000ull, 0x10000000000000ull, 0x20000000000000ull, 0x40000000000000ull, 0x80000000000000ull, 0x100000000000000ull, 0x200000000000000ull, 0x400000000000000ull, 0x800000000000000ull, 0x1000000000000000ull, 0x2000000000000000ull, 0x4000000000000000ull, 0x8000000000000000ull};

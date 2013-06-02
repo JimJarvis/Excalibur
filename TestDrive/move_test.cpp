@@ -3,27 +3,23 @@
 
 TEST(Move, Piece)
 {
-	PieceType p = WK;
-	ASSERT_TRUE(isKing(p));
-	ASSERT_FALSE(isPawn(p));
-	ASSERT_FALSE(isSlider(p));
-	ASSERT_FALSE(isOrthoSlider(p));
-	ASSERT_FALSE(isDiagSlider(p));
-	ASSERT_EQ(getColor(p), W);
-	p = BQ;
-	ASSERT_TRUE(isQueen(p));
+	PieceType nonsliders[3] = {KING, KNIGHT, PAWN};
+	for (PieceType p : nonsliders)
+	{
+		ASSERT_FALSE(isSlider(p));
+		ASSERT_FALSE(isOrthoSlider(p));
+		ASSERT_FALSE(isDiagSlider(p));
+	}
+	PieceType p;
+	p = QUEEN;
 	ASSERT_TRUE(isSlider(p));
 	ASSERT_TRUE(isOrthoSlider(p));
 	ASSERT_TRUE(isDiagSlider(p));
-	ASSERT_EQ(getColor(p), B);
-	p = WR;
-	ASSERT_TRUE(isRook(p));
-	ASSERT_FALSE(isKnight(p));
+	p = ROOK;
 	ASSERT_TRUE(isSlider(p));
 	ASSERT_TRUE(isOrthoSlider(p));
 	ASSERT_FALSE(isDiagSlider(p));
-	p = BB;
-	ASSERT_TRUE(isBishop(p));
+	p = BISHOP;
 	ASSERT_TRUE(isSlider(p));
 	ASSERT_FALSE(isOrthoSlider(p));
 	ASSERT_TRUE(isDiagSlider(p));
@@ -38,9 +34,10 @@ TEST(Move, Judgement)
 	m.setFrom(from);
 	uint to = rand() % 64;
 	m.setTo(to);
-	PieceType piece = BR; // moved
-	PieceType capt = WK;  // captured
-	PieceType prom = BQ; // promoted
+	m.setColor(B);
+	PieceType piece = ROOK; // moved
+	PieceType capt = KING;  // captured
+	PieceType prom = QUEEN; // promoted
 	m.setPiece(piece);
 	m.setCapt(capt);
 	m.setPromo(prom);
@@ -50,10 +47,9 @@ TEST(Move, Judgement)
 	ASSERT_EQ(m.getCapt(), capt);
 	ASSERT_EQ(m.getPiece(), piece);
 	ASSERT_EQ(m.getPromo(), prom);
-	ASSERT_TRUE(m.isBlack());
-	ASSERT_FALSE(m.isWhite());
 	ASSERT_EQ(m.getColor(), B);
 	ASSERT_TRUE(m.isCapt());
+	ASSERT_EQ(m.getCaptColor(), W);
 	ASSERT_TRUE(m.isKingCapt());
 	ASSERT_FALSE(m.isKingMove());
 	ASSERT_FALSE(m.isRookCapt());
@@ -67,12 +63,18 @@ TEST(Move, Judgement)
 	m.clear();
 	m.setFrom(str2pos("c2"));
 	m.setTo(str2pos("c4"));
-	m.setPiece(WP);
+	m.setColor(W);
+	m.setPiece(PAWN);
+	m.setCapt(ROOK);
 	m.setQCastle();
 	ASSERT_EQ(m.getFrom(), 10);
 	ASSERT_EQ(m.getTo(), 26);
 	ASSERT_EQ(m.getColor(), W);
-	ASSERT_FALSE(m.isCapt());
+	ASSERT_TRUE(m.isCapt());
+	ASSERT_TRUE(m.isRookCapt());
+	ASSERT_FALSE(m.isKingCapt());
+	ASSERT_EQ(m.getCaptColor(), B);
+	ASSERT_EQ(m.getCapt(), ROOK);
 	ASSERT_FALSE(m.isKCastle());
 	ASSERT_TRUE(m.isQCastle());
 	ASSERT_FALSE(m.isEP());
@@ -81,6 +83,7 @@ TEST(Move, Judgement)
 
 	m.clear();
 	m.setEP();
+	ASSERT_FALSE(m.isCapt());
 	ASSERT_FALSE(m.isKCastle());
 	ASSERT_FALSE(m.isQCastle());
 	ASSERT_TRUE(m.isEP());

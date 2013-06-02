@@ -10,7 +10,7 @@ class Board
 public:
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
 	Bit Pawns[COLOR_N], Kings[COLOR_N], Knights[COLOR_N], Bishops[COLOR_N], Rooks[COLOR_N], Queens[COLOR_N];
-	Bit ColoredPieces[COLOR_N];
+	Bit Pieces[COLOR_N];
 	Bit Occupied;  // everything
 
 	// Incrementally updated info, for fast access:
@@ -20,7 +20,7 @@ public:
 	// additional important states
 	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
 	Color turn; // white(0) or black(1)
-	uint epSquare; // enpassant square
+	uint epSquare; // en-passant square
 	uint fiftyMove; // move since last pawn move or capture
 	uint fullMove;  // starts at 1 and increments after black moves
 

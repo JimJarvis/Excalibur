@@ -104,4 +104,17 @@ TEST(Board, FEN)
 	ASSERT_EQ(bd.fiftyMove, 21);
 	ASSERT_EQ(bd.fullMove, 33);
 	ASSERT_EQ(bd.epSquare, 42);
+	bd.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); 
+	ASSERT_EQ(bd.pieceCount[W][PAWN], 6);
+	ASSERT_EQ(bd.pieceCount[W][KING], 1);
+	ASSERT_EQ(bd.pieceCount[W][KNIGHT], 2);
+	ASSERT_EQ(bd.pieceCount[W][BISHOP], 1);
+	ASSERT_EQ(bd.pieceCount[W][ROOK], 0);
+	ASSERT_EQ(bd.pieceCount[W][QUEEN], 0);
+	ASSERT_EQ(bd.pieceCount[B][PAWN], 5);
+	ASSERT_EQ(bd.pieceCount[B][KING], 1);
+	ASSERT_EQ(bd.pieceCount[B][KNIGHT], 2);
+	ASSERT_EQ(bd.pieceCount[B][BISHOP], 2);
+	ASSERT_EQ(bd.pieceCount[B][ROOK], 2);
+	ASSERT_EQ(bd.pieceCount[B][QUEEN], 1);
 }

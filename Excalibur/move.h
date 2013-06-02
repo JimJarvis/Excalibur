@@ -13,6 +13,7 @@ public:
 	Move(const Move& anotherMove) { mov = anotherMove.mov; } // copy ctor
 	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; }
 	bool operator==(const Move& anotherMove) { return mov == anotherMove.mov; }
+	friend ostream& operator<<(ostream& os, Move m);
 	void clear() { mov = 0; }
 
 	// bits 0 to 5
@@ -21,24 +22,25 @@ public:
 	// bits 6 to 11
 	void setTo(uint to) 	{ mov &= 0xfffff03f; mov |= (to & 0x0000003f)<< 6; }
 	uint getTo() { return (mov >> 6) & 0x0000003f; }
-	// bits 12 to 15, 4 bits for the moving piece
-	void setPiece(PieceType piece) { mov &= 0xffff0fff; mov |= (piece & 0x0000000f) << 12; }
-	PieceType getPiece() { return PieceType((mov >> 12) & 0x0000000f); }
-	// bits 16 to 19, 4 bits for captured piece, if any
-	void setCapt(PieceType capture) { mov &= 0xfff0ffff; mov |= (capture & 0x0000000f) << 16; }
-	PieceType getCapt() { return PieceType((mov >> 16) & 0x0000000f); }
-	// bits 20 to 23, promotion type
-	void setPromo(PieceType promotion) { mov &= 0xff0fffff; mov |= (promotion & 0x0000000f) << 20; }
-	PieceType getPromo() { return PieceType((mov >> 20) & 0x0000000f); }
-	// bits 24 to 25, special flags: 01 for O-O, 10 for O-O-O, 11 for en-passant
-	void setKCastle() { mov |= 0x1000000; }
-	void setQCastle() { mov |= 0x2000000; }
-	void setEP() { mov |= 0x3000000; }
-	// boolean checks for some types of moves.
-	bool isWhite() { return (mov & 0x00008000) == 0x0; } // white's move? bit 15 must be 0
-	bool isBlack() { return (mov & 0x00008000) == 0x00008000; } // black's move? bit 15 must be 1
+	// bits 12 to 14, 3 bits for the moving piece
+	void setPiece(PieceType piece) { mov &= 0xffff8fff; mov |= (piece & 0x00000007) << 12; }
+	PieceType getPiece() { return PieceType((mov >> 12) & 0x00000007); }
+	// bit 15 : the color of the mover
+	void setColor(Color c) { mov |= c << 15; }
 	Color getColor() { return Color((mov & 0x00008000) == 0x00008000); }
-	bool isCapt() { return (mov & 0x000f0000) != 0x0; } // bits 16 to 19 must != 0
+	// bits 16 to 18, 3 bits for captured piece, if any
+	void setCapt(PieceType capture) { mov &= 0xfff8ffff; mov |= (capture & 0x00000007) << 16; }
+	PieceType getCapt() { return PieceType((mov >> 16) & 0x00000007); }
+	Color getCaptColor() { return Color((mov & 0x00008000) == 0x0); } // capture color must be opposite to own color
+	// bits 19 to 21, promotion type
+	void setPromo(PieceType promotion) { mov &= 0xffc7ffff; mov |= (promotion & 0x00000007) << 19; }
+	PieceType getPromo() { return PieceType((mov >> 19) & 0x00000007); }
+	// bits 22 to 24, special flags: 22 for O-O, 23 for O-O-O, 24 for en-passant
+	void setKCastle() { mov |= 0x400000; }
+	void setQCastle() { mov |= 0x800000; }
+	void setEP() { mov |= 0x1000000; }
+	// boolean checks for some types of moves.
+	bool isCapt() { return (mov & 0x00070000) != 0; } // bits 16 to 18 must != 0
 	bool isKingCapt() { return ( mov & 0x00070000) == 0x00020000; } // bits 16 to 18 must be 010
 	bool isKingMove() { return ( mov & 0x00007000) == 0x00002000; } // bits 12 to 14 must be 010
 	bool isRookCapt() { return ( mov & 0x00070000) == 0x00060000; } // bits 16 to 18 must be 110
@@ -51,9 +53,15 @@ public:
 			0x00000008) && ((( mov & 0x00000e00) == 0x00000600))) ||
 			((( mov & 0x00000038) == 0x00000030) && ((( mov & 0x00000e00) == 0x00000800)))); }
 	// special queries: mutually exclusive
-	bool isKCastle() { return (mov & 0x3000000) == 0x1000000; }
-	bool isQCastle() { return (mov & 0x3000000) == 0x2000000; }
-	bool isEP() { return (mov & 0x3000000) == 0x3000000; }
+	bool isKCastle() { return (mov & 0x400000) != 0; }
+	bool isQCastle() { return (mov & 0x800000) != 0; }
+	bool isEP() { return (mov & 0x1000000) != 0; }
 };
+
+inline ostream& operator<<(ostream& os, Move m)
+{
+	cout << hex << m.mov << endl; // use iomanip to output the hex
+	return os;
+}
 
 #endif // __move_h__

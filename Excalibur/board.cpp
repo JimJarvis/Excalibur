@@ -30,8 +30,24 @@ void Board::init_default()
 	Knights[B] = 0x4200000000000000;
 	Pawns[B] = 0x00ff000000000000;
 	refresh_pieces();
-	for (Color c : COLORS)
+	
+	for (int pos = 0; pos < SQ; pos++)
+		boardPiece[pos] = NON;
+	for (Color c : COLORS)  
 	{
+		// init pieceCount[COLOR_N][PIECE_TYPE_N]
+		pieceCount[c][PAWN] = 8;
+		pieceCount[c][KNIGHT] = pieceCount[c][BISHOP] = pieceCount[c][ROOK] = 2;
+		pieceCount[c][KING] = pieceCount[c][QUEEN] = 1;
+		// init boardPiece[SQ]: symmetric with respect to the central rank
+		int sign = c==W ? -1: 1;
+		for (int i = 28; i <= 35; i++)
+			boardPiece[i + sign*20] = PAWN;
+		boardPiece[28 + sign*28] = boardPiece[35 + sign*28] = ROOK;
+		boardPiece[29 + sign*28] = boardPiece[34 + sign*28] = KNIGHT;
+		boardPiece[30 + sign*28] = boardPiece[33 + sign*28] = BISHOP;
+		boardPiece[31 + sign*28] = QUEEN;
+		boardPiece[32 + sign*28] = KING;
 	}
 	// init special status
 	castleRights[W] = castleRights[B] = 3;
@@ -45,8 +61,8 @@ void Board::init_default()
 void Board::refresh_pieces()
 {
 	for (Color c : COLORS)
-		ColoredPieces[c] = Pawns[c] | Kings[c] | Knights[c] | Bishops[c] | Rooks[c] | Queens[c];
-	Occupied = ColoredPieces[W] | ColoredPieces[B];
+		Pieces[c] = Pawns[c] | Kings[c] | Knights[c] | Bishops[c] | Rooks[c] | Queens[c];
+	Occupied = Pieces[W] | Pieces[B];
 }
 
 // initialize *_attack[][] tables
@@ -335,7 +351,12 @@ void Board::init_pawn_push2_tbl( int pos, int x, int y, Color c )
 void Board::parseFEN(string fen0)
 {
 	for (Color c : COLORS)
+	{
 		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
+		pieceCount[c][PAWN] = pieceCount[c][KING] = pieceCount[c][KNIGHT] = pieceCount[c][BISHOP] = pieceCount[c][ROOK] = pieceCount[c][QUEEN] = 0;
+	}
+	for (int pos = 0; pos < SQ; pos++)
+		boardPiece[pos] = NON;
 	istringstream fen(fen0);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
@@ -349,23 +370,25 @@ void Board::parseFEN(string fen0)
 			rank --;
 			file = 0;
 		}
-		else if (isdigit(ch))
+		else if (isdigit(ch)) // number means blank square. Pass
 			file += ch - '0';
-		else // number means blank square. Pass
+		else
 		{
 			mask = setbit[POS[file][rank]];  // r*8 + f
-			Color c; 
-			if (isupper(ch)) c = W; else c = B;
+			Color c = isupper(ch) ? W: B; 
 			ch = tolower(ch);
+			PieceType pt;
 			switch (ch)
 			{
-			case 'p': Pawns[c] |= mask; break;
-			case 'n': Knights[c] |= mask; break;
-			case 'b': Bishops[c] |= mask; break;
-			case 'r': Rooks[c] |= mask; break;
-			case 'q': Queens[c] |= mask; break;
-			case 'k': Kings[c] |= mask; break;
+			case 'p': Pawns[c] |= mask; pt = PAWN; break;
+			case 'n': Knights[c] |= mask; pt = KNIGHT; break;
+			case 'b': Bishops[c] |= mask; pt = BISHOP; break;
+			case 'r': Rooks[c] |= mask; pt = ROOK; break;
+			case 'q': Queens[c] |= mask; pt = QUEEN; break;
+			case 'k': Kings[c] |= mask; pt = KING; break;
 			}
+			++ pieceCount[c][pt]; 
+			boardPiece[POS[file][rank]] = pt;
 			file ++;
 		}
 	}
@@ -427,6 +450,15 @@ void Board::dispboard()
 	cout << "   ----------------" << endl;
 	cout << "   a b c d e f g h" << endl;
 	cout << "************************" << endl;
+	for (int i = 7; i >= 0; i--)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			int n = POS[j][i];
+			cout << boardPiece[n] << "  ";
+		}
+		cout << endl;
+	}
 }
 
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
