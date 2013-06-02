@@ -1,34 +1,8 @@
 #ifndef __board_h__
 #define __board_h__
 
-#include "utils.h"  // contains important macros and typedefs
-
-/* Piece identifiers, 4 bits each.
- * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
- * pawns and kings (without color bits), are < 3
- * major pieces (without color bits set), are > 5
- * minor and major pieces (without color bits set), are > 2
- */
-static const uchar W = 0;  // color white
-static const uchar WP = 1;         //  0001
-static const uchar WK= 2;         //  0010
-static const uchar WN= 3;         //  0011
-static const uchar WB=  5;        //  0101
-static const uchar WR= 6;         //  0110
-static const uchar WQ= 7;         //  0111
-static const uchar B = 1;  // color black
-static const uchar BP= 9;          //  1001
-static const uchar BK= 10;        //  1010
-static const uchar BN= 11;        //  1011
-static const uchar BB= 13;        //  1101
-static const uchar BR= 14;        //  1110
-static const uchar BQ= 15;        //  1111
-static const uchar PAWN = 1;
-static const uchar KING = 2;
-static const uchar KNIGHT = 3;
-static const uchar BISHOP = 5;
-static const uchar ROOK = 6;
-static const uchar QUEEN = 7;
+#include "utils.h" // contains important macros and typedefs
+#include "move.h"  
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Board
@@ -39,32 +13,39 @@ public:
 	Bit Pieces[2];
 	Bit Occupied;  // everything
 
-	// additional important var's
-	uchar castle[2]; // &1: O-O, &2: O-O-O
-	uchar turn; // white(0) or black(1)
+	// Incrementally updated info, for fast access:
+
+
+	// additional important states
+	byte castle[2]; // &1: O-O, &2: O-O-O
+	byte turn; // white(0) or black(1)
 	uint epSquare; // en passent square
 	uint fiftyMove; // move since last pawn move or capture
 	uint fullMove;  // starts at 1 and increments after black moves
 
+	Move m;// stores all the moves
+
 	Board(); // Default constructor
 	Board(string fen); // construct by FEN
-
-	// parse a FEN position
-	void parseFEN(string fen);
 	
-	// display the full board with letters as pieces. For testing
-	void dispboard();
+	void parseFEN(string fen); // parse a FEN position
+	void dispboard(); // display the full board with letters
+	
+	// movegen.cpp: updates the move buffer for ply searches
+	int moveGen(int index);   // return the index
+	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
+	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// non-sliding pieces
 	Bit knight_attack(int pos) { return knight_tbl[pos]; }
 	Bit king_attack(int pos) { return king_tbl[pos]; }
 	Bit pawn_attack(int pos) { return pawn_atk_tbl[pos][turn]; }
-	Bit pawn_attack(int pos, int color) { return pawn_atk_tbl[pos][color]; }
+	Bit pawn_attack(int pos, Color c) { return pawn_atk_tbl[pos][c]; }
 	Bit pawn_push(int pos) { return pawn_push_tbl[pos][turn]; }
-	Bit pawn_push(int pos, int color) { return pawn_push_tbl[pos][color]; }
+	Bit pawn_push(int pos, Color c) { return pawn_push_tbl[pos][c]; }
 	Bit pawn_push2(int pos) { return pawn_push2_tbl[pos][turn]; }
-	Bit pawn_push2(int pos, int color) { return pawn_push2_tbl[pos][color]; }
+	Bit pawn_push2(int pos, Color c) { return pawn_push2_tbl[pos][c]; }
 
 	// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
 	// The following 4 functions are inlined at the end of this header.
@@ -91,12 +72,12 @@ private:
 	void init_attack_tables();
 
 	// Precalculated attack tables for sliding pieces. 
-	uchar rook_key[N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
+	byte rook_key[SQ][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
 	void init_rook_key(int pos, int x, int y);
 	Bit rook_tbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
 	void init_rook_tbl(int pos, int x, int y);
 
-	uchar bishop_key[N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
+	byte bishop_key[SQ][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
 	void init_bishop_key(int pos, int x, int y);
 	Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
 	void init_bishop_tbl(int pos, int x, int y);
@@ -107,31 +88,23 @@ private:
 		Bit mask;  // &-mask
 		uint offset;  // attack_key + offset == real attack lookup table index
 	};
-	Magics rook_magics[N];  // for each square
-	Magics bishop_magics[N]; 
+	Magics rook_magics[SQ];  // for each square
+	Magics bishop_magics[SQ]; 
 	void init_rook_magics(int pos, int x, int y);
 	void init_bishop_magics(int pos, int x, int y);
 
 	// Precalculated attack tables for non-sliding pieces
-	Bit knight_tbl[N], king_tbl[N];
+	Bit knight_tbl[SQ], king_tbl[SQ];
 	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
-	Bit pawn_atk_tbl[N][2], pawn_push_tbl[N][2], pawn_push2_tbl[N][2];
+	Bit pawn_atk_tbl[SQ][2], pawn_push_tbl[SQ][2], pawn_push2_tbl[SQ][2];
 	// for none-sliding pieces
 	void init_knight_tbl(int pos, int x, int y);
 	void init_king_tbl(int pos, int x, int y);
-	void init_pawn_atk_tbl(int pos, int x, int y, int color);
-	void init_pawn_push_tbl(int pos, int x, int y, int color);
-	void init_pawn_push2_tbl(int pos, int x, int y, int color);
+	void init_pawn_atk_tbl(int pos, int x, int y, Color c);
+	void init_pawn_push_tbl(int pos, int x, int y, Color c);
+	void init_pawn_push2_tbl(int pos, int x, int y, Color c);
 };
 
-
-// display a bitmap as 8*8. For testing
-Bit dispBit(Bit, bool = 1);
-
-// convert a square to its string pos representation, and vice versa
-// a1 is 0 and h8 is 63
-string pos2str(uint pos);
-uint str2pos(string str);
 
 // Constants for magics. Generated by the functions *_magicU64_generator()
 static const U64 ROOK_MAGIC[64] = {

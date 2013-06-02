@@ -1,5 +1,45 @@
+/* algorithms and utility functions, some for debugging only. */
 #include "utils.h"
 
+// display the bitmap. For testing purposes
+// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
+Bit dispBit(Bit bitmap, bool flag)
+{
+	if (!flag)
+		return bitmap;
+	bitset<64> bs(bitmap);
+	for (int i = 7; i >= 0; i--)
+	{
+		cout << i+1 << "  ";
+		for (int j = 0; j < 8; j++)
+		{
+			cout << bs[POS[j][i]] << " ";  // j + 8*i
+		}
+		cout << endl;
+	}
+	cout << "   ----------------" << endl;
+	cout << "   a b c d e f g h" << endl;
+	cout << "BitMap: " << bitmap << endl;
+	cout << "************************" << endl;
+	return bitmap;
+}
+
+// position (47) to readable string ("h6")
+string pos2str(uint pos)
+{
+	char alpha = 'a' + FILES[pos];
+	char num = RANKS[pos] + '1';
+	char str[3] = {alpha, num, 0};
+	return string(str);
+}
+
+uint str2pos(string str)
+{
+	return 8* (str[1] -'1') + (tolower(str[0]) - 'a');
+}
+
+
+/* A few borrowed algorithms */
 // http://chessprogramming.wikispaces.com/Flipping+Mirroring+and+Rotating
 Bit rotate90(Bit bitmap)
 {
@@ -67,13 +107,23 @@ uint bitCount(U64 bitmap)
 	return unsigned int(bitmap);
 }
 
-/* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
- * get the least siginficant 1. 
- * bitmap = 0 would be undefined for this func */
-uint LSB(U64 bitmap)
+// The clearer implementation without inline (current definition is in utils.h)
+/************
+U64 rand_U64() 
 {
-	static const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-	/* Here's the algorithm that generates the following table:
+	U64 u1, u2, u3, u4;
+	u1 = U64(rand()) & 0xFFFF; u2 = U64(rand()) & 0xFFFF;
+	u3 = U64(rand()) & 0xFFFF; u4 = U64(rand()) & 0xFFFF;
+	return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
+}
+*************/
+
+// LSB without inline (current definition is in utils.h)
+/**********
+inline uint LSB(U64 bitmap)
+{
+	// Here's the algorithm that generates the INDEX64[64] table:
+	//-----------------------------
 	void initializeFirstINDEX64()
 	{
 		unsigned char bit = 1;
@@ -85,27 +135,18 @@ uint LSB(U64 bitmap)
 			bit <<= 1;
 		} while (bit);
 	}
-	*/
-	static const int INDEX64[64] = {
-		63, 0, 58, 1, 59, 47, 53, 2,
-		60, 39, 48, 27, 54, 33, 42, 3,
-		61, 51, 37, 40, 49, 18, 28, 20,
-		55, 30, 34, 11, 43, 14, 22, 4,
-		62, 57, 46, 52, 38, 26, 32, 41,
-		50, 36, 17, 19, 29, 10, 13, 21,
-		56, 45, 25, 31, 35, 16, 9, 12,
-		44, 24, 15, 8, 23, 7, 6, 5 };
+	//------------------------------
+  const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
+  const int INDEX64[64] = {
+	63, 0, 58, 1, 59, 47, 53, 2,
+	60, 39, 48, 27, 54, 33, 42, 3,
+	61, 51, 37, 40, 49, 18, 28, 20,
+	55, 30, 34, 11, 43, 14, 22, 4,
+	62, 57, 46, 52, 38, 26, 32, 41,
+	50, 36, 17, 19, 29, 10, 13, 21,
+	56, 45, 25, 31, 35, 16, 9, 12,
+	44, 24, 15, 8, 23, 7, 6, 5 };
 	// x&-x is equivalent to the more readable form x&(-x+1), which gives the LSB due to 2's complement encoding. 
 	return INDEX64[((bitmap & (-bitmap)) * BITSCAN_MAGIC) >> 58]; 
 }
-
-// helper to generate a random U64
-U64 rand_U64_helper() 
-{
-	U64 u1, u2, u3, u4;
-	u1 = U64(rand()) & 0xFFFF; u2 = U64(rand()) & 0xFFFF;
-	u3 = U64(rand()) & 0xFFFF; u4 = U64(rand()) & 0xFFFF;
-	return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
-}
-// a sparse random U64. The more & the sparser
-U64 rand_U64()  { return rand_U64_helper() & rand_U64_helper(); }
+***********/

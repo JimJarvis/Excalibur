@@ -17,9 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="board_test.cpp">
-      <Filter>Test Files</Filter>
-    </ClCompile>
     <ClCompile Include="test_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,6 +28,12 @@
     </ClCompile>
     <ClCompile Include="..\Excalibur\moveGen.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="move_test.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="board_init_test.cpp">
+      <Filter>Test Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

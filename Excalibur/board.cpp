@@ -49,7 +49,7 @@ void Board::refresh_pieces()
 void Board::init_attack_tables()
 {
 	// rank_attack
-	for (int pos = 0; pos < N; ++pos)
+	for (int pos = 0; pos < SQ; ++pos)
 	{
 		// pre-calculate the coordinate (x,y), which can be easily got from pos
 		int x = FILES[pos]; // pos % 8
@@ -67,11 +67,11 @@ void Board::init_attack_tables()
 		init_bishop_tbl(pos, x, y); 
 
 		// pawn has different colors
-		for (int color = 0; color < 2; ++color)
+		for (Color c : COLORS) // iterate through Color::W and B
 		{
-			init_pawn_atk_tbl(pos, x, y, color);
-			init_pawn_push_tbl(pos, x, y, color);
-			init_pawn_push2_tbl(pos, x, y, color);
+			init_pawn_atk_tbl(pos, x, y, c);
+			init_pawn_push_tbl(pos, x, y, c);
+			init_pawn_push2_tbl(pos, x, y, c);
 		}
 	}
 }
@@ -99,15 +99,14 @@ void Board::init_rook_key(int pos, int x, int y)
 	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;  // set 0's to 1, for multiplying purposes
 	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
 
-	uchar key; // will be stored as the table entry
+	byte key; // will be stored as the table entry
 	for (perm = 0; perm < possibility; perm++) 
 	{
 		ans = 0;  // records one particular permutation, which is an occupancy state
 		mask = rook_magics[pos].mask;
 		for (int i = 0; i < n; i++)
 		{
-			lsb = LSB(mask);  // loop through the mask bits, at most 12
-			mask &= unsetbit[lsb];  // unset this bit
+			lsb = popLSB(mask);  // loop through the mask bits, at most 12
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
 				ans |= setbit[lsb];
 		}
@@ -136,7 +135,7 @@ void Board::init_rook_tbl(int pos, int x, int y)
 	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;
 	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
-	uchar key;  Bit mask;
+	byte key;  Bit mask;
 	uint offset = rook_magics[pos].offset;  // constant for one pos.
 		// loop through all 4 directions, starting from E and go counterclockwise
 	for (ei = 1; ei <= em; ei++)		{
@@ -191,15 +190,14 @@ void Board::init_bishop_key(int pos, int x, int y)
 	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
 
-	uchar key; // will be stored as the table entry
+	byte key; // will be stored as the table entry
 	for (perm = 0; perm < possibility; perm++) 
 	{
 		ans = 0;  // records one particular permutation, which is an occupancy state
 		mask = bishop_magics[pos].mask;
 		for (int i = 0; i < n; i++)
 		{
-			lsb = LSB(mask);  // loop through the mask bits, at most 12
-			mask &= unsetbit[lsb];  // unset this bit
+			lsb = popLSB(mask);  // loop through the mask bits, at most 12
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
 				ans |= setbit[lsb];
 		}
@@ -229,7 +227,7 @@ void Board::init_bishop_tbl(int pos, int x, int y)
 	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
-	uchar key;  Bit mask;
+	byte key;  Bit mask;
 	uint offset = bishop_magics[pos].offset;  // constant for one pos.
 	// loop through all 4 directions, starting from E and go counterclockwise
 	for (ne = 1; ne <= nem; ne++)		{
@@ -295,34 +293,34 @@ void Board::init_king_tbl(int pos, int x, int y)
 }
 
 // Pawn attack table - 2 colors
-void Board::init_pawn_atk_tbl(int pos, int x, int y, int color)
+void Board::init_pawn_atk_tbl( int pos, int x, int y, Color c )
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
 	{
-		pawn_atk_tbl[pos][color] = 0;
+		pawn_atk_tbl[pos][c] = 0;
 		return;
 	}
 	Bit ans = 0;
-	int offset =  color==W ? 1 : -1;
+	int offset =  c==W ? 1 : -1;
 	if (x - 1 >= 0)
 		ans |= setbit[POS[x-1][y+offset]]; // white color = 0, black = 1
 	if (x + 1 < 8)
 		ans |= setbit[POS[x+1][y+offset]]; // white color = 0, black = 1
-	pawn_atk_tbl[pos][color] = ans;
+	pawn_atk_tbl[pos][c] = ans;
 }
-void Board::init_pawn_push_tbl(int pos, int x, int y, int color)
+void Board::init_pawn_push_tbl( int pos, int x, int y, Color c )
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
-		pawn_push_tbl[pos][color] = 0;
+		pawn_push_tbl[pos][c] = 0;
 	else
-		pawn_push_tbl[pos][color] = setbit[pos + (color==W ? 8 : -8)];
+		pawn_push_tbl[pos][c] = setbit[pos + (c==W ? 8 : -8)];
 }
-void Board::init_pawn_push2_tbl(int pos, int x, int y, int color) // double push
+void Board::init_pawn_push2_tbl( int pos, int x, int y, Color c )
 {
-	if (y == (color==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
-		pawn_push2_tbl[pos][color] = setbit[pos + (color==W ? 16 : -16)];
+	if (y == (c==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
+		pawn_push2_tbl[pos][c] = setbit[pos + (c==W ? 16 : -16)];
 	else
-		pawn_push2_tbl[pos][color] = 0;
+		pawn_push2_tbl[pos][c] = 0;
 }
 
 
@@ -393,30 +391,6 @@ void Board::parseFEN(string fen0)
 	fen >> fullMove;
 }
 
-
-// display the bitmap. For testing purposes
-// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
-Bit dispBit(Bit bitmap, bool flag)
-{
-	if (!flag)
-		return bitmap;
-	bitset<64> bs(bitmap);
-	for (int i = 7; i >= 0; i--)
-	{
-		cout << i+1 << "  ";
-		for (int j = 0; j < 8; j++)
-		{
-			cout << bs[POS[j][i]] << " ";  // j + 8*i
-		}
-		cout << endl;
-	}
-	cout << "   ----------------" << endl;
-	cout << "   a b c d e f g h" << endl;
-	cout << "BitMap: " << bitmap << endl;
-	cout << "************************" << endl;
-	return bitmap;
-}
-
 // Display the full board with letters
 void Board::dispboard()
 {
@@ -451,19 +425,6 @@ void Board::dispboard()
 	cout << "************************" << endl;
 }
 
-string pos2str(uint pos)
-{
-	char alpha = 'a' + FILES[pos];
-	char num = RANKS[pos] + '1';
-	char str[3] = {alpha, num, 0};
-	return string(str);
-}
-
-uint str2pos(string str)
-{
-	return 8* (str[1] -'1') + (tolower(str[0]) - 'a');
-}
-
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()
 {
@@ -474,7 +435,7 @@ void rook_magicU64_generator()
 	U64 allstates[4096];
 	U64 magic;
 	cout << "const U64 ROOK_MAGIC[64] = {" << endl;
-	for (int pos = 0; pos < N; pos++)
+	for (int pos = 0; pos < SQ; pos++)
 	{
 		// generate all 2^bits permutations of the rook cross bitmap
 		n = bitCount(bd.rook_magics[pos].mask);
@@ -486,8 +447,7 @@ void rook_magicU64_generator()
 			mask = bd.rook_magics[pos].mask;
 			for (i = 0; i < n; i++)
 			{
-				lsb = LSB(mask);  // loop through the mask bits, at most 12
-				mask &= unsetbit[lsb];  // unset this bit
+				lsb = popLSB(mask);  // loop through the mask bits, at most 12
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
 					ans |= setbit[lsb];
 			}
@@ -498,7 +458,7 @@ void rook_magicU64_generator()
 		string endchar = pos==63 ? "\n};\n" : ((pos&7)==7 ? ",\n" : ", ");
 		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
-			magic = rand_U64();
+			magic = rand_U64_sparse();
 			for (i = 0; i < 4096; i++)	{ hashcheck[i] = 0ULL; } // init
 			for (i = 0, fail = 0; i < possibility && !fail; i++)
 			{
@@ -522,7 +482,7 @@ void bishop_magicU64_generator()
 	U64 allstates[512];
 	U64 magic;
 	cout << "const U64 BISHOP_MAGIC[64] = {" << endl;
-	for (int pos = 0; pos < N; pos++)
+	for (int pos = 0; pos < SQ; pos++)
 	{
 		// generate all 2^bits permutations of the bishop cross bitmap
 		n = bitCount(bd.bishop_magics[pos].mask);
@@ -534,8 +494,7 @@ void bishop_magicU64_generator()
 			mask = bd.bishop_magics[pos].mask;
 			for (i = 0; i < n; i++)
 			{
-				lsb = LSB(mask);  // loop through the mask bits, at most 12
-				mask &= unsetbit[lsb];  // unset this bit
+				lsb = popLSB(mask);  // loop through the mask bits, at most 12
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
 					ans |= setbit[lsb];
 			}
@@ -546,7 +505,7 @@ void bishop_magicU64_generator()
 		string endchar = pos==63 ? "\n};\n" : ((pos&7)==7 ? ",\n" : ", ");
 		for (tries = 0; tries < 10000000; tries++)  // trial and error
 		{
-			magic = rand_U64();
+			magic = rand_U64_sparse();
 			for (i = 0; i < 512; i++)	{ hashcheck[i] = 0ULL; } // init
 			for (i = 0, fail = 0; i < possibility && !fail; i++)
 			{

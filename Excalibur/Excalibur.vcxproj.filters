@@ -27,7 +27,7 @@
     <ClCompile Include="algor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="moveGen.cpp">
+    <ClCompile Include="movegen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -39,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="move.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="typeconsts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

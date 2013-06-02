@@ -25,7 +25,8 @@
     <ClCompile Include="..\Excalibur\algor.cpp" />
     <ClCompile Include="..\Excalibur\board.cpp" />
     <ClCompile Include="..\Excalibur\moveGen.cpp" />
-    <ClCompile Include="board_test.cpp" />
+    <ClCompile Include="board_init_test.cpp" />
+    <ClCompile Include="move_test.cpp" />
     <ClCompile Include="test_util.cpp" />
   </ItemGroup>
   <ItemGroup>
