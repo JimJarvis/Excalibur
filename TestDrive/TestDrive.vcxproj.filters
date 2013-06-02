@@ -26,14 +26,14 @@
     <ClCompile Include="..\Excalibur\algor.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\moveGen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="move_test.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
     <ClCompile Include="board_init_test.cpp">
       <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Excalibur\movegen.cpp">
+      <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

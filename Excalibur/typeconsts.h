@@ -1,11 +1,16 @@
 /* engine-wide types and constants */
 
+#ifndef __typeconsts_h__
+#define __typeconsts_h__
+
 typedef unsigned long long Bit;  // Bitboard
 typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
 typedef unsigned char byte;
 
 #define SQ 64
+#define COLOR_N 2
+#define PIECE_TYPE_N 8
 
 /* Piece identifiers, 4 bits each.
  * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
@@ -34,6 +39,12 @@ static const enum PieceType : byte
 	  BR= 14,        //  1110
 	  BQ= 15        //  1111
 };
+static const PieceType PAWN[COLOR_N] = {WP, BP};
+static const PieceType KING[COLOR_N] = {WK, BK};
+static const PieceType KNIGHT[COLOR_N] = {WN, BN};
+static const PieceType BISHOP[COLOR_N] = {WB, BB};
+static const PieceType ROOK[COLOR_N] = {WR, BR};
+static const PieceType QUEEN[COLOR_N] = {WQ, BQ};
 
 // single-bit masks
 static const U64 setbit[64] = {0x1ull, 0x2ull, 0x4ull, 0x8ull, 0x10ull, 0x20ull, 0x40ull, 0x80ull, 0x100ull, 0x200ull, 0x400ull, 0x800ull, 0x1000ull, 0x2000ull, 0x4000ull, 0x8000ull, 0x10000ull, 0x20000ull, 0x40000ull, 0x80000ull, 0x100000ull, 0x200000ull, 0x400000ull, 0x800000ull, 0x1000000ull, 0x2000000ull, 0x4000000ull, 0x8000000ull, 0x10000000ull, 0x20000000ull, 0x40000000ull, 0x80000000ull, 0x100000000ull, 0x200000000ull, 0x400000000ull, 0x800000000ull, 0x1000000000ull, 0x2000000000ull, 0x4000000000ull, 0x8000000000ull, 0x10000000000ull, 0x20000000000ull, 0x40000000000ull, 0x80000000000ull, 0x100000000000ull, 0x200000000000ull, 0x400000000000ull, 0x800000000000ull, 0x1000000000000ull, 0x2000000000000ull, 0x4000000000000ull, 0x8000000000000ull, 0x10000000000000ull, 0x20000000000000ull, 0x40000000000000ull, 0x80000000000000ull, 0x100000000000000ull, 0x200000000000000ull, 0x400000000000000ull, 0x800000000000000ull, 0x1000000000000000ull, 0x2000000000000000ull, 0x4000000000000000ull, 0x8000000000000000ull};
@@ -70,3 +81,5 @@ static const int POS[8][8] = {
 	{6, 14, 22, 30, 38, 46, 54, 62},
 	{7, 15, 23, 31, 39, 47, 55, 63},
 };
+
+#endif // __typeconsts_h__

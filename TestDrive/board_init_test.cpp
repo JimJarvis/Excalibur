@@ -99,8 +99,8 @@ TEST(Board, FEN)
 {
 	bd.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_EQ(bd.Occupied, 0xfffb00041000efff);	
-	ASSERT_EQ(bd.castle[B], 2);
-	ASSERT_EQ(bd.castle[W], 3);
+	ASSERT_EQ(bd.castleRights[B], 2);
+	ASSERT_EQ(bd.castleRights[W], 3);
 	ASSERT_EQ(bd.fiftyMove, 21);
 	ASSERT_EQ(bd.fullMove, 33);
 	ASSERT_EQ(bd.epSquare, 42);

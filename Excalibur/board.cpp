@@ -30,19 +30,20 @@ void Board::init_default()
 	Knights[B] = 0x4200000000000000;
 	Pawns[B] = 0x00ff000000000000;
 	refresh_pieces();
-	castle[W] = castle[B] = 3;
+	castleRights[W] = castleRights[B] = 3;
 	fiftyMove = 0;
 	fullMove = 1;
-	turn = 0;  // white goes first
+	turn = W;  // white goes first
 	epSquare = 0;
+
 }
 
 // refresh the pieces
 void Board::refresh_pieces()
 {
 	for (int color = 0; color < 2; color++)
-		Pieces[color] = Pawns[color] | Kings[color] | Knights[color] | Bishops[color] | Rooks[color] | Queens[color];
-	Occupied = Pieces[W] | Pieces[B];
+		ColoredPieces[color] = Pawns[color] | Kings[color] | Knights[color] | Bishops[color] | Rooks[color] | Queens[color];
+	Occupied = ColoredPieces[W] | ColoredPieces[B];
 }
 
 // initialize *_attack[][] tables
@@ -366,9 +367,9 @@ void Board::parseFEN(string fen0)
 		}
 	}
 	refresh_pieces();
-	turn =  fen.get()=='w' ? 0 : 1;  // indicate active part
+	turn =  fen.get()=='w' ? W : B;  // indicate active part
 	fen.get(); // consume the space
-	castle[W] = castle[B] = 0;
+	castleRights[W] = castleRights[B] = 0;
 	while ((ch = fen.get()) != ' ')  // castle status. '-' if none available
 	{
 		bool color;
@@ -376,8 +377,8 @@ void Board::parseFEN(string fen0)
 		ch = tolower(ch);
 		switch (ch)
 		{
-		case 'k': castle[color] |= 1; break;
-		case 'q': castle[color] |= 2; break;
+		case 'k': castleRights[color] |= 1; break;
+		case 'q': castleRights[color] |= 2; break;
 		case '-': continue;
 		}
 	}

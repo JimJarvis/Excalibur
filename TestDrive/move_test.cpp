@@ -1,6 +1,34 @@
 /* Move tests */
 #include "tests.h"
 
+TEST(Move, Piece)
+{
+	PieceType p = WK;
+	ASSERT_TRUE(isKing(p));
+	ASSERT_FALSE(isPawn(p));
+	ASSERT_FALSE(isSlider(p));
+	ASSERT_FALSE(isOrthoSlider(p));
+	ASSERT_FALSE(isDiagSlider(p));
+	ASSERT_EQ(getColor(p), W);
+	p = BQ;
+	ASSERT_TRUE(isQueen(p));
+	ASSERT_TRUE(isSlider(p));
+	ASSERT_TRUE(isOrthoSlider(p));
+	ASSERT_TRUE(isDiagSlider(p));
+	ASSERT_EQ(getColor(p), B);
+	p = WR;
+	ASSERT_TRUE(isRook(p));
+	ASSERT_FALSE(isKnight(p));
+	ASSERT_TRUE(isSlider(p));
+	ASSERT_TRUE(isOrthoSlider(p));
+	ASSERT_FALSE(isDiagSlider(p));
+	p = BB;
+	ASSERT_TRUE(isBishop(p));
+	ASSERT_TRUE(isSlider(p));
+	ASSERT_FALSE(isOrthoSlider(p));
+	ASSERT_TRUE(isDiagSlider(p));
+}
+
 TEST(Move, Judgement)
 {
 	Move m;

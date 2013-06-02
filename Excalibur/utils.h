@@ -24,9 +24,9 @@ inline U64 rand_U64_sparse()  { return rand_U64() & rand_U64(); }  // the more &
  * bitmap = 0 would be undefined for this func 
  * BITSCAN_MAGIC and INDEX64 are constants needed for LSB algorithm */
 static const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-static const int INDEX64[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
+static const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
 inline uint LSB(U64 bitmap)
-{ return INDEX64[((bitmap & (1 - bitmap)) * BITSCAN_MAGIC) >> 58]; }
+{ return BITSCAN_INDEX[((bitmap & (1 - bitmap)) * BITSCAN_MAGIC) >> 58]; }
 inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
 
 // display a bitmap as 8*8. For debugging
@@ -36,6 +36,17 @@ Bit dispBit(Bit, bool = 1);
 string pos2str(uint pos);
 uint str2pos(string str);
 
+// a few type queries
+inline bool isPawn(PieceType p) { return (p & 7) == WP; }
+inline bool isKing(PieceType p) { return (p & 7) == WK; }
+inline bool isKnight(PieceType p) { return (p & 7) == WN; }
+inline bool isBishop(PieceType p) { return (p & 7) == WB; }
+inline bool isRook(PieceType p) { return (p & 7) == WR; }
+inline bool isQueen(PieceType p) { return (p & 7) == WQ; }
+inline bool isSlider(PieceType p) { return (p & 4) == 4; }
+inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank
+inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  // slider along the diagonal
+inline Color getColor(PieceType p) { return Color((p & 8) == 8); }
 
 /* some borrowed algorithms */
 Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise
