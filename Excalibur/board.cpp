@@ -30,19 +30,22 @@ void Board::init_default()
 	Knights[B] = 0x4200000000000000;
 	Pawns[B] = 0x00ff000000000000;
 	refresh_pieces();
+	for (Color c : COLORS)
+	{
+	}
+	// init special status
 	castleRights[W] = castleRights[B] = 3;
 	fiftyMove = 0;
 	fullMove = 1;
 	turn = W;  // white goes first
 	epSquare = 0;
-
 }
 
 // refresh the pieces
 void Board::refresh_pieces()
 {
-	for (int color = 0; color < 2; color++)
-		ColoredPieces[color] = Pawns[color] | Kings[color] | Knights[color] | Bishops[color] | Rooks[color] | Queens[color];
+	for (Color c : COLORS)
+		ColoredPieces[c] = Pawns[c] | Kings[c] | Knights[c] | Bishops[c] | Rooks[c] | Queens[c];
 	Occupied = ColoredPieces[W] | ColoredPieces[B];
 }
 
@@ -331,8 +334,8 @@ void Board::init_pawn_push2_tbl( int pos, int x, int y, Color c )
  */
 void Board::parseFEN(string fen0)
 {
-	for (int color = 0; color < 2; color++)
-		Pawns[color] = Kings[color] = Knights[color] = Bishops[color] = Rooks[color] = Queens[color] = 0;
+	for (Color c : COLORS)
+		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
 	istringstream fen(fen0);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
@@ -351,17 +354,17 @@ void Board::parseFEN(string fen0)
 		else // number means blank square. Pass
 		{
 			mask = setbit[POS[file][rank]];  // r*8 + f
-			bool color; 
-			if (isupper(ch)) color = W; else color = B;
+			Color c; 
+			if (isupper(ch)) c = W; else c = B;
 			ch = tolower(ch);
 			switch (ch)
 			{
-			case 'p': Pawns[color] |= mask; break;
-			case 'n': Knights[color] |= mask; break;
-			case 'b': Bishops[color] |= mask; break;
-			case 'r': Rooks[color] |= mask; break;
-			case 'q': Queens[color] |= mask; break;
-			case 'k': Kings[color] |= mask; break;
+			case 'p': Pawns[c] |= mask; break;
+			case 'n': Knights[c] |= mask; break;
+			case 'b': Bishops[c] |= mask; break;
+			case 'r': Rooks[c] |= mask; break;
+			case 'q': Queens[c] |= mask; break;
+			case 'k': Kings[c] |= mask; break;
 			}
 			file ++;
 		}
@@ -372,13 +375,13 @@ void Board::parseFEN(string fen0)
 	castleRights[W] = castleRights[B] = 0;
 	while ((ch = fen.get()) != ' ')  // castle status. '-' if none available
 	{
-		bool color;
-		if (isupper(ch)) color = W; else color = B;
+		Color c;
+		if (isupper(ch)) c = W; else c = B;
 		ch = tolower(ch);
 		switch (ch)
 		{
-		case 'k': castleRights[color] |= 1; break;
-		case 'q': castleRights[color] |= 2; break;
+		case 'k': castleRights[c] |= 1; break;
+		case 'q': castleRights[c] |= 2; break;
 		case '-': continue;
 		}
 	}

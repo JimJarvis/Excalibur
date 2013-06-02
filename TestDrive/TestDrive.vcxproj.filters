@@ -35,6 +35,9 @@
     <ClCompile Include="..\Excalibur\movegen.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="other_test.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tests.h">
