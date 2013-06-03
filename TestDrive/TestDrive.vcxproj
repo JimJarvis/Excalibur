@@ -22,9 +22,10 @@
     <ClInclude Include="tests.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Excalibur\algor.cpp" />
     <ClCompile Include="..\Excalibur\board.cpp" />
     <ClCompile Include="..\Excalibur\movegen.cpp" />
+    <ClCompile Include="..\Excalibur\position.cpp" />
+    <ClCompile Include="..\Excalibur\utils.cpp" />
     <ClCompile Include="board_init_test.cpp" />
     <ClCompile Include="move_test.cpp" />
     <ClCompile Include="other_test.cpp" />

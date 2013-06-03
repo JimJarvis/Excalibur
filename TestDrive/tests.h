@@ -15,8 +15,7 @@
 using namespace std; 
 
 // include headers in Excalibur
-#include "utils.h"
-#include "board.h"
+#include "position.h"
 
 // test-oriented functions
 void blank();

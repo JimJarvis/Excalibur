@@ -1,11 +1,12 @@
-#include "board.h"
+#include "position.h"
 #define update moveBuffer[index++] = mv // add an entry to the buffer
 
 /* generate a pseudo-legal move and store it into a board buffer
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
-int Board::movegen(int index)
+
+int Position::movegen(int index)
 {
 	Color opponent = Color(!turn);
 	Bit Freesq = ~Occupied;

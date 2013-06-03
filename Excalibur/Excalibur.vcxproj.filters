@@ -24,10 +24,13 @@
     <ClCompile Include="board.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="algor.cpp">
+    <ClCompile Include="movegen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="movegen.cpp">
+    <ClCompile Include="position.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="typeconsts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="position.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
