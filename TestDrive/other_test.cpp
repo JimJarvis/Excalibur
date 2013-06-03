@@ -2,7 +2,7 @@
 
 #include "tests.h"
 
-TEST(Other)
+TEST(Other, Other)
 {
 	
 }

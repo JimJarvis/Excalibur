@@ -83,6 +83,9 @@ TEST(Move, Judgement)
 
 	m.clear();
 	m.setEP();
+	m.setColor(B);
+	ASSERT_EQ(m.getColor(), B);
+	ASSERT_EQ(m.getCaptColor(), W);
 	ASSERT_FALSE(m.isCapt());
 	ASSERT_FALSE(m.isKCastle());
 	ASSERT_FALSE(m.isQCastle());

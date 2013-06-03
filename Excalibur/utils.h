@@ -40,6 +40,9 @@ uint str2pos(string str);
 inline bool isSlider(PieceType p) { return (p & 4) == 4; }
 inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank
 inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  // slider along the diagonal
+// castle right query
+inline bool canCastleOO(byte castleRight) { return (castleRight & 1) == 1; }
+inline bool canCastleOOO(byte castleRight) { return (castleRight & 2) == 2; }
 
 /* some borrowed algorithms */
 Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise

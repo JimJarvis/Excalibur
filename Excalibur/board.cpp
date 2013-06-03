@@ -450,15 +450,6 @@ void Board::dispboard()
 	cout << "   ----------------" << endl;
 	cout << "   a b c d e f g h" << endl;
 	cout << "************************" << endl;
-	for (int i = 7; i >= 0; i--)
-	{
-		for (int j = 0; j < 8; j++)
-		{
-			int n = POS[j][i];
-			cout << boardPiece[n] << "  ";
-		}
-		cout << endl;
-	}
 }
 
 // Rook magicU64 multiplier generator. Will be pretabulated literals.

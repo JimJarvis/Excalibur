@@ -11,10 +11,10 @@ private:
 public:
 	Move(): mov(0) {}  // default ctor
 	Move(const Move& anotherMove) { mov = anotherMove.mov; } // copy ctor
-	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; }
+	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; return *this; }
 	bool operator==(const Move& anotherMove) { return mov == anotherMove.mov; }
 	friend ostream& operator<<(ostream& os, Move m);
-	void clear() { mov = 0; }
+	void clear() { mov &= 0x00008000; }  // clear all except the color bit
 
 	// bits 0 to 5
 	void setFrom(uint from) 	{ mov &= 0xffffffc0; mov |= (from & 0x0000003f); }
@@ -26,7 +26,7 @@ public:
 	void setPiece(PieceType piece) { mov &= 0xffff8fff; mov |= (piece & 0x00000007) << 12; }
 	PieceType getPiece() { return PieceType((mov >> 12) & 0x00000007); }
 	// bit 15 : the color of the mover
-	void setColor(Color c) { mov |= c << 15; }
+	void setColor(Color c) { if (c==W) mov &= 0xffff7fff; else mov |= 0x00008000; }
 	Color getColor() { return Color((mov & 0x00008000) == 0x00008000); }
 	// bits 16 to 18, 3 bits for captured piece, if any
 	void setCapt(PieceType capture) { mov &= 0xfff8ffff; mov |= (capture & 0x00000007) << 16; }

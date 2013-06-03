@@ -31,6 +31,7 @@ public:
 	
 	void parseFEN(string fen); // parse a FEN position
 	void dispboard(); // display the full board with letters
+	friend ostream& operator<<(ostream&, Board);
 	
 	// movegen.cpp: updates the move buffer for ply searches
 	int moveGen(int index);   // return the index
@@ -140,5 +141,8 @@ inline Bit Board::bishop_attack(int pos)
 	{ return bishop_tbl[ bishop_key[pos][bhash(pos, Occupied & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
 inline Bit Board::bishop_attack(int pos, Bit occup)
 	{ return bishop_tbl[ bishop_key[pos][bhash(pos, occup & bishop_magics[pos].mask)] + bishop_magics[pos].offset ]; }
+
+inline ostream& operator<<(ostream& os, Board bd)
+{ bd.dispboard(); return os; }
 
 #endif // __board_h__
