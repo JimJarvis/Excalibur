@@ -5,7 +5,7 @@
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
-int Board::moveGen(int index)
+int Board::movegen(int index)
 {
 	Color opponent = Color(!turn);
 	Bit Freesq = ~Occupied;

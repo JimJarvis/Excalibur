@@ -343,6 +343,16 @@ void Board::init_pawn_push2_tbl( int pos, int x, int y, Color c )
 		pawn_push2_tbl[pos][c] = 0;
 }
 
+// Attack map of the piece on a square
+Bit Board::attacks_from(int pos)
+{
+	PieceType piece = boardPiece[pos];
+	Color c = Color((setbit[pos] & Pieces[W]) == 0);
+	switch (piece)
+	{
+	case PAWN:  break;
+	}
+}
 
 /* Parse an FEN string
  * FEN format:

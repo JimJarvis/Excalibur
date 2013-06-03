@@ -33,10 +33,11 @@ public:
 	void dispboard(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Board);
 	
-	// movegen.cpp: updates the move buffer for ply searches
-	int moveGen(int index);   // return the index
+	/***** movegen.cpp: updates the move buffer for ply searches *****/
 	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
+	int movegen(int index);   // return the new index in move buffer
+
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// non-sliding pieces
@@ -55,9 +56,14 @@ public:
 	Bit rook_attack(int pos, Bit occup); // external occupancy state
 	Bit bishop_attack(int pos);
 	Bit bishop_attack(int pos, Bit occup);
-
 	Bit queen_attack(int pos) { return rook_attack(pos) | bishop_attack(pos); }
 	Bit queen_attack(int pos, Bit occup) { return rook_attack(pos, occup) | bishop_attack(pos, occup); }
+
+	// about attackers
+	Bit attacks_from(int pos, PieceType piece, Color c, Bit occup);  // the attack map of the piece on the square
+	Bit attacks_from(int pos);
+	Bit attacks_to(int pos);  // the attackers to a specific square
+	bool is_attacked(Bit& Target);  // return if any '1' in the target bitmap is attacked.
 
 
 	// Generate the U64 magic multipliers. Won't actually be run. Pretabulated literals
