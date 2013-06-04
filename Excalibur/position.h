@@ -32,11 +32,15 @@ public:
 	void display(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Position);
 	
-	/***** movegen.cpp: updates the move buffer for ply searches *****/
+	/*
+	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
+	 */
 	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 	int moveGen(int index);   // return the new index in move buffer
 	bool isAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
+	void makeMove(Move& mv);   // make the move and update internal states
+	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
 
 
 	// Get the attack masks, based on precalculated tables and current board status

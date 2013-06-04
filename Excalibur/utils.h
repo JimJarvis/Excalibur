@@ -42,6 +42,8 @@ inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  //
 // castle right query
 inline bool canCastleOO(byte castleRight) { return (castleRight & 1) == 1; }
 inline bool canCastleOOO(byte castleRight) { return (castleRight & 2) == 2; }
+inline void deleteCastleOO(byte& castleRight) { castleRight &= 2; }
+inline void deleteCastleOOO(byte& castleRight) { castleRight &= 1; }
 
 /* some borrowed algorithms */
 Bit rotate90(Bit board); // Rotate the board 90 degrees counter-clockwise

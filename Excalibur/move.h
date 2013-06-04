@@ -76,8 +76,10 @@ inline ostream& operator<<(ostream& os, Move& m)
 /* Constants for castling */
 static const Move MOVE_OO_KING[COLOR_N] = { 0x402184U, 0x40afbcU };
 static const Move MOVE_OOO_KING[COLOR_N] = { 0x802084U, 0x80aebcU };
-static const Move MOVE_OO_ROOK[COLOR_N] = { 0x406147U, 0x40ef7fU };
-static const Move MOVE_OOO_ROOK[COLOR_N] = { 0x8060c0U, 0x80eef8U };
-
+// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
+static const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+static const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+static const Bit MASK_OO_ROOK[COLOR_N] = { setbit[7] | setbit[5], setbit[63] | setbit[61] };
+static const Bit MASK_OOO_ROOK[COLOR_N] = { setbit[0] | setbit[3], setbit[56] | setbit[59] };
 
 #endif // __move_h__

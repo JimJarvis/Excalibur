@@ -5,7 +5,6 @@
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
-
 int Position::moveGen(int index)
 {
 	Color opponent = flipColor(turn);
@@ -192,27 +191,109 @@ bool Position::isAttacked(Bit Target, Color attacker_side)
 	return false; 
 }
 
-/* Verbose version for testing
-bool Position::isAttacked(Bit Target, Color attacker_side)
+/*
+ *	Make move and update the Position status
+ */
+void Position::makeMove(Move& mv)
 {
-	cout << "Target map:" << endl;
-	dispBit(Target);
-	uint to;
-	Color defender_side = flipColor(attacker_side);
-	Bit pawn_map = Pawns[attacker_side];
-	Bit knight_map = Knights[attacker_side];
-	Bit king_map = Kings[attacker_side];
-	Bit ortho_slider_map = Rooks[attacker_side] | Queens[attacker_side];
-	Bit diag_slider_map = Bishops[attacker_side] | Queens[attacker_side];
-	while (Target)
+	uint from = mv.getFrom();
+	uint to = mv.getTo();
+	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
+	Bit FromToMap = setbit[from] | ToMap;
+	PieceType piece = mv.getPiece();
+	PieceType capt = mv.getCapt();
+	Color opponent = flipColor(turn);
+
+	Pieces[turn] ^= FromToMap;
+	boardPiece[from] = NON;
+	boardPiece[to] = piece;
+	epSquare = 0;
+	if (turn == B)  fullMove ++;  // only increments after black moves
+
+	switch (piece)
 	{
-		to = popLSB(Target);
-		cout << "checking target sq: " << to << endl;
-		if (pawn_map & Board::pawn_attack(to, defender_side)) { cout << "pawn" << endl;return true; }
-		if (knight_map & Board::knight_attack(to))  { cout << "knight" << endl;return true; }
-		if (king_map & Board::king_attack(to))  { cout << "king" << endl;return true; }
-		if (ortho_slider_map & rook_attack(to))  { cout << "rook" << endl;return true; }
-		if (diag_slider_map & bishop_attack(to))  { cout << "bishop" << endl;return true;}
+	case PAWN:
+		Pawns[turn] ^= FromToMap;
+		fiftyMove = 0;  // any pawn move resets the fifty-move clock
+		if (RANKS[from] == (turn==W ? 1: 6) && RANKS[to] == (turn==W ? 3: 4))
+			epSquare = from + (turn==W ? 8 : -8);  // pawn double push: new ep square
+		if (mv.isEP())  // en-passant capture
+		{
+			uint ep_sq = mv.getEP();
+			ToMap = setbit[ep_sq];  // the captured pawn location
+			boardPiece[ep_sq] = NON;
+		}
+		else if (mv.isPromo())
+		{
+			PieceType promo = mv.getPromo();
+			-- pieceCount[turn][PAWN];
+			++ pieceCount[turn][promo];
+			boardPiece[to] = promo;
+			switch (promo)
+			{
+			case KNIGHT: Knights[turn] ^= ToMap; break;
+			case BISHOP: Bishops[turn] ^= ToMap; break;
+			case ROOK: Rooks[turn] ^= ToMap; break;
+			case QUEEN: Queens[turn] ^= ToMap; break;
+			}
+		}
+		break;
+
+	case KING:
+		Kings[turn] ^= FromToMap; 
+		castleRights[turn] = 0;  // cannot castle any more
+		if (mv.isCastleOO())
+		{
+			Rooks[turn] ^= MASK_OO_ROOK[turn];
+			Pieces[turn] ^= MASK_OO_ROOK[turn];
+			boardPiece[SQ_OO_ROOK[turn][0]] = NON;  // from
+			boardPiece[SQ_OO_ROOK[turn][1]] = ROOK;  // to
+		}
+		else if (mv.isCastleOOO())
+		{
+			Rooks[turn] ^= MASK_OOO_ROOK[turn];
+			Pieces[turn] ^= MASK_OOO_ROOK[turn];
+			boardPiece[SQ_OOO_ROOK[turn][0]] = NON;  // from
+			boardPiece[SQ_OOO_ROOK[turn][1]] = ROOK;  // to
+		}
+		break;
+
+	case ROOK:
+		Rooks[turn] ^= FromToMap;
+		if (from == SQ_OO_ROOK[turn][0])   // if the rook moves, cancel the castle rights
+			deleteCastleOO(castleRights[turn]);
+		else if (from == SQ_OOO_ROOK[turn][0])
+			deleteCastleOOO(castleRights[turn]);
+		break;
+
+	case KNIGHT:
+		Knights[turn] ^= FromToMap; break;
+	case BISHOP:
+		Bishops[turn] ^= FromToMap; break;
+	case QUEEN:
+		Queens[turn] ^= FromToMap; break;
 	}
-	cout << "nothing" << endl;return false; 
-}    */
+
+	/* Deal with all kinds of captures, including en-passant */
+	if (capt)
+	{
+		switch (capt)
+		{
+		case PAWN: Pawns[opponent] ^= ToMap; break;
+		case KING: Kings[opponent] ^= ToMap; break;
+		case KNIGHT: Knights[opponent] ^= ToMap; break;
+		case BISHOP: Bishops[opponent] ^= ToMap; break;
+		case ROOK: Rooks[opponent] ^= ToMap; 	break;
+		case QUEEN: Queens[opponent] ^= ToMap; break;
+		}
+		-- pieceCount[opponent][capt];
+		Pieces[opponent] ^= ToMap;
+		fiftyMove = 0;  // deal with fifty move counter
+	}
+	else if (piece != PAWN)
+		fiftyMove ++;
+
+	Occupied = Pieces[W] | Pieces[B];
+
+	turn = opponent;
+}
