@@ -34,7 +34,7 @@ void Position::init_default()
 	Pawns[B] = 0x00ff000000000000;
 	refresh_pieces();
 	
-	for (int pos = 0; pos < SQ; pos++)
+	for (int pos = 0; pos < SQ_N; pos++)
 		boardPiece[pos] = NON;
 	for (Color c : COLORS)  
 	{
@@ -79,7 +79,7 @@ void Position::parseFEN(string fen0)
 		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
 		pieceCount[c][PAWN] = pieceCount[c][KING] = pieceCount[c][KNIGHT] = pieceCount[c][BISHOP] = pieceCount[c][ROOK] = pieceCount[c][QUEEN] = 0;
 	}
-	for (int pos = 0; pos < SQ; pos++)
+	for (int pos = 0; pos < SQ_N; pos++)
 		boardPiece[pos] = NON;
 	istringstream fen(fen0);
 	// Read up until the first space
@@ -135,7 +135,7 @@ void Position::parseFEN(string fen0)
 	string ep; // en passent square
 	fen >> ep;  // see if there's an en passent square. '-' if none.
 	if (ep != "-")
-		epSquare = str2pos(ep);
+		epSquare = str2sq(ep);
 	else
 		epSquare = 0;
 	fen >> fiftyMove;

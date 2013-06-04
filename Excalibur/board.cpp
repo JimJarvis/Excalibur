@@ -4,20 +4,20 @@ namespace Board
 {
 
 // Because we extern the tables in board.h, we must explicitly declare them again:
-Bit knight_tbl[SQ], king_tbl[SQ];
-Bit pawn_atk_tbl[SQ][COLOR_N], pawn_push_tbl[SQ][COLOR_N], pawn_push2_tbl[SQ][COLOR_N];
-byte rook_key[SQ][4096]; 
+Bit knight_tbl[SQ_N], king_tbl[SQ_N];
+Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
+byte rook_key[SQ_N][4096]; 
 Bit rook_tbl[4900]; 
-byte bishop_key[SQ][512];
+byte bishop_key[SQ_N][512];
 Bit bishop_tbl[1428]; 
-Magics rook_magics[SQ];
-Magics bishop_magics[SQ]; 
+Magics rook_magics[SQ_N];
+Magics bishop_magics[SQ_N]; 
 
 // initialize *_attack[][] tables
 void init_attack_tables()
 {
 	// rank_attack
-	for (int sq = 0; sq < SQ; ++sq)
+	for (int sq = 0; sq < SQ_N; ++sq)
 	{
 		// pre-calculate the coordinate (x,y), which can be easily got from pos
 		int x = FILES[sq]; // sq % 8
@@ -294,8 +294,6 @@ void init_pawn_push2_tbl( int sq, int x, int y, Color c )
 // Attack map of the piece on a square
 //Bit attacks_from(int sq, PieceType piece, Color c, Bit occup)
 //{
-//	PieceType piece = boardPiece[sq];
-//	Color c = Color((setbit[sq] & Pieces[W]) == 0);
 //	switch (piece)
 //	{
 //	case PAWN:  break;
@@ -310,7 +308,7 @@ void rook_magicU64_generator()
 	U64 allstates[4096];
 	U64 magic;
 	cout << "const U64 ROOK_MAGIC[64] = {" << endl;
-	for (int sq = 0; sq < SQ; sq++)
+	for (int sq = 0; sq < SQ_N; sq++)
 	{
 		// generate all 2^bits permutations of the rook cross bitmap
 		n = bitCount(rook_magics[sq].mask);
@@ -355,7 +353,7 @@ void bishop_magicU64_generator()
 	U64 allstates[512];
 	U64 magic;
 	cout << "const U64 BISHOP_MAGIC[64] = {" << endl;
-	for (int sq = 0; sq < SQ; sq++)
+	for (int sq = 0; sq < SQ_N; sq++)
 	{
 		// generate all 2^bits permutations of the bishop cross bitmap
 		n = bitCount(bishop_magics[sq].mask);

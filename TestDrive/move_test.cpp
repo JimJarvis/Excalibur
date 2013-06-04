@@ -1,6 +1,19 @@
 /* Move tests */
 #include "tests.h"
 
+Position pos2;
+
+TEST(Move, Generator)
+{
+	Board::init_attack_tables();
+	pos2.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); 
+	int end = pos2.moveGen(0);
+	for (int i = 0; i < end; i++)
+	{
+		cout << pos2.moveBuffer[i] << endl;
+	}
+}
+
 TEST(Move, Piece)
 {
 	PieceType nonsliders[3] = {KING, KNIGHT, PAWN};
@@ -41,12 +54,13 @@ TEST(Move, Judgement)
 	m.setPiece(piece);
 	m.setCapt(capt);
 	m.setPromo(prom);
-	m.setKCastle();
+	m.setCastleOO();
 	ASSERT_EQ(m.getFrom(), from);
 	ASSERT_EQ(m.getTo(), to);
 	ASSERT_EQ(m.getCapt(), capt);
 	ASSERT_EQ(m.getPiece(), piece);
 	ASSERT_EQ(m.getPromo(), prom);
+	ASSERT_TRUE(m.isPromo());
 	ASSERT_EQ(m.getColor(), B);
 	ASSERT_TRUE(m.isCapt());
 	ASSERT_EQ(m.getCaptColor(), W);
@@ -56,27 +70,28 @@ TEST(Move, Judgement)
 	ASSERT_TRUE(m.isRookMove());
 	ASSERT_FALSE(m.isPawnMove());
 	ASSERT_FALSE(m.isPawnDouble());
-	ASSERT_TRUE(m.isKCastle());
-	ASSERT_FALSE(m.isQCastle());
+	ASSERT_TRUE(m.isCastleOO());
+	ASSERT_FALSE(m.isCastleOOO());
 	ASSERT_FALSE(m.isEP());
 
 	m.clear();
-	m.setFrom(str2pos("c2"));
-	m.setTo(str2pos("c4"));
+	m.setFrom(str2sq("c2"));
+	m.setTo(str2sq("c4"));
 	m.setColor(W);
 	m.setPiece(PAWN);
 	m.setCapt(ROOK);
-	m.setQCastle();
+	m.setCastleOOO();
 	ASSERT_EQ(m.getFrom(), 10);
 	ASSERT_EQ(m.getTo(), 26);
 	ASSERT_EQ(m.getColor(), W);
 	ASSERT_TRUE(m.isCapt());
 	ASSERT_TRUE(m.isRookCapt());
 	ASSERT_FALSE(m.isKingCapt());
+	ASSERT_FALSE(m.isPromo());
 	ASSERT_EQ(m.getCaptColor(), B);
 	ASSERT_EQ(m.getCapt(), ROOK);
-	ASSERT_FALSE(m.isKCastle());
-	ASSERT_TRUE(m.isQCastle());
+	ASSERT_FALSE(m.isCastleOO());
+	ASSERT_TRUE(m.isCastleOOO());
 	ASSERT_FALSE(m.isEP());
 	ASSERT_TRUE(m.isPawnMove());
 	ASSERT_TRUE(m.isPawnDouble());
@@ -87,8 +102,9 @@ TEST(Move, Judgement)
 	ASSERT_EQ(m.getColor(), B);
 	ASSERT_EQ(m.getCaptColor(), W);
 	ASSERT_FALSE(m.isCapt());
-	ASSERT_FALSE(m.isKCastle());
-	ASSERT_FALSE(m.isQCastle());
+	ASSERT_FALSE(m.isPromo());
+	ASSERT_FALSE(m.isCastleOO());
+	ASSERT_FALSE(m.isCastleOOO());
 	ASSERT_TRUE(m.isEP());
 	ASSERT_FALSE(m.isPawnDouble());
 	ASSERT_FALSE(m.isKingCapt());

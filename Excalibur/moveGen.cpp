@@ -6,9 +6,9 @@
  * the new first location is returned
  */
 
-int Position::movegen(int index)
+int Position::moveGen(int index)
 {
-	Color opponent = Color(!turn);
+	Color opponent = flipColor(turn);
 	Bit Freesq = ~Occupied;
 	Bit Target = ~Pieces[turn];   // attack the other side
 	Bit TempPiece, TempMove;
@@ -67,7 +67,7 @@ int Position::movegen(int index)
 	{
 		from = popLSB(TempPiece);
 		mv.setFrom(from);
-		TempMove = knight_attack(from) & Target;
+		TempMove = Board::knight_attack(from) & Target;
 		while (TempMove)
 		{
 			to = popLSB(TempMove);
@@ -139,7 +139,7 @@ int Position::movegen(int index)
 	{
 		from = popLSB(TempPiece);
 		mv.setFrom(from);
-		TempMove = king_attack(from) & Target;
+		TempMove = Board::king_attack(from) & Target;
 		while (TempMove)
 		{
 			to = popLSB(TempMove);
@@ -150,10 +150,41 @@ int Position::movegen(int index)
 		// King side castling O-O
 		if (canCastleOO(castleRights[turn]))
 		{
-
+			if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
+				if (!isAttacked(CASTLE_MASK[turn][CASTLE_EG], opponent))
+					moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
+		}
+		if (canCastleOOO(castleRights[turn]))
+		{
+			if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
+				if (!isAttacked(CASTLE_MASK[turn][CASTLE_CE], opponent))
+					moveBuffer[index ++] = MOVE_OOO_KING[turn];  // pre-stored king's castling move
 		}
 	}
 
 	return index;
 }
 
+/*
+ *	Move legality test to see if any '1' in Target is attacked by the specific color
+ * for check detection and castling legality
+ */
+bool Position::isAttacked(Bit Target, Color attacker_side)
+{
+	uint to;
+	Color defender_side = flipColor(attacker_side);
+	Bit pawnmap = Pawns[attacker_side];
+	Bit knightmap = Knights[attacker_side];
+	Bit kingmap = Kings[attacker_side];
+	Bit slidermap = Rooks[attacker_side] | Bishops[attacker_side] | Queens[attacker_side];
+	while (Target)
+	{
+		to = popLSB(Target);
+		if (pawnmap & Board::pawn_attack(to, defender_side))  return true;
+		if (knightmap & Board::knight_attack(to))  return true;
+		if (kingmap & Board::king_attack(to))  return true;
+		if (slidermap & rook_attack(to))  return true;
+		if (slidermap & bishop_attack(to))  return true;
+	}
+	return false; 
+}

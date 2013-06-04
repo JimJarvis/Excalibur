@@ -15,7 +15,7 @@ public:
 
 	// Incrementally updated info, for fast access:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
-	PieceType boardPiece[SQ];
+	PieceType boardPiece[SQ_N];
 
 	// additional important states
 	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
@@ -35,13 +35,14 @@ public:
 	/***** movegen.cpp: updates the move buffer for ply searches *****/
 	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
-	int movegen(int index);   // return the new index in move buffer
+	int moveGen(int index);   // return the new index in move buffer
+	bool isAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
 
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// non-sliding pieces
-	Bit knight_attack(int sq) { return Board::knight_attack(sq); }
-	Bit king_attack(int sq) { return Board::king_attack(sq); }
+	//Bit knight_attack(int sq) { return Board::knight_attack(sq); }
+	//Bit king_attack(int sq) { return Board::king_attack(sq); }
 	Bit pawn_attack(int sq) { return Board::pawn_attack(sq, turn); }
 	Bit pawn_push(int sq) { return Board::pawn_push(sq, turn); }
 	Bit pawn_push2(int sq) { return Board::pawn_push2(sq, turn); }
@@ -51,10 +52,10 @@ public:
 	Bit bishop_attack(int sq) { return Board::bishop_attack(sq, Occupied); };
 	Bit queen_attack(int sq) { return rook_attack(sq) | bishop_attack(sq); }
 	
-	// about attackers
-	//Bit attacks_from(int sq);
+	// Attackers query
+	//Bit attacks_from(int sq) { return Board::attacks_from(sq, boardPiece[sq], Color((setbit[sq] & Pieces[W]) == 0), Occupied); }
+
 	//Bit attacks_to(int sq);  // the attackers to a specific square
-	//bool is_attacked(Bit& Target);  // return if any '1' in the target bitmap is attacked.
 
 private:
 	// initialize the default piece positions and internal states

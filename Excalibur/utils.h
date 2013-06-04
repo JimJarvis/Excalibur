@@ -31,11 +31,10 @@ inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb];
 
 // display a bitmap as 8*8. For debugging
 Bit dispBit(Bit, bool = 1);
-// convert a square to its string pos representation, and vice versa
-// a1 is 0 and h8 is 63
-string pos2str(uint pos);
-uint str2pos(string str);
+// convert a name to its square index. a1 is 0 and h8 is 63
+inline uint str2sq(string str) { return 8* (str[1] -'1') + (tolower(str[0]) - 'a'); };
 
+inline Color flipColor(Color c) { return Color(~c); }
 // a few type queries
 inline bool isSlider(PieceType p) { return (p & 4) == 4; }
 inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank

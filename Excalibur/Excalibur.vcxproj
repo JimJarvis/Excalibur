@@ -22,6 +22,7 @@
     <Text Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="move.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="Excalibur.cpp" />

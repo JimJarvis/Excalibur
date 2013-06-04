@@ -10,11 +10,15 @@ private:
 
 public:
 	Move(): mov(0) {}  // default ctor
+	Move(uint value): mov(value) {}
 	Move(const Move& anotherMove) { mov = anotherMove.mov; } // copy ctor
 	Move& operator=(const Move& anotherMove)  { mov = anotherMove.mov; return *this; }
 	bool operator==(const Move& anotherMove) { return mov == anotherMove.mov; }
-	friend ostream& operator<<(ostream& os, Move m);
+	friend ostream& operator<<(ostream& os, Move& m);
+
 	void clear() { mov &= 0x00008000; }  // clear all except the color bit
+	operator uint() const { return mov; } // conversion operator
+	operator string(); // convert to algebraic chess notation string
 
 	// bits 0 to 5
 	void setFrom(uint from) 	{ mov &= 0xffffffc0; mov |= (from & 0x0000003f); }
@@ -36,11 +40,12 @@ public:
 	void setPromo(PieceType promotion) { mov &= 0xffc7ffff; mov |= (promotion & 0x00000007) << 19; }
 	PieceType getPromo() { return PieceType((mov >> 19) & 0x00000007); }
 	// bits 22 to 24, special flags: 22 for O-O, 23 for O-O-O, 24 for en-passant
-	void setKCastle() { mov |= 0x400000; }
-	void setQCastle() { mov |= 0x800000; }
+	void setCastleOO() { mov |= 0x400000; }
+	void setCastleOOO() { mov |= 0x800000; }
 	void setEP() { mov |= 0x1000000; }
 	// boolean checks for some types of moves.
 	bool isCapt() { return (mov & 0x00070000) != 0; } // bits 16 to 18 must != 0
+	bool isPromo() { return (mov & 0x00380000) != 0; }
 	bool isKingCapt() { return ( mov & 0x00070000) == 0x00020000; } // bits 16 to 18 must be 010
 	bool isKingMove() { return ( mov & 0x00007000) == 0x00002000; } // bits 12 to 14 must be 010
 	bool isRookCapt() { return ( mov & 0x00070000) == 0x00060000; } // bits 16 to 18 must be 110
@@ -53,15 +58,23 @@ public:
 			0x00000008) && ((( mov & 0x00000e00) == 0x00000600))) ||
 			((( mov & 0x00000038) == 0x00000030) && ((( mov & 0x00000e00) == 0x00000800)))); }
 	// special queries: mutually exclusive
-	bool isKCastle() { return (mov & 0x400000) != 0; }
-	bool isQCastle() { return (mov & 0x800000) != 0; }
+	bool isCastleOO() { return (mov & 0x400000) != 0; }
+	bool isCastleOOO() { return (mov & 0x800000) != 0; }
 	bool isEP() { return (mov & 0x1000000) != 0; }
 };
 
-inline ostream& operator<<(ostream& os, Move m)
+inline ostream& operator<<(ostream& os, Move& m)
 {
-	cout << hex << m.mov << endl; // use iomanip to output the hex
+	//cout << "0x" <<  hex << m.mov << endl;
+	cout << string(m);
 	return os;
 }
+
+/* Constants for castling */
+static const Move MOVE_OO_KING[COLOR_N] = { 0x402184U, 0x40afbcU };
+static const Move MOVE_OOO_KING[COLOR_N] = { 0x802084U, 0x80aebcU };
+static const Move MOVE_OO_ROOK[COLOR_N] = { 0x406147U, 0x40ef7fU };
+static const Move MOVE_OOO_ROOK[COLOR_N] = { 0x8060c0U, 0x80eef8U };
+
 
 #endif // __move_h__

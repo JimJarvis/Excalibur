@@ -24,19 +24,15 @@ Bit dispBit(Bit bitmap, bool flag)
 	return bitmap;
 }
 
-// position (47) to readable string ("h6")
-string pos2str(uint pos)
+// position (47) to readable string ("h6"). Obsolete - now please use table lookup SQ_NAME[]
+/*
+string sq2str(uint pos)
 {
 	char alpha = 'a' + FILES[pos];
 	char num = RANKS[pos] + '1';
 	char str[3] = {alpha, num, 0};
 	return string(str);
-}
-
-uint str2pos(string str)
-{
-	return 8* (str[1] -'1') + (tolower(str[0]) - 'a');
-}
+} */
 
 
 /* A few borrowed algorithms */
