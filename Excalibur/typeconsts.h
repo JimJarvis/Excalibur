@@ -35,7 +35,7 @@ static const enum PieceType : byte
 	ROOK = 6,        //  110
 	QUEEN = 7,      //  111
 };
-static const char* PIECE_NAME[PIECE_TYPE_N] = {0, "", "K", "N", 0, "B", "R", "Q"};
+static const char* PIECE_NAME[PIECE_TYPE_N] = {"", "", "K", "N", "", "B", "R", "Q"};
 
 // single-bit masks
 static const U64 setbit[SQ_N] = {0x1ull, 0x2ull, 0x4ull, 0x8ull, 0x10ull, 0x20ull, 0x40ull, 0x80ull, 0x100ull, 0x200ull, 0x400ull, 0x800ull, 0x1000ull, 0x2000ull, 0x4000ull, 0x8000ull, 0x10000ull, 0x20000ull, 0x40000ull, 0x80000ull, 0x100000ull, 0x200000ull, 0x400000ull, 0x800000ull, 0x1000000ull, 0x2000000ull, 0x4000000ull, 0x8000000ull, 0x10000000ull, 0x20000000ull, 0x40000000ull, 0x80000000ull, 0x100000000ull, 0x200000000ull, 0x400000000ull, 0x800000000ull, 0x1000000000ull, 0x2000000000ull, 0x4000000000ull, 0x8000000000ull, 0x10000000000ull, 0x20000000000ull, 0x40000000000ull, 0x80000000000ull, 0x100000000000ull, 0x200000000000ull, 0x400000000000ull, 0x800000000000ull, 0x1000000000000ull, 0x2000000000000ull, 0x4000000000000ull, 0x8000000000000ull, 0x10000000000000ull, 0x20000000000000ull, 0x40000000000000ull, 0x80000000000000ull, 0x100000000000000ull, 0x200000000000000ull, 0x400000000000000ull, 0x800000000000000ull, 0x1000000000000000ull, 0x2000000000000000ull, 0x4000000000000000ull, 0x8000000000000000ull};
@@ -87,7 +87,7 @@ static const int RANKS[SQ_N] = { // sq >> 3
 	7, 7, 7, 7, 7, 7, 7, 7,
 };
 // position[FILE][RANK], fast lookup
-static const int POS[8][8] = {  
+static const int SQUARES[8][8] = {  
 	{0, 8, 16, 24, 32, 40, 48, 56},
 	{1, 9, 17, 25, 33, 41, 49, 57},
 	{2, 10, 18, 26, 34, 42, 50, 58},

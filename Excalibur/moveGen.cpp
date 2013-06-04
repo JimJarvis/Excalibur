@@ -48,15 +48,17 @@ int Position::moveGen(int index)
 			if (pawn_attack(from) & setbit[epSquare])
 			{
 				// final check to avoid same color capture
-				if (Pawns[opponent] & setbit[epSquare + (opponent==W ? 8: -8)])
+				uint ep_capture_sq = epSquare + (opponent==W ? 8: -8);
+				if (Pawns[opponent] & setbit[ep_capture_sq])
 				{
-					mv.setEP();
+					mv.setEP(ep_capture_sq);
 					mv.setCapt(PAWN);
 					mv.setTo(epSquare);
 					update;
 				}
 			}
 		}
+		mv.clearSpecial();  // clear the EP and promo square.
 	}
 	mv.clear();  // clear all except the color bit
 
@@ -173,18 +175,44 @@ bool Position::isAttacked(Bit Target, Color attacker_side)
 {
 	uint to;
 	Color defender_side = flipColor(attacker_side);
-	Bit pawnmap = Pawns[attacker_side];
-	Bit knightmap = Knights[attacker_side];
-	Bit kingmap = Kings[attacker_side];
-	Bit slidermap = Rooks[attacker_side] | Bishops[attacker_side] | Queens[attacker_side];
+	Bit pawn_map = Pawns[attacker_side];
+	Bit knight_map = Knights[attacker_side];
+	Bit king_map = Kings[attacker_side];
+	Bit ortho_slider_map = Rooks[attacker_side] | Queens[attacker_side];
+	Bit diag_slider_map = Bishops[attacker_side] | Queens[attacker_side];
 	while (Target)
 	{
 		to = popLSB(Target);
-		if (pawnmap & Board::pawn_attack(to, defender_side))  return true;
-		if (knightmap & Board::knight_attack(to))  return true;
-		if (kingmap & Board::king_attack(to))  return true;
-		if (slidermap & rook_attack(to))  return true;
-		if (slidermap & bishop_attack(to))  return true;
+		if (pawn_map & Board::pawn_attack(to, defender_side))  return true; 
+		if (knight_map & Board::knight_attack(to))  return true; 
+		if (king_map & Board::king_attack(to))  return true; 
+		if (ortho_slider_map & rook_attack(to))  return true; 
+		if (diag_slider_map & bishop_attack(to))  return true;
 	}
 	return false; 
 }
+
+/* Verbose version for testing
+bool Position::isAttacked(Bit Target, Color attacker_side)
+{
+	cout << "Target map:" << endl;
+	dispBit(Target);
+	uint to;
+	Color defender_side = flipColor(attacker_side);
+	Bit pawn_map = Pawns[attacker_side];
+	Bit knight_map = Knights[attacker_side];
+	Bit king_map = Kings[attacker_side];
+	Bit ortho_slider_map = Rooks[attacker_side] | Queens[attacker_side];
+	Bit diag_slider_map = Bishops[attacker_side] | Queens[attacker_side];
+	while (Target)
+	{
+		to = popLSB(Target);
+		cout << "checking target sq: " << to << endl;
+		if (pawn_map & Board::pawn_attack(to, defender_side)) { cout << "pawn" << endl;return true; }
+		if (knight_map & Board::knight_attack(to))  { cout << "knight" << endl;return true; }
+		if (king_map & Board::king_attack(to))  { cout << "king" << endl;return true; }
+		if (ortho_slider_map & rook_attack(to))  { cout << "rook" << endl;return true; }
+		if (diag_slider_map & bishop_attack(to))  { cout << "bishop" << endl;return true;}
+	}
+	cout << "nothing" << endl;return false; 
+}    */

@@ -1,15 +1,18 @@
 #include "move.h"
-Move::operator string()  // semi-standard algebraic notation: no disambiguation
+
+Move::operator string()  // verbose algebraic notation: no disambiguation
 {
 	ostringstream ostr; 
 	PieceType piece = getPiece();
-	if (piece == KING && isCastleOO())
+	if (isCastleOO())
 		ostr << "O-O";
-	else if (piece == KING && isCastleOOO())
+	else if (isCastleOOO())
 		ostr << "O-O-O";
+	else if (isEP())
+		ostr << SQ_NAME[getFrom()] << "x" << SQ_NAME[getTo()] << "[ep=" << SQ_NAME[getEP()] << "]";
 	else
-		ostr << PIECE_NAME[piece] << getFrom() 
-			<< (isCapt() ? "x":"") << getTo() 
+		ostr << PIECE_NAME[piece] << SQ_NAME[getFrom()]
+			<< (isCapt() ? "x":"") << PIECE_NAME[getCapt()] <<  SQ_NAME[getTo()]
 			<< (isPromo() ? string("=")+PIECE_NAME[getPromo()] : "" );
 
 	return ostr.str();

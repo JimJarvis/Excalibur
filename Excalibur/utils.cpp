@@ -13,7 +13,7 @@ Bit dispBit(Bit bitmap, bool flag)
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			cout << bs[POS[j][i]] << " ";  // j + 8*i
+			cout << bs[SQUARES[j][i]] << " ";  // j + 8*i
 		}
 		cout << endl;
 	}
@@ -142,7 +142,7 @@ inline uint LSB(U64 bitmap)
 	50, 36, 17, 19, 29, 10, 13, 21,
 	56, 45, 25, 31, 35, 16, 9, 12,
 	44, 24, 15, 8, 23, 7, 6, 5 };
-	// x&-x is equivalent to the more readable form x&(-x+1), which gives the LSB due to 2's complement encoding. 
+	// x&-x is equivalent to the more readable form x&(~x+1), which gives the LSB due to 2's complement encoding. 
 	return INDEX64[((bitmap & (-bitmap)) * BITSCAN_MAGIC) >> 58]; 
 }
 ***********/

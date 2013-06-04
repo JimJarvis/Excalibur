@@ -98,7 +98,7 @@ void Position::parseFEN(string fen0)
 			file += ch - '0';
 		else
 		{
-			mask = setbit[POS[file][rank]];  // r*8 + f
+			mask = setbit[SQUARES[file][rank]];  // r*8 + f
 			Color c = isupper(ch) ? W: B; 
 			ch = tolower(ch);
 			PieceType pt;
@@ -112,7 +112,7 @@ void Position::parseFEN(string fen0)
 			case 'k': Kings[c] |= mask; pt = KING; break;
 			}
 			++ pieceCount[c][pt]; 
-			boardPiece[POS[file][rank]] = pt;
+			boardPiece[SQUARES[file][rank]] = pt;
 			file ++;
 		}
 	}
@@ -152,7 +152,7 @@ void Position::display()
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			int n = POS[j][i];
+			int n = SQUARES[j][i];
 			char c;
 			if (wk[n]) c = 'K';
 			else if (wq[n]) c = 'Q';

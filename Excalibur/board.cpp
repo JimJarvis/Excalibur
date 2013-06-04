@@ -232,7 +232,7 @@ void init_knight_tbl(int sq, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= setbit[POS[destx][desty]];
+				ans |= setbit[SQUARES[destx][desty]];
 			}
 		}
 	}
@@ -254,7 +254,7 @@ void init_king_tbl(int sq, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= setbit[POS[destx][desty]];
+			ans |= setbit[SQUARES[destx][desty]];
 		}
 	}
 	king_tbl[sq] = ans;
@@ -263,7 +263,7 @@ void init_king_tbl(int sq, int x, int y)
 // Pawn attack table - 2 colors
 void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 {
-	if (y == 0 || y == 7) // pawns can never be on these squares
+	if (y==0 && c==B || y==7 && c==W) 
 	{
 		pawn_atk_tbl[sq][c] = 0;
 		return;
@@ -271,9 +271,9 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 	Bit ans = 0;
 	int offset =  c==W ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= setbit[POS[x-1][y+offset]]; // white color = 0, black = 1
+		ans |= setbit[SQUARES[x-1][y+offset]]; // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= setbit[POS[x+1][y+offset]]; // white color = 0, black = 1
+		ans |= setbit[SQUARES[x+1][y+offset]]; // white color = 0, black = 1
 	pawn_atk_tbl[sq][c] = ans;
 }
 void init_pawn_push_tbl( int sq, int x, int y, Color c )

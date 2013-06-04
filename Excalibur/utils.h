@@ -26,15 +26,15 @@ inline U64 rand_U64_sparse()  { return rand_U64() & rand_U64(); }  // the more &
 static const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
 static const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
 inline uint LSB(U64 bitmap)
-{ return BITSCAN_INDEX[((bitmap & (1 - bitmap)) * BITSCAN_MAGIC) >> 58]; }
+{ return BITSCAN_INDEX[((bitmap & (~bitmap + 1)) * BITSCAN_MAGIC) >> 58]; }
 inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
 
 // display a bitmap as 8*8. For debugging
 Bit dispBit(Bit, bool = 1);
 // convert a name to its square index. a1 is 0 and h8 is 63
-inline uint str2sq(string str) { return 8* (str[1] -'1') + (tolower(str[0]) - 'a'); };
+inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 
-inline Color flipColor(Color c) { return Color(~c); }
+inline Color flipColor(Color c) { return Color(!c); }
 // a few type queries
 inline bool isSlider(PieceType p) { return (p & 4) == 4; }
 inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank

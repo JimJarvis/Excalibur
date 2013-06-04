@@ -102,7 +102,8 @@ TEST(Board, Pawn)
 	ASSERT_EQ(patk("a2", W), 131072);
 	ASSERT_EQ(patk("c5", W), 10995116277760);
 	ASSERT_EQ(patk("h6", B), 274877906944);
-	ASSERT_EQ(patk("g8", B), 0);
+	ASSERT_EQ(patk("c1", W), 2560);
+	ASSERT_EQ(patk("g8", B), 45035996273704960);
 	ASSERT_EQ(ppush("c4", W), 17179869184);
 	ASSERT_EQ(ppush("h2", B), 128);
 	ASSERT_EQ(ppush2("a3", W), 0);

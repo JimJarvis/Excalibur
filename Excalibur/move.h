@@ -17,6 +17,7 @@ public:
 	friend ostream& operator<<(ostream& os, Move& m);
 
 	void clear() { mov &= 0x00008000; }  // clear all except the color bit
+	void clearSpecial() { mov &= 0x0007ffff; }  // clear special bits: promotion, castle/EP flags: bits 19 and above
 	operator uint() const { return mov; } // conversion operator
 	operator string(); // convert to algebraic chess notation string
 
@@ -24,8 +25,8 @@ public:
 	void setFrom(uint from) 	{ mov &= 0xffffffc0; mov |= (from & 0x0000003f); }
 	uint getFrom() {  return mov & 0x0000003f;  }
 	// bits 6 to 11
-	void setTo(uint to) 	{ mov &= 0xfffff03f; mov |= (to & 0x0000003f)<< 6; }
-	uint getTo() { return (mov >> 6) & 0x0000003f; }
+	void setTo(uint to) 	{ mov &= 0xfffff03f; mov |= (to & 0x3f)<< 6; }
+	uint getTo() { return (mov >> 6) & 0x3f; }
 	// bits 12 to 14, 3 bits for the moving piece
 	void setPiece(PieceType piece) { mov &= 0xffff8fff; mov |= (piece & 0x00000007) << 12; }
 	PieceType getPiece() { return PieceType((mov >> 12) & 0x00000007); }
@@ -39,10 +40,12 @@ public:
 	// bits 19 to 21, promotion type
 	void setPromo(PieceType promotion) { mov &= 0xffc7ffff; mov |= (promotion & 0x00000007) << 19; }
 	PieceType getPromo() { return PieceType((mov >> 19) & 0x00000007); }
-	// bits 22 to 24, special flags: 22 for O-O, 23 for O-O-O, 24 for en-passant
+	// bits 22 to 23, castling flags: 22 for O-O, 23 for O-O-O
 	void setCastleOO() { mov |= 0x400000; }
 	void setCastleOOO() { mov |= 0x800000; }
-	void setEP() { mov |= 0x1000000; }
+	// bits 24 to 29, EP captured square. 0 if no EP
+	void setEP(uint ep_capt_sq) { mov &= 0xc0ffffff; mov |= (ep_capt_sq & 0x3f) << 24; }
+	uint getEP() { return (mov >> 24) & 0x3f; }
 	// boolean checks for some types of moves.
 	bool isCapt() { return (mov & 0x00070000) != 0; } // bits 16 to 18 must != 0
 	bool isPromo() { return (mov & 0x00380000) != 0; }
@@ -60,7 +63,7 @@ public:
 	// special queries: mutually exclusive
 	bool isCastleOO() { return (mov & 0x400000) != 0; }
 	bool isCastleOOO() { return (mov & 0x800000) != 0; }
-	bool isEP() { return (mov & 0x1000000) != 0; }
+	bool isEP() { return (mov & 0x3f000000) != 0; }
 };
 
 inline ostream& operator<<(ostream& os, Move& m)

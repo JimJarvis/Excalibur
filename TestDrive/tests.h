@@ -15,8 +15,6 @@
 using namespace std; 
 
 // include headers in Excalibur
-#include "move.h"
-#include "board.h"
 #include "position.h"
 
 // test-oriented functions
