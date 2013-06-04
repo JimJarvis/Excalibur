@@ -191,11 +191,16 @@ bool Position::isAttacked(Bit Target, Color attacker_side)
 	return false; 
 }
 
+
+StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
 /*
- *	Make move and update the Position status
+ *	Make move and update the Position internal states
  */
 void Position::makeMove(Move& mv)
 {
+	// store the internal state for future recovery
+	state_record[state_pointer ++] = *this;
+
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
@@ -296,4 +301,97 @@ void Position::makeMove(Move& mv)
 	Occupied = Pieces[W] | Pieces[B];
 
 	turn = opponent;
+}
+
+/*
+ *	Unmake move and restore the Position internal states
+ */
+void Position::unmakeMove(Move& mv)
+{
+	uint from = mv.getFrom();
+	uint to = mv.getTo();
+	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
+	Bit FromToMap = setbit[from] | ToMap;
+	PieceType piece = mv.getPiece();
+	PieceType capt = mv.getCapt();
+	Color opponent = turn;
+	Color turn = flipColor(turn);
+
+	Pieces[turn] ^= FromToMap;
+	boardPiece[from] = piece; // restore
+	boardPiece[to] = NON;
+
+	switch (piece)
+	{
+	case PAWN:
+		Pawns[turn] ^= FromToMap;
+		if (mv.isEP())  // en-passant capture
+		{
+			uint ep_sq = mv.getEP();
+			ToMap = setbit[ep_sq];  // the captured pawn location
+			boardPiece[ep_sq] = PAWN;
+		}
+		else if (mv.isPromo())
+		{
+			PieceType promo = mv.getPromo();
+			++ pieceCount[turn][PAWN];
+			-- pieceCount[turn][promo];
+			boardPiece[to] = NON;
+			switch (promo)  // flip back the promoted bit
+			{
+			case KNIGHT: Knights[turn] ^= ToMap; break;
+			case BISHOP: Bishops[turn] ^= ToMap; break;
+			case ROOK: Rooks[turn] ^= ToMap; break;
+			case QUEEN: Queens[turn] ^= ToMap; break;
+			}
+		}
+		break;
+
+	case KING:
+		Kings[turn] ^= FromToMap; 
+		if (mv.isCastleOO())
+		{
+			Rooks[turn] ^= MASK_OO_ROOK[turn];
+			Pieces[turn] ^= MASK_OO_ROOK[turn];
+			boardPiece[SQ_OO_ROOK[turn][0]] = ROOK;  // from
+			boardPiece[SQ_OO_ROOK[turn][1]] = NON;  // to
+		}
+		else if (mv.isCastleOOO())
+		{
+			Rooks[turn] ^= MASK_OOO_ROOK[turn];
+			Pieces[turn] ^= MASK_OOO_ROOK[turn];
+			boardPiece[SQ_OOO_ROOK[turn][0]] = ROOK;  // from
+			boardPiece[SQ_OOO_ROOK[turn][1]] = NON;  // to
+		}
+		break;
+
+	case ROOK:
+		Rooks[turn] ^= FromToMap; break;
+	case KNIGHT:
+		Knights[turn] ^= FromToMap; break;
+	case BISHOP:
+		Bishops[turn] ^= FromToMap; break;
+	case QUEEN:
+		Queens[turn] ^= FromToMap; break;
+	}
+
+	/* Deal with all kinds of captures, including en-passant */
+	if (capt)
+	{
+		switch (capt)
+		{
+		case PAWN: Pawns[opponent] ^= ToMap; break;
+		case KING: Kings[opponent] ^= ToMap; break;
+		case KNIGHT: Knights[opponent] ^= ToMap; break;
+		case BISHOP: Bishops[opponent] ^= ToMap; break;
+		case ROOK: Rooks[opponent] ^= ToMap; 	break;
+		case QUEEN: Queens[opponent] ^= ToMap; break;
+		}
+		++ pieceCount[opponent][capt];
+		Pieces[opponent] ^= ToMap;
+	}
+
+	Occupied = Pieces[W] | Pieces[B];
+
+	restoreState(state_record[--state_pointer]);
 }

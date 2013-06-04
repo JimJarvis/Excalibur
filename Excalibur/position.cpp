@@ -58,6 +58,7 @@ void Position::init_default()
 	fullMove = 1;
 	turn = W;  // white goes first
 	epSquare = 0;
+	state_pointer = 0;
 }
 
 // refresh the pieces
@@ -140,6 +141,7 @@ void Position::parseFEN(string fen0)
 		epSquare = 0;
 	fen >> fiftyMove;
 	fen >> fullMove;
+	state_pointer = 0;
 }
 
 // Display the full board with letters

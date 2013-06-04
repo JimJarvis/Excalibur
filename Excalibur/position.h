@@ -4,10 +4,16 @@
 #include "move.h"
 #include "board.h"
 
+class StateInfo;  // forward declaration
+
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
 {
 public:
+
+	Position(); // Default constructor
+	Position(string fen); // construct by FEN
+	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
 	Bit Pawns[COLOR_N], Kings[COLOR_N], Knights[COLOR_N], Bishops[COLOR_N], Rooks[COLOR_N], Queens[COLOR_N];
 	Bit Pieces[COLOR_N];
@@ -21,16 +27,15 @@ public:
 	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
 	Color turn; // white(0) or black(1)
 	uint epSquare; // en-passant square
-	uint fiftyMove; // move since last pawn move or capture
-	uint fullMove;  // starts at 1 and increments after black moves
+	int fiftyMove; // move since last pawn move or capture
+	int fullMove;  // starts at 1 and increments after black moves
+	int state_pointer;  // points to the current in "extern state_record" array
+	void restoreState(StateInfo& state); // inlined
 
-	Position(); // Default constructor
-	Position(string fen); // construct by FEN
-	
 	void reset();  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
-	friend ostream& operator<<(ostream&, Position);
+	friend ostream& operator<<(ostream&, Position); // inlined
 	
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
@@ -55,20 +60,43 @@ public:
 	Bit rook_attack(int sq) { return Board::rook_attack(sq, Occupied); } // internal state
 	Bit bishop_attack(int sq) { return Board::bishop_attack(sq, Occupied); };
 	Bit queen_attack(int sq) { return rook_attack(sq) | bishop_attack(sq); }
-	
-	// Attackers query
-	//Bit attacks_from(int sq) { return Board::attacks_from(sq, boardPiece[sq], Color((setbit[sq] & Pieces[W]) == 0), Occupied); }
-
-	//Bit attacks_to(int sq);  // the attackers to a specific square
 
 private:
-	// initialize the default piece positions and internal states
-	void init_default();
-	// refresh the Pieces[] and Occupied
-	void refresh_pieces();
+	void init_default(); // initialize the default piece positions and internal states
+	void refresh_pieces(); // refresh the Pieces[] and Occupied
 };
 
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
+
+
+/* internal state of a position: used to unmake a move */
+class StateInfo
+{
+public:
+	byte castleRights[COLOR_N];
+	uint epSquare;
+	int fiftyMove;
+	int fullMove;
+
+	StateInfo() {}  // default ctor
+
+	StateInfo(Position& pos) : epSquare(pos.epSquare),  // ctor
+		fiftyMove(pos.fiftyMove), fullMove(pos.fullMove)
+	{
+		castleRights[W] = pos.castleRights[W]; castleRights[B] = pos.castleRights[B];
+	}
+};
+#define STATE_RECORD_MAX 1024
+extern StateInfo state_record[STATE_RECORD_MAX];  // keep track of the internal states
+
+// restore from StateInfo
+inline void Position::restoreState(StateInfo& state)
+{
+	castleRights[W] = state.castleRights[W]; castleRights[B] = state.castleRights[B];
+	epSquare = state.epSquare;
+	fiftyMove = state.fiftyMove;
+	fullMove = state.fullMove;
+}
 
 #endif // __position_h__

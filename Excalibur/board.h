@@ -80,9 +80,6 @@ namespace Board
 	inline Bit pawn_push2(int sq, Color c) { return pawn_push2_tbl[sq][c]; }
 	inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
 
-	// Various attacks query. 
-	//inline Bit attacks_from(int sq, PieceType piece, Color c, Bit occup);  // the attack map of the piece on the square
-
 }
 
 
