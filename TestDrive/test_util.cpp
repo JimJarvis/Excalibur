@@ -3,5 +3,5 @@
 // display a separator line
 void blank()
 {
-	cout << "！！！！！！！！！！！！！！" << endl;
+	cout << "！！！！！！！！！！！！！！！！！！！！！" << endl;
 }

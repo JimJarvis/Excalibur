@@ -56,10 +56,15 @@ void init_rook_magics(int sq, int x, int y)
 // Using a unique recoverable coding scheme
 void init_rook_key(int sq, int x, int y)
 {
+	Bit mask, ans; uint perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
 	// generate all 2^bits permutations of the rook cross bitmap
-	int n = bitCount(rook_magics[sq].mask);
+	int n = 0;  // n will eventually store the bitCount of a mask
+	int lsbarray[12];  // store the lsb locations for a particular mask
+	mask = rook_magics[sq].mask;
+	while (mask)
+		lsbarray[n++] = popLSB(mask);
+
 	uint possibility = 1 << n; // 2^n
-	Bit mask, ans; uint lsb, perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
 	// Xm stands for the maximum possible range along that direction. Counterclockwise with S most significant
 	wm = x; em = 7-x; nm = 7-y; sm = y;
 	wjug = ejug = njug = sjug = 0;  // to indicate whether we are on the border or not.
@@ -70,12 +75,10 @@ void init_rook_key(int sq, int x, int y)
 	for (perm = 0; perm < possibility; perm++) 
 	{
 		ans = 0;  // records one particular permutation, which is an occupancy state
-		mask = rook_magics[sq].mask;
 		for (int i = 0; i < n; i++)
 		{
-			lsb = popLSB(mask);  // loop through the mask bits, at most 12
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit[lsb];
+				ans |= setbit[lsbarray[i]];
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
@@ -88,6 +91,7 @@ void init_rook_key(int sq, int x, int y)
 		// second, we map the number to a 1-byte key
 		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
 		key = (east - 1) + (north - 1) *em + (west - 1) *nm*em + (south - 1) *wm*nm*em;
+
 		rook_key[sq][ rhash(sq, ans) ] = key; // store the key to the key_table
 	}
 }
@@ -145,10 +149,15 @@ void init_bishop_magics(int sq, int x, int y)
 
 void init_bishop_key(int sq, int x, int y)
 {
-	// generate all 2^bits permutations of the bishop cross bitmap
-	int n = bitCount(bishop_magics[sq].mask);
+	Bit mask, ans; uint perm, x0, y0, ne, nw, se, sw, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
+	// generate all 2^bits permutations of the rook cross bitmap
+	int n = 0;  // n will eventually store the bitCount of a mask
+	int lsbarray[9];  // store the lsb locations for a particular mask
+	mask = bishop_magics[sq].mask;
+	while (mask)
+		lsbarray[n++] = popLSB(mask);
+
 	uint possibility = 1 << n; // 2^n
-	Bit mask, ans; uint lsb, perm, x0, y0, ne, nw, se, sw, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
 	// Xm stands for the maximum possible range along that diag direction. Counterclockwise with SE most significant
 	//int max = (x > y) ? x : y;
 	auto min = [](int x, int y) { return (x < y) ? x : y; };  // lambda!
@@ -161,12 +170,10 @@ void init_bishop_key(int sq, int x, int y)
 	for (perm = 0; perm < possibility; perm++) 
 	{
 		ans = 0;  // records one particular permutation, which is an occupancy state
-		mask = bishop_magics[sq].mask;
 		for (int i = 0; i < n; i++)
 		{
-			lsb = popLSB(mask);  // loop through the mask bits, at most 12
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit[lsb];
+				ans |= setbit[lsbarray[i]];
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (NE, NW, SE, SW) from the nearest blocker in all 4 directions
@@ -309,26 +316,29 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()
 {
-	Bit mask, ans; uint lsb, perm, possibility, n, jug, tries, i; bool fail;
+	Bit mask, ans; uint i, n, perm, possibility, jug, tries; bool fail; 
 	U64 hashcheck[4096];  // table used to check hash collision
 	U64 allstates[4096];
 	U64 magic;
+	int lsbarray[12];  // store the lsb locations for a particular mask
 	cout << "const U64 ROOK_MAGIC[64] = {" << endl;
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
+		mask = rook_magics[sq].mask;
+		n = 0;  // n will finally be the bitCount(mask)
+		// get the lsb array of the mask
+		while (mask)
+			lsbarray[n++] = popLSB(mask);
 		// generate all 2^bits permutations of the rook cross bitmap
-		n = bitCount(rook_magics[sq].mask);
 		possibility = 1 << n; // 2^n
 		srand(time(NULL));  // reset random seed
 		for (perm = 0; perm < possibility; perm++) 
 		{
 			ans = 0;  // records one particular permutation, which is an occupancy state
-			mask = rook_magics[sq].mask;
 			for (i = 0; i < n; i++)
 			{
-				lsb = popLSB(mask);  // loop through the mask bits, at most 12
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit[lsb];
+					ans |= setbit[lsbarray[i]];
 			}
 			allstates[perm] = ans;
 		}
@@ -338,12 +348,12 @@ void rook_magicU64_generator()
 		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
 			magic = rand_U64_sparse();
-			for (i = 0; i < 4096; i++)	{ hashcheck[i] = 0ULL; } // init
-			for (i = 0, fail = 0; i < possibility && !fail; i++)
+			for (i = 0; i < 4096; i++)	{ hashcheck[i] = -1; } // init: must NOT initialize to 0, otherwise collision possible.
+			for (i = 0, fail = false; i < possibility && !fail; i++)
 			{
 				jug = (allstates[i] * magic) >> 52;
-				if (hashcheck[jug] == 0)  hashcheck[jug] = allstates[i];
-				else if (hashcheck[jug] != allstates[i]) fail = 1;
+				if (hashcheck[jug] == -1)  hashcheck[jug] = allstates[i];
+				else  fail = true;
 			}
 			if (!fail)  {  cout << "0x" << hex << magic << "ULL" << endchar; break; }
 		}
@@ -354,26 +364,29 @@ void rook_magicU64_generator()
 // Bishop magicU64 multiplier generator. Will be pretabulated literals.
 void bishop_magicU64_generator()
 {
-	Bit mask, ans; uint lsb, perm, possibility, n, jug, tries, i; bool fail;
+	Bit mask, ans; uint perm, possibility, n, jug, tries, i; bool fail;
 	U64 hashcheck[512];  // table used to check hash collision
 	U64 allstates[512];
 	U64 magic;
+	int lsbarray[9];  // store the lsb locations for a particular mask
 	cout << "const U64 BISHOP_MAGIC[64] = {" << endl;
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
-		// generate all 2^bits permutations of the bishop cross bitmap
-		n = bitCount(bishop_magics[sq].mask);
+		mask = bishop_magics[sq].mask;
+		n = 0;  // n will finally be the bitCount(mask)
+		// get the lsb array of the mask
+		while (mask)
+			lsbarray[n++] = popLSB(mask);
+		// generate all 2^bits permutations of the rook cross bitmap
 		possibility = 1 << n; // 2^n
 		srand(time(NULL));  // reset random seed
 		for (perm = 0; perm < possibility; perm++) 
 		{
 			ans = 0;  // records one particular permutation, which is an occupancy state
-			mask = bishop_magics[sq].mask;
 			for (i = 0; i < n; i++)
 			{
-				lsb = popLSB(mask);  // loop through the mask bits, at most 12
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit[lsb];
+					ans |= setbit[lsbarray[i]];
 			}
 			allstates[perm] = ans;
 		}
@@ -383,12 +396,12 @@ void bishop_magicU64_generator()
 		for (tries = 0; tries < 10000000; tries++)  // trial and error
 		{
 			magic = rand_U64_sparse();
-			for (i = 0; i < 512; i++)	{ hashcheck[i] = 0ULL; } // init
-			for (i = 0, fail = 0; i < possibility && !fail; i++)
+			for (i = 0; i < 512; i++)	{ hashcheck[i] = -1; } // init: must NOT initialize to 0, otherwise collision possible.
+			for (i = 0, fail = false; i < possibility && !fail; i++)
 			{
 				jug = (allstates[i] * magic) >> 55;
-				if (hashcheck[jug] == 0)  hashcheck[jug] = allstates[i];
-				else if (hashcheck[jug] != allstates[i]) fail = 1;
+				if (hashcheck[jug] == -1)  hashcheck[jug] = allstates[i];
+				else  fail = true;
 			}
 			if (!fail)  {  cout << "0x" << hex << magic << "ULL" << endchar; break; }
 		}

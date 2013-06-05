@@ -18,23 +18,23 @@ U64 Position::perft(int depth, int ply)
 		makeMove(m);
 		if (!isOppKingAttacked())  // make strictly legal move
 		{
-			int count = perft(depth - 1, ply + 1);
-			if (depth == 1)
-			{
-				cout << m << ": ";
-				cout << count << endl;
-			}
-			nodeCount += count;
-			//nodeCount += perft(depth - 1, ply + 1);
+			//U64 count = perft(depth - 1, ply + 1);
 			//if (depth == 1)
 			//{
-			//	if (m.isCapt()) perft_capture ++;
-			//	if (m.isEP()) perft_EP ++;
-			//	if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
-			//	if (m.isPromo()) perft_promo ++;
-			//	if (isOwnKingAttacked()) perft_check ++;
-			//	if (mateStatus() == CHECKMATE) perft_mate ++;
+			//	cout << m << ": ";
+			//	cout << count << endl;
 			//}
+			//nodeCount += count;
+			nodeCount += perft(depth - 1, ply + 1);
+			if (depth == 1)
+			{
+				if (m.isCapt()) perft_capture ++;
+				if (m.isEP()) perft_EP ++;
+				if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
+				if (m.isPromo()) perft_promo ++;
+				if (isOwnKingAttacked()) perft_check ++;
+				if (mateStatus() == CHECKMATE) perft_mate ++;
+			}
 		}
 		unmakeMove(m);
 	}
