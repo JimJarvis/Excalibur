@@ -35,6 +35,7 @@ static const enum PieceType : byte
 	ROOK = 6,        //  110
 	QUEEN = 7,      //  111
 };
+static const PieceType PIECE_TYPES[PIECE_TYPE_N - 2] = {PAWN, KING, KNIGHT, BISHOP, ROOK, QUEEN}; // for iterators
 static const char* PIECE_NAME[PIECE_TYPE_N] = {"", "", "K", "N", "", "B", "R", "Q"};
 
 // single-bit masks

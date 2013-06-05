@@ -288,7 +288,11 @@ void Position::makeMove(Move& mv)
 		case KING: Kings[opponent] ^= ToMap; break;
 		case KNIGHT: Knights[opponent] ^= ToMap; break;
 		case BISHOP: Bishops[opponent] ^= ToMap; break;
-		case ROOK: Rooks[opponent] ^= ToMap; 	break;
+		case ROOK: // if rook is captured, the castling right is canceled
+			if (to == SQ_OO_ROOK[opponent][0])  deleteCastleOO(castleRights[opponent]);
+			else if (to == SQ_OOO_ROOK[opponent][0])  deleteCastleOOO(castleRights[opponent]);
+			Rooks[opponent] ^= ToMap; 
+			break;
 		case QUEEN: Queens[opponent] ^= ToMap; break;
 		}
 		-- pieceCount[opponent][capt];
@@ -315,7 +319,7 @@ void Position::unmakeMove(Move& mv)
 	PieceType piece = mv.getPiece();
 	PieceType capt = mv.getCapt();
 	Color opponent = turn;
-	Color turn = flipColor(turn);
+	turn = flipColor(turn);
 
 	Pieces[turn] ^= FromToMap;
 	boardPiece[from] = piece; // restore
@@ -329,7 +333,7 @@ void Position::unmakeMove(Move& mv)
 		{
 			uint ep_sq = mv.getEP();
 			ToMap = setbit[ep_sq];  // the captured pawn location
-			boardPiece[ep_sq] = PAWN;
+			to = ep_sq;  // will restore the captured pawn later, with all other capturing cases
 		}
 		else if (mv.isPromo())
 		{
@@ -389,6 +393,7 @@ void Position::unmakeMove(Move& mv)
 		}
 		++ pieceCount[opponent][capt];
 		Pieces[opponent] ^= ToMap;
+		boardPiece[to] = capt;  // restore the captured piece
 	}
 
 	Occupied = Pieces[W] | Pieces[B];

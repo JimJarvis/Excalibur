@@ -12,6 +12,31 @@ Position::Position(string fen)
 	parseFEN(fen);
 }
 
+// Copy ctor
+Position::Position(const Position& another)
+{
+	turn = another.turn;
+	epSquare = another.epSquare;
+	fiftyMove = another.fiftyMove;
+	fullMove = another.fullMove;
+	state_pointer = another.state_pointer;
+	Occupied = another.Occupied;
+	for (Color c : COLORS)
+	{
+		castleRights[c] = another.castleRights[c];
+		Pawns[c] = another.Pawns[c];
+		Kings[c] = another.Kings[c];
+		Knights[c] = another.Knights[c];
+		Bishops[c] = another.Bishops[c];
+		Rooks[c] = another.Rooks[c];
+		Queens[c] = another.Queens[c];
+		for (PieceType piece : PIECE_TYPES)
+			pieceCount[c][piece] = another.pieceCount[c][piece];
+	}
+	for (int sq = 0; sq < SQ_N; sq++)
+		boardPiece[sq] = another.boardPiece[sq];
+}
+
 void Position::reset()
 {
 	init_default();
@@ -143,6 +168,75 @@ void Position::parseFEN(string fen0)
 	fen >> fullMove;
 	state_pointer = 0;
 }
+
+// for debugging purpose
+bool operator==(const Position& pos1, const Position& pos2)
+{
+	if (pos1.turn != pos2.turn) 
+		{ cout << "false turn: " << pos1.turn << " != " << pos2.turn << endl;	return false;}
+	if (pos1.epSquare != pos2.epSquare) 
+		{ cout << "false epSquare: " << pos1.epSquare << " != " << pos2.epSquare << endl;	return false;}
+	if (pos1.fiftyMove != pos2.fiftyMove) 
+		{ cout << "false fiftyMove: " << pos1.fiftyMove << " != " << pos2.fiftyMove << endl;	return false;}
+	if (pos1.fullMove != pos2.fullMove) 
+		{ cout << "false fullMove: " << pos1.fullMove << " != " << pos2.fullMove << endl;	return false;}
+	if (pos1.state_pointer != pos2.state_pointer) 
+		{ cout << "false state_pointer: " << pos1.state_pointer << " != " << pos2.state_pointer << endl;	return false;}
+	if (pos1.Occupied != pos2.Occupied) 
+		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
+	for (Color c : COLORS)
+	{
+		if (pos1.castleRights[c] != pos2.castleRights[c]) 
+			{ cout << "false castleRights for Color " << c << ": " << pos1.castleRights[c] << " != " << pos2.castleRights[c] << endl;	return false;}
+		if (pos1.Pawns[c] != pos2.Pawns[c]) 
+			{ cout << "false Pawns for Color " << c << ": " << pos1.Pawns[c] << " != " << pos2.Pawns[c] << endl;	return false;}
+		if (pos1.Kings[c] != pos2.Kings[c]) 
+			{ cout << "false Kings for Color " << c << ": " << pos1.Kings[c] << " != " << pos2.Kings[c] << endl;	return false;}
+		if (pos1.Knights[c] != pos2.Knights[c]) 
+			{ cout << "false Knights for Color " << c << ": " << pos1.Knights[c] << " != " << pos2.Knights[c] << endl;	return false;}
+		if (pos1.Bishops[c] != pos2.Bishops[c]) 
+			{ cout << "false Bishops for Color " << c << ": " << pos1.Bishops[c] << " != " << pos2.Bishops[c] << endl;	return false;}
+		if (pos1.Rooks[c] != pos2.Rooks[c]) 
+			{ cout << "false Rooks for Color " << c << ": " << pos1.Rooks[c] << " != " << pos2.Rooks[c] << endl;	return false;}
+		if (pos1.Queens[c] != pos2.Queens[c])
+			{ cout << "false Queens for Color " << c << ": " << pos1.Queens[c] << " != " << pos2.Queens[c] << endl;	return false;}
+		for (PieceType piece : PIECE_TYPES)
+			if (pos1.pieceCount[c][piece] != pos2.pieceCount[c][piece]) 
+				{ cout << "false pieceCount for Color " << c << " " << PIECE_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
+	}
+	for (int sq = 0; sq < SQ_N; sq++)
+		if (pos1.boardPiece[sq] != pos2.boardPiece[sq]) 
+			{ cout << "false boardPiece for square " << SQ_NAME[sq] << ": " << PIECE_NAME[pos1.boardPiece[sq]] << " != " << PIECE_NAME[pos2.boardPiece[sq]] << endl;	return false;}
+
+	return true;
+}
+/*
+bool Position::operator==(const Position& anotherPos)
+{
+	if (turn != anotherPos.turn) return false;
+	if (epSquare != anotherPos.epSquare) return false;
+	if (fiftyMove != anotherPos.fiftyMove) return false;
+	if (fullMove != anotherPos.fullMove) return false;
+	if (state_pointer != anotherPos.state_pointer) return false;
+	if (Occupied != anotherPos.Occupied) return false;
+	for (Color c : COLORS)
+	{
+		if (castleRights[c] != anotherPos.castleRights[c]) return false;
+		if (Pawns[c] != anotherPos.Pawns[c]) return false;
+		if (Kings[c] != anotherPos.Kings[c]) return false;
+		if (Knights[c] != anotherPos.Knights[c]) return false;
+		if (Bishops[c] != anotherPos.Bishops[c]) return false;
+		if (Rooks[c] != anotherPos.Rooks[c]) return false;
+		if (Queens[c] != anotherPos.Queens[c]) return false;
+		for (PieceType piece : PIECE_TYPES)
+			if (pieceCount[c][piece] != anotherPos.pieceCount[c][piece]) return false;
+	}
+	for (int sq = 0; sq < SQ_N; sq++)
+		if (boardPiece[sq] != anotherPos.boardPiece[sq]) return false;
+
+	return true;
+}
+*/
 
 // Display the full board with letters
 void Position::display()

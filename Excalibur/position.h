@@ -13,6 +13,8 @@ public:
 
 	Position(); // Default constructor
 	Position(string fen); // construct by FEN
+	Position(const Position& another); // copy ctor
+	friend bool operator==(const Position& pos1, const Position& pos2);
 	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
 	Bit Pawns[COLOR_N], Kings[COLOR_N], Knights[COLOR_N], Bishops[COLOR_N], Rooks[COLOR_N], Queens[COLOR_N];
@@ -86,6 +88,13 @@ public:
 	{
 		castleRights[W] = pos.castleRights[W]; castleRights[B] = pos.castleRights[B];
 	}
+	
+	const StateInfo& operator=(const StateInfo& another)
+	{
+		castleRights[W] = another.castleRights[W]; castleRights[B] = another.castleRights[B];
+		epSquare = another.epSquare; fiftyMove = another.fiftyMove; fullMove = another.fullMove;
+		return *this;
+	}
 };
 #define STATE_RECORD_MAX 1024
 extern StateInfo state_record[STATE_RECORD_MAX];  // keep track of the internal states
@@ -94,9 +103,7 @@ extern StateInfo state_record[STATE_RECORD_MAX];  // keep track of the internal 
 inline void Position::restoreState(StateInfo& state)
 {
 	castleRights[W] = state.castleRights[W]; castleRights[B] = state.castleRights[B];
-	epSquare = state.epSquare;
-	fiftyMove = state.fiftyMove;
-	fullMove = state.fullMove;
+	epSquare = state.epSquare; fiftyMove = state.fiftyMove; fullMove = state.fullMove;
 }
 
 #endif // __position_h__
