@@ -54,6 +54,27 @@ TEST(Move, Generator4)
 		ASSERT_EQ(generator_assertion[i], pos0.moveBuffer[i]);
 }
 
+TEST(Move, Checks)
+{
+	bool verbose = false;
+	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
+	pos0.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
+	int end = pos0.moveGen(0);
+	int check = 0, quiet = 0; // count checking moves
+	for (int i = 0; i < end; i++)
+	{
+		Move m = pos0.moveBuffer[i];
+		pos0.makeMove(m);
+		if (pos0.isOwnKingAttacked())  // display checking moves
+			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
+		else // display non-threatening moves to the opposite king
+			{ if (verbose) cout << "non: " <<  m << endl;  quiet ++; }
+		pos0.unmakeMove(m);
+	}
+	ASSERT_EQ(16, check);
+	ASSERT_EQ(43, quiet);
+}
+
 TEST(Move, Piece)
 {
 	PieceType nonsliders[3] = {KING, KNIGHT, PAWN};
@@ -153,6 +174,23 @@ TEST(Move, Judgement)
 	ASSERT_FALSE(m.isPawnMove());
 }
 
+
+/* some other useful debugging info from perft */
+U64 perft_capture, perft_EP, perft_castle, perft_promo, perft_check;
+
+TEST(Move, Perft)
+{
+	pos0.reset();
+	for (int depth = 1; depth <= 7; depth ++)
+	{
+		perft_capture = perft_EP = perft_castle = perft_promo = perft_check = 0;
+		cout << "Depth " << depth << endl;
+		cout << "Nodes searched: " << pos0.perft(depth) << endl;
+		cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Checks = " << perft_check 
+			<< "; Promotion = " << perft_promo << "; Castles = " << perft_castle << endl;
+	}
+}
+
 TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unmake
 {
 	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
@@ -179,7 +217,7 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
 	}
 }
 
-TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 3
+TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 3. Non-recursive version
 {
 	pos0.parseFEN("r3k1qr/p3pP2/8/1pPB4/2N2pPp/8/PP1P3P/R3K2R b KQkq g3 2 30"); 
 	int end1, end2, end3;

@@ -20,7 +20,4 @@ using namespace std;
 /* test-oriented functions */
 void blank();
 
-// Performance testing: speed and accuracy. Return node count
-U64 perft(int depth);
-
 #endif // __alltest_h__

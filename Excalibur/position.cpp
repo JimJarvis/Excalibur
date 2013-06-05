@@ -38,11 +38,6 @@ Position::Position(const Position& another)
 		boardPiece[sq] = another.boardPiece[sq];
 }
 
-void Position::reset()
-{
-	init_default();
-}
-
 // initialize the default position bitmaps
 void Position::init_default()
 {

@@ -35,7 +35,7 @@ public:
 	int state_pointer;  // points to the current in "extern state_record" array
 	void restoreState(StateInfo& state); // inlined
 
-	void reset();  // reset to initial position
+	void reset() { init_default(); }  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Position); // inlined later
@@ -53,6 +53,10 @@ public:
 	void makeMove(Move& mv);   // make the move and update internal states
 	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
 
+	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
+	// raw node number counting: strictly legal moves.
+	U64 perft(int depth, int ply);
+	U64 perft(int depth) { return perft(depth, 0); } // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// non-sliding pieces
