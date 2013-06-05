@@ -23,7 +23,7 @@ int Position::moveGen(int index)
 		from = popLSB(TempPiece);
 		mv.setFrom(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
-		if (RANKS[from] == (turn==W ? 1 : 6) && TempMove != 0) // double push
+		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
 		TempMove |= pawn_attack(from) & Pieces[opponent];  // pawn capture
 		while (TempMove)
@@ -31,7 +31,7 @@ int Position::moveGen(int index)
 			to = popLSB(TempMove);
 			mv.setTo(to);
 			mv.setCapt(boardPiece[to]);
-			if (RANKS[to] == (turn==W ? 7 : 0)) // add promotion
+			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
 			{
 				mv.setPromo(QUEEN); update;
 				mv.setPromo(ROOK); update;
@@ -47,7 +47,7 @@ int Position::moveGen(int index)
 			if (pawn_attack(from) & setbit[epSquare])
 			{
 				// final check to avoid same color capture
-				uint ep_capture_sq = epSquare + (opponent==W ? 8: -8);
+				uint ep_capture_sq = Board::backward_sq(epSquare, turn);
 				if (Pawns[opponent] & setbit[ep_capture_sq])
 				{
 					mv.setEP(ep_capture_sq);
@@ -198,8 +198,7 @@ StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
  */
 void Position::makeMove(Move& mv)
 {
-	// store the internal state for future recovery
-	state_record[state_pointer ++] = *this;
+	state_record[state_pointer ++] = *this; // store the internal state for future recovery
 
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
@@ -220,8 +219,8 @@ void Position::makeMove(Move& mv)
 	case PAWN:
 		Pawns[turn] ^= FromToMap;
 		fiftyMove = 0;  // any pawn move resets the fifty-move clock
-		if (RANKS[from] == (turn==W ? 1: 6) && RANKS[to] == (turn==W ? 3: 4))
-			epSquare = from + (turn==W ? 8 : -8);  // pawn double push: new ep square
+		if (ToMap == pawn_push2(from)) // if pawn double push
+			epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
 		if (mv.isEP())  // en-passant capture
 		{
 			uint ep_sq = mv.getEP();
@@ -312,6 +311,8 @@ void Position::makeMove(Move& mv)
  */
 void Position::unmakeMove(Move& mv)
 {
+	restoreState(state_record[--state_pointer]); // recover the state from previous position
+
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
@@ -397,6 +398,5 @@ void Position::unmakeMove(Move& mv)
 	}
 
 	Occupied = Pieces[W] | Pieces[B];
-
-	restoreState(state_record[--state_pointer]);
 }
+

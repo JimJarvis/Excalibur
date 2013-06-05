@@ -6,15 +6,13 @@ namespace Board
 // Because we extern the tables in board.h, we must explicitly declare them again:
 Bit knight_tbl[SQ_N], king_tbl[SQ_N];
 Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
-byte rook_key[SQ_N][4096]; 
-Bit rook_tbl[4900]; 
-byte bishop_key[SQ_N][512];
-Bit bishop_tbl[1428]; 
-Magics rook_magics[SQ_N];
-Magics bishop_magics[SQ_N]; 
+uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N]; 
+byte rook_key[SQ_N][4096]; Bit rook_tbl[4900]; 
+byte bishop_key[SQ_N][512]; Bit bishop_tbl[1428]; 
+Magics rook_magics[SQ_N]; Magics bishop_magics[SQ_N]; 
 
 // initialize *_attack[][] tables
-void init_attack_tables()
+void init_tables()
 {
 	// rank_attack
 	for (int sq = 0; sq < SQ_N; ++sq)
@@ -40,6 +38,7 @@ void init_attack_tables()
 			init_pawn_atk_tbl(sq, x, y, c);
 			init_pawn_push_tbl(sq, x, y, c);
 			init_pawn_push2_tbl(sq, x, y, c);
+			init_forward_backward_sq_tbl(sq, x, y, c);
 		}
 	}
 }
@@ -291,14 +290,21 @@ void init_pawn_push2_tbl( int sq, int x, int y, Color c )
 		pawn_push2_tbl[sq][c] = 0;
 }
 
-// Attack map of the piece on a square
-//Bit attacks_from(int sq, PieceType piece, Color c, Bit occup)
-//{
-//	switch (piece)
-//	{
-//	case PAWN:  break;
-//	}
-//}
+void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
+{
+	int offset = c==W ? 8: -8;
+
+	if (y == (c==W ? 7: 0))
+		forward_sq_tbl[sq][c] = INVALID_SQ;
+	else 
+		forward_sq_tbl[sq][c] = sq + offset;
+
+	if (y == (c==W ? 0: 7))
+		backward_sq_tbl[sq][c] = INVALID_SQ;
+	else
+		backward_sq_tbl[sq][c] = sq - offset;
+}
+
 
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()

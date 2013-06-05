@@ -13,7 +13,7 @@ Position pos;
 TEST(Board, FEN)
 {
 	// Init all test suite:
-	Board::init_attack_tables();
+	Board::init_tables();
 
 	pos.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_EQ(pos.Occupied, 0xfffb00041000efff);	

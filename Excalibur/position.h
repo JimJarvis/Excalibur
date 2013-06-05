@@ -37,7 +37,7 @@ public:
 	void reset();  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
-	friend ostream& operator<<(ostream&, Position); // inlined
+	friend ostream& operator<<(ostream&, Position); // inlined later
 	
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
@@ -46,6 +46,8 @@ public:
 	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 	int moveGen(int index);   // return the new index in move buffer
 	bool isAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
+	bool isOwnKingAttacked() { return isAttacked(Kings[turn], flipColor(turn)); } // legality check
+	bool isOppKingAttacked() { return isAttacked(Kings[flipColor(turn)], turn); }
 	void makeMove(Move& mv);   // make the move and update internal states
 	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
 

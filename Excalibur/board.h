@@ -6,28 +6,31 @@
 namespace Board
 {
 	// Initialize *_attack[][] table. Called once at program start. 
-	void init_attack_tables();
+	void init_tables();
 
 	// Precalculated attack tables for non-sliding pieces
 	extern Bit knight_tbl[SQ_N], king_tbl[SQ_N];
 	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
 	extern Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
+	extern uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
+	static const uint INVALID_SQ = 100;  // denote an invalid square in forward/backward tables
 	// for none-sliding pieces: private functions used only to initialize the tables
-	void init_knight_tbl(int pos, int x, int y);
-	void init_king_tbl(int pos, int x, int y);
-	void init_pawn_atk_tbl(int pos, int x, int y, Color c);
-	void init_pawn_push_tbl(int pos, int x, int y, Color c);
-	void init_pawn_push2_tbl(int pos, int x, int y, Color c);
+	void init_knight_tbl(int sq, int x, int y);
+	void init_king_tbl(int sq, int x, int y);
+	void init_pawn_atk_tbl(int sq, int x, int y, Color c);
+	void init_pawn_push_tbl(int sq, int x, int y, Color c);
+	void init_pawn_push2_tbl(int sq, int x, int y, Color c);
+	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
 
 	// Precalculated attack tables for sliding pieces. 
 	extern byte rook_key[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
-	void init_rook_key(int pos, int x, int y);
+	void init_rook_key(int sq, int x, int y);
 	extern Bit rook_tbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
-	void init_rook_tbl(int pos, int x, int y);
+	void init_rook_tbl(int sq, int x, int y);
 	extern byte bishop_key[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
-	void init_bishop_key(int pos, int x, int y);
+	void init_bishop_key(int sq, int x, int y);
 	extern Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
-	void init_bishop_tbl(int pos, int x, int y);
+	void init_bishop_tbl(int sq, int x, int y);
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -37,8 +40,8 @@ namespace Board
 	};
 	extern Magics rook_magics[SQ_N];  // for each square
 	extern Magics bishop_magics[SQ_N]; 
-	void init_rook_magics(int pos, int x, int y);
-	void init_bishop_magics(int pos, int x, int y);
+	void init_rook_magics(int sq, int x, int y);
+	void init_bishop_magics(int sq, int x, int y);
 
 	// Generate the U64 magic multipliers. Won't actually be run. Pretabulated literals
 	void rook_magicU64_generator();  // will display the results to stdout
@@ -79,7 +82,8 @@ namespace Board
 	inline Bit pawn_push(int sq, Color c) { return pawn_push_tbl[sq][c]; }
 	inline Bit pawn_push2(int sq, Color c) { return pawn_push2_tbl[sq][c]; }
 	inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
-
+	inline uint forward_sq(int sq, Color c) { return forward_sq_tbl[sq][c]; }
+	inline uint backward_sq(int sq, Color c) { return backward_sq_tbl[sq][c]; }
 }
 
 
