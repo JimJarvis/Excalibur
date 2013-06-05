@@ -24,6 +24,7 @@ Position::Position(const Position& another)
 	for (Color c : COLORS)
 	{
 		castleRights[c] = another.castleRights[c];
+		kingSq[c] = another.kingSq[c];
 		Pawns[c] = another.Pawns[c];
 		Kings[c] = another.Kings[c];
 		Knights[c] = another.Knights[c];
@@ -57,7 +58,7 @@ void Position::init_default()
 	Bishops[B] = 0x2400000000000000;
 	Knights[B] = 0x4200000000000000;
 	Pawns[B] = 0x00ff000000000000;
-	refresh_pieces();
+	refresh_maps();
 	
 	for (int pos = 0; pos < SQ_N; pos++)
 		boardPiece[pos] = NON;
@@ -84,13 +85,17 @@ void Position::init_default()
 	turn = W;  // white goes first
 	epSquare = 0;
 	state_pointer = 0;
+	moveBufEnds[0] = 0;
 }
 
-// refresh the pieces
-void Position::refresh_pieces()
+// refresh the maps and king position
+void Position::refresh_maps()
 {
 	for (Color c : COLORS)
+	{
 		Pieces[c] = Pawns[c] | Kings[c] | Knights[c] | Bishops[c] | Rooks[c] | Queens[c];
+		kingSq[c] = LSB(Kings[c]);
+	}
 	Occupied = Pieces[W] | Pieces[B];
 }
 
@@ -142,7 +147,7 @@ void Position::parseFEN(string fen0)
 			file ++;
 		}
 	}
-	refresh_pieces();
+	refresh_maps();
 	turn =  fen.get()=='w' ? W : B;  // indicate active part
 	fen.get(); // consume the space
 	castleRights[W] = castleRights[B] = 0;
@@ -167,6 +172,7 @@ void Position::parseFEN(string fen0)
 	fen >> fiftyMove;
 	fen >> fullMove;
 	state_pointer = 0;
+	moveBufEnds[0] = 0;
 }
 
 // for debugging purpose
@@ -188,6 +194,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 	{
 		if (pos1.castleRights[c] != pos2.castleRights[c]) 
 			{ cout << "false castleRights for Color " << c << ": " << pos1.castleRights[c] << " != " << pos2.castleRights[c] << endl;	return false;}
+		if (pos1.kingSq[c] != pos2.kingSq[c])
+			{ cout << "false kingSq for Color" << c << ": " << pos1.kingSq[c] << " != " << pos2.kingSq[c] << endl; return false;	}
 		if (pos1.Pawns[c] != pos2.Pawns[c]) 
 			{ cout << "false Pawns for Color " << c << ": " << pos1.Pawns[c] << " != " << pos2.Pawns[c] << endl;	return false;}
 		if (pos1.Kings[c] != pos2.Kings[c]) 
@@ -208,35 +216,9 @@ bool operator==(const Position& pos1, const Position& pos2)
 		if (pos1.boardPiece[sq] != pos2.boardPiece[sq]) 
 			{ cout << "false boardPiece for square " << SQ_NAME[sq] << ": " << PIECE_NAME[pos1.boardPiece[sq]] << " != " << PIECE_NAME[pos2.boardPiece[sq]] << endl;	return false;}
 
-	return true;
+	return true; // won't display anything if the test passes
 }
-/*
-bool Position::operator==(const Position& anotherPos)
-{
-	if (turn != anotherPos.turn) return false;
-	if (epSquare != anotherPos.epSquare) return false;
-	if (fiftyMove != anotherPos.fiftyMove) return false;
-	if (fullMove != anotherPos.fullMove) return false;
-	if (state_pointer != anotherPos.state_pointer) return false;
-	if (Occupied != anotherPos.Occupied) return false;
-	for (Color c : COLORS)
-	{
-		if (castleRights[c] != anotherPos.castleRights[c]) return false;
-		if (Pawns[c] != anotherPos.Pawns[c]) return false;
-		if (Kings[c] != anotherPos.Kings[c]) return false;
-		if (Knights[c] != anotherPos.Knights[c]) return false;
-		if (Bishops[c] != anotherPos.Bishops[c]) return false;
-		if (Rooks[c] != anotherPos.Rooks[c]) return false;
-		if (Queens[c] != anotherPos.Queens[c]) return false;
-		for (PieceType piece : PIECE_TYPES)
-			if (pieceCount[c][piece] != anotherPos.pieceCount[c][piece]) return false;
-	}
-	for (int sq = 0; sq < SQ_N; sq++)
-		if (boardPiece[sq] != anotherPos.boardPiece[sq]) return false;
 
-	return true;
-}
-*/
 
 // Display the full board with letters
 void Position::display()

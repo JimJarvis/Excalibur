@@ -17,7 +17,10 @@ using namespace std;
 // include headers in Excalibur
 #include "position.h"
 
-// test-oriented functions
+/* test-oriented functions */
 void blank();
+
+// Performance testing: speed and accuracy. Return node count
+U64 perft(int depth);
 
 #endif // __alltest_h__

@@ -7,7 +7,7 @@
  */
 int Position::moveGen(int index)
 {
-	Color opponent = flipColor(turn);
+	Color opponent = flipColor[turn];
 	Bit Freesq = ~Occupied;
 	Bit Target = ~Pieces[turn];   // attack the other side
 	Bit TempPiece, TempMove;
@@ -152,13 +152,13 @@ int Position::moveGen(int index)
 		if (canCastleOO(castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
-				if (!isAttacked(CASTLE_MASK[turn][CASTLE_EG], opponent))
+				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_EG], opponent))
 					moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
 		}
 		if (canCastleOOO(castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
-				if (!isAttacked(CASTLE_MASK[turn][CASTLE_CE], opponent))
+				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_CE], opponent))
 					moveBuffer[index ++] = MOVE_OOO_KING[turn];  // pre-stored king's castling move
 		}
 	}
@@ -170,10 +170,10 @@ int Position::moveGen(int index)
  *	Move legality test to see if any '1' in Target is attacked by the specific color
  * for check detection and castling legality
  */
-bool Position::isAttacked(Bit Target, Color attacker_side)
+bool Position::isBitAttacked(Bit Target, Color attacker_side)
 {
 	uint to;
-	Color defender_side = flipColor(attacker_side);
+	Color defender_side = flipColor[attacker_side];
 	Bit pawn_map = Pawns[attacker_side];
 	Bit knight_map = Knights[attacker_side];
 	Bit king_map = Kings[attacker_side];
@@ -182,14 +182,15 @@ bool Position::isAttacked(Bit Target, Color attacker_side)
 	while (Target)
 	{
 		to = popLSB(Target);
-		if (pawn_map & Board::pawn_attack(to, defender_side))  return true; 
 		if (knight_map & Board::knight_attack(to))  return true; 
 		if (king_map & Board::king_attack(to))  return true; 
+		if (pawn_map & Board::pawn_attack(to, defender_side))  return true; 
 		if (ortho_slider_map & rook_attack(to))  return true; 
 		if (diag_slider_map & bishop_attack(to))  return true;
 	}
 	return false; 
 }
+
 
 
 StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
@@ -206,7 +207,7 @@ void Position::makeMove(Move& mv)
 	Bit FromToMap = setbit[from] | ToMap;
 	PieceType piece = mv.getPiece();
 	PieceType capt = mv.getCapt();
-	Color opponent = flipColor(turn);
+	Color opponent = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
 	boardPiece[from] = NON;
@@ -245,6 +246,7 @@ void Position::makeMove(Move& mv)
 
 	case KING:
 		Kings[turn] ^= FromToMap; 
+		kingSq[turn] = to; // update king square
 		castleRights[turn] = 0;  // cannot castle any more
 		if (mv.isCastleOO())
 		{
@@ -320,7 +322,7 @@ void Position::unmakeMove(Move& mv)
 	PieceType piece = mv.getPiece();
 	PieceType capt = mv.getCapt();
 	Color opponent = turn;
-	turn = flipColor(turn);
+	turn = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
 	boardPiece[from] = piece; // restore
@@ -353,7 +355,8 @@ void Position::unmakeMove(Move& mv)
 		break;
 
 	case KING:
-		Kings[turn] ^= FromToMap; 
+		Kings[turn] ^= FromToMap;
+		kingSq[turn] = from; // restore the original king position
 		if (mv.isCastleOO())
 		{
 			Rooks[turn] ^= MASK_OO_ROOK[turn];

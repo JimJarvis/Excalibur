@@ -24,6 +24,7 @@ static const enum Color : byte
 	B = 1
 };
 static const Color COLORS[COLOR_N] = {W, B}; // for iterator
+static const Color flipColor[COLOR_N] = {B, W};
 
 static const enum PieceType : byte
 {

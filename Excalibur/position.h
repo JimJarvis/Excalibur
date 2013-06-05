@@ -18,8 +18,9 @@ public:
 	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
 	Bit Pawns[COLOR_N], Kings[COLOR_N], Knights[COLOR_N], Bishops[COLOR_N], Rooks[COLOR_N], Queens[COLOR_N];
-	Bit Pieces[COLOR_N];
+	Bit Pieces[COLOR_N];  // entire white/black army
 	Bit Occupied;  // everything
+	uint kingSq[COLOR_N];  // king square
 
 	// Incrementally updated info, for fast access:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
@@ -45,9 +46,10 @@ public:
 	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 	int moveGen(int index);   // return the new index in move buffer
-	bool isAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
-	bool isOwnKingAttacked() { return isAttacked(Kings[turn], flipColor(turn)); } // legality check
-	bool isOppKingAttacked() { return isAttacked(Kings[flipColor(turn)], turn); }
+	bool isBitAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
+	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
+	bool isOwnKingAttacked() { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check
+	bool isOppKingAttacked() { return isSqAttacked(kingSq[flipColor[turn]], turn); }
 	void makeMove(Move& mv);   // make the move and update internal states
 	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
 
@@ -67,11 +69,22 @@ public:
 
 private:
 	void init_default(); // initialize the default piece positions and internal states
-	void refresh_pieces(); // refresh the Pieces[] and Occupied
+	void refresh_maps(); // refresh the Pieces[] and Occupied
 };
 
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
+
+// Check if a single square is attacked. For check detection
+inline bool Position::isSqAttacked(uint sq, Color attacker_side)
+{
+	if (Knights[attacker_side] & Board::knight_attack(sq)) return true;
+	if (Kings[attacker_side] & Board::king_attack(sq)) return true;
+	if (Pawns[attacker_side] & Board::pawn_attack(sq, flipColor[attacker_side])) return true;
+	if ((Rooks[attacker_side] | Queens[attacker_side]) & rook_attack(sq)) return true; // orthogonal slider
+	if ((Bishops[attacker_side] | Queens[attacker_side]) & bishop_attack(sq)) return true; // diagonal slider
+	return false;
+}
 
 
 /* internal state of a position: used to unmake a move */
