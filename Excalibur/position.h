@@ -52,6 +52,8 @@ public:
 	bool isOppKingAttacked() { return isSqAttacked(kingSq[flipColor[turn]], turn); }
 	void makeMove(Move& mv);   // make the move and update internal states
 	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
+	// use exhaustive make/unmakeMove for stale/checkmate states. Very expensive.
+	int mateStatus();  // return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.

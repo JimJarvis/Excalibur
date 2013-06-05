@@ -1,13 +1,11 @@
 #include "tests.h"
 
-extern U64 perft_capture, perft_castle, perft_promo, perft_EP, perft_check;
+extern U64 perft_capture, perft_castle, perft_promo, perft_EP, perft_check, perft_mate;
 
 // return raw node count
 U64 Position::perft(int depth, int ply)
 {
 	U64 nodeCount = 0;
-	
-
 	if (depth == 0) return 1;  // root
 
 	int currentBuf, nextBuf; Move m;
@@ -20,18 +18,26 @@ U64 Position::perft(int depth, int ply)
 		makeMove(m);
 		if (!isOppKingAttacked())  // make strictly legal move
 		{
-			nodeCount += perft(depth - 1, ply + 1);
+			int count = perft(depth - 1, ply + 1);
 			if (depth == 1)
 			{
-				if (m.isCapt()) perft_capture ++;
-				if (m.isEP()) perft_EP ++;
-				if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
-				if (m.isPromo()) perft_promo ++;
-				if (isOwnKingAttacked()) perft_check ++;
+				cout << m << ": ";
+				cout << count << endl;
 			}
+			nodeCount += count;
+			//nodeCount += perft(depth - 1, ply + 1);
+			//if (depth == 1)
+			//{
+			//	if (m.isCapt()) perft_capture ++;
+			//	if (m.isEP()) perft_EP ++;
+			//	if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
+			//	if (m.isPromo()) perft_promo ++;
+			//	if (isOwnKingAttacked()) perft_check ++;
+			//	if (mateStatus() == CHECKMATE) perft_mate ++;
+			//}
 		}
 		unmakeMove(m);
 	}
-
+	
 	return nodeCount;
 }

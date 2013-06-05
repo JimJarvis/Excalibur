@@ -192,7 +192,6 @@ bool Position::isBitAttacked(Bit Target, Color attacker_side)
 }
 
 
-
 StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
 /*
  *	Make move and update the Position internal states
@@ -403,3 +402,25 @@ void Position::unmakeMove(Move& mv)
 	Occupied = Pieces[W] | Pieces[B];
 }
 
+// return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
+int Position::mateStatus()
+{
+	bool isDead = true;  // can be check OR stalemate
+	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
+	// 4096 - 218, 218 is the most move a legal position can ever make
+	const int start = 3878;  
+	int end = moveGen(start);
+	Move m;
+	for (int i = start; i < end; i++)
+	{
+		m = moveBuffer[i];
+		makeMove(m);
+		if (!isOppKingAttacked())  // make strictly legal move
+			isDead = false;  // found a legal move
+		unmakeMove(m);
+	}
+	if (isDead) 
+		return (isOwnKingAttacked()) ? CHECKMATE : STALEMATE;
+	else
+		return 0;  // good and sound
+}

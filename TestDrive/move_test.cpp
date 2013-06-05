@@ -4,7 +4,7 @@ Position pos0;
 
 TEST(Move, Generator1)
 {
-	pos0.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); 
+	pos0.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
 	
 	/* Generate the assertion results
 	int end = pos2.moveGen(0);
@@ -174,21 +174,40 @@ TEST(Move, Judgement)
 	ASSERT_FALSE(m.isPawnMove());
 }
 
+TEST(Move, GeneratorExtra)
+{
+	pos0.parseFEN("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1");
+	int end = pos0.moveGen(0);
+	for (int i = 0; i < end; i++)
+	{
+		cout << pos0.moveBuffer[i] << endl;
+	}
+}
 
-/* some other useful debugging info from perft */
-U64 perft_capture, perft_EP, perft_castle, perft_promo, perft_check;
+/*
+ *	Perft test result check
+ * http://chessprogramming.wikispaces.com/Perft+Results
+ */
+// some other useful debugging info from perft
+U64 perft_capture, perft_EP, perft_castle, perft_promo, perft_check, perft_mate;
 
 TEST(Move, Perft)
 {
-	pos0.reset();
-	for (int depth = 1; depth <= 7; depth ++)
+	pos0.parseFEN("n1n5/PPP5/2k5/8/8/8/4Kppp/5N1N w - - 1 2");
+	pos0.parseFEN("nQn5/P1P5/2k5/8/8/8/4Kppp/5N1N b - - 0 2");
+	for (int depth = 1; depth <= 1; depth ++)
 	{
-		perft_capture = perft_EP = perft_castle = perft_promo = perft_check = 0;
+		perft_capture = perft_EP = perft_castle = perft_promo = perft_check = perft_mate = 0;
 		cout << "Depth " << depth << endl;
 		cout << "Nodes searched: " << pos0.perft(depth) << endl;
-		cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Checks = " << perft_check 
-			<< "; Promotion = " << perft_promo << "; Castles = " << perft_castle << endl;
+		cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Castles = " << perft_castle 
+			<< ";Promotions = " << perft_promo << "; Checks = " << perft_check << "; Mates = " << perft_mate << endl;
+		blank();
 	}
+	cout << (pos0.isSqAttacked(33, W) ? "true" : "FAIL") << endl;
+	dispBit(pos0.Queens[W]);
+	dispBit(pos0.Rooks[W]);
+	dispBit(pos0.rook_attack(33));
 }
 
 TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unmake
@@ -220,8 +239,9 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
 TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 3. Non-recursive version
 {
 	pos0.parseFEN("r3k1qr/p3pP2/8/1pPB4/2N2pPp/8/PP1P3P/R3K2R b KQkq g3 2 30"); 
-	int end1, end2, end3;
-	Move m1, m2, m3;
+	pos0.parseFEN("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1");
+	int end1, end2, end3, end4;
+	Move m1, m2, m3, m4;
 	Position pos_orig1 = pos0;
 	end1 = pos0.moveGen(0);
 	for (int i1 = 0; i1 < end1; i1++) // testing all possible moves up to 3 depths
@@ -239,16 +259,24 @@ TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 3. No
 			for (int i3 = end2; i3 < end3; i3++)
 			{
 				m3 = pos0.moveBuffer[i3];
-				//cout << "Depth 1: " << m1 << "; 2: " << m2 << "; 3: " <<  m3 << endl;
 				pos0.makeMove(m3);
+				Position pos_orig4 = pos0;
+				end4 = pos0.moveGen(end3);
+				for (int i4 = end3; i4 < end4; i4++)
+				{
+					m4 = pos0.moveBuffer[i4];
+					pos0.makeMove(m4);
+					pos0.unmakeMove(m4);
+					ASSERT_EQ(pos_orig4, pos0)<< "depth 4 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
+				}
 				// begin unmaking all 3 moves consecutively
 				pos0.unmakeMove(m3);
-				ASSERT_EQ(pos_orig3, pos0) << "depth 3 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 ;
+				ASSERT_EQ(pos_orig3, pos0) << "depth 3 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 			}
 			pos0.unmakeMove(m2);
-			ASSERT_EQ(pos_orig2, pos0) << "depth 2 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 ;
+			ASSERT_EQ(pos_orig2, pos0) << "depth 2 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 		}
 		pos0.unmakeMove(m1);
-		ASSERT_EQ(pos_orig1, pos0) << "depth 1 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 ;
+		ASSERT_EQ(pos_orig1, pos0) << "depth 1 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 	}
 }
