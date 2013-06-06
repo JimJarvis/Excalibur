@@ -19,7 +19,7 @@ Position::Position(const Position& another)
 	epSquare = another.epSquare;
 	fiftyMove = another.fiftyMove;
 	fullMove = another.fullMove;
-	state_pointer = another.state_pointer;
+	//state_pointer = another.state_pointer;
 	Occupied = another.Occupied;
 	for (Color c : COLORS)
 	{
@@ -31,11 +31,40 @@ Position::Position(const Position& another)
 		Bishops[c] = another.Bishops[c];
 		Rooks[c] = another.Rooks[c];
 		Queens[c] = another.Queens[c];
+		Pieces[c] = another.Pieces[c];
 		for (PieceType piece : PIECE_TYPES)
 			pieceCount[c][piece] = another.pieceCount[c][piece];
 	}
 	for (int sq = 0; sq < SQ_N; sq++)
 		boardPiece[sq] = another.boardPiece[sq];
+}
+
+// Assignment
+const Position& Position::operator=(const Position& another)
+{
+	turn = another.turn;
+	epSquare = another.epSquare;
+	fiftyMove = another.fiftyMove;
+	fullMove = another.fullMove;
+	//state_pointer = another.state_pointer;
+	Occupied = another.Occupied;
+	for (Color c : COLORS)
+	{
+		castleRights[c] = another.castleRights[c];
+		kingSq[c] = another.kingSq[c];
+		Pawns[c] = another.Pawns[c];
+		Kings[c] = another.Kings[c];
+		Knights[c] = another.Knights[c];
+		Bishops[c] = another.Bishops[c];
+		Rooks[c] = another.Rooks[c];
+		Queens[c] = another.Queens[c];
+		Pieces[c] = another.Pieces[c];
+		for (PieceType piece : PIECE_TYPES)
+			pieceCount[c][piece] = another.pieceCount[c][piece];
+	}
+	for (int sq = 0; sq < SQ_N; sq++)
+		boardPiece[sq] = another.boardPiece[sq];
+	return *this;
 }
 
 // initialize the default position bitmaps
@@ -79,7 +108,7 @@ void Position::init_default()
 	fullMove = 1;
 	turn = W;  // white goes first
 	epSquare = 0;
-	state_pointer = 0;
+	//state_pointer = 0;
 	moveBufEnds[0] = 0;
 }
 
@@ -166,7 +195,7 @@ void Position::parseFEN(string fen0)
 		epSquare = 0;
 	fen >> fiftyMove;
 	fen >> fullMove;
-	state_pointer = 0;
+	//state_pointer = 0;
 	moveBufEnds[0] = 0;
 }
 
@@ -181,8 +210,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false fiftyMove: " << pos1.fiftyMove << " != " << pos2.fiftyMove << endl;	return false;}
 	if (pos1.fullMove != pos2.fullMove) 
 		{ cout << "false fullMove: " << pos1.fullMove << " != " << pos2.fullMove << endl;	return false;}
-	if (pos1.state_pointer != pos2.state_pointer) 
-		{ cout << "false state_pointer: " << pos1.state_pointer << " != " << pos2.state_pointer << endl;	return false;}
+	//if (pos1.state_pointer != pos2.state_pointer) 
+	//	{ cout << "false state_pointer: " << pos1.state_pointer << " != " << pos2.state_pointer << endl;	return false;}
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (Color c : COLORS)

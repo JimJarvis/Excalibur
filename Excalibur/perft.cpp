@@ -1,4 +1,4 @@
-#include "tests.h"
+#include "position.h"
 
 extern U64 perft_capture, perft_castle, perft_promo, perft_EP, perft_check, perft_mate;
 
@@ -26,15 +26,15 @@ U64 Position::perft(int depth, int ply)
 			//}
 			//nodeCount += count;
 			nodeCount += perft(depth - 1, ply + 1);
-			if (depth == 1)
-			{
-				if (m.isCapt()) perft_capture ++;
-				if (m.isEP()) perft_EP ++;
-				if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
-				if (m.isPromo()) perft_promo ++;
-				if (isOwnKingAttacked()) perft_check ++;
-				if (mateStatus() == CHECKMATE) perft_mate ++;
-			}
+			//if (depth == 1)
+			//{
+			//	if (m.isCapt()) perft_capture ++;
+			//	if (m.isEP()) perft_EP ++;
+			//	if (m.isCastleOO() | m.isCastleOOO())  perft_castle ++;
+			//	if (m.isPromo()) perft_promo ++;
+			//	if (isOwnKingAttacked()) perft_check ++;
+			//	if (mateStatus() == CHECKMATE) perft_mate ++;
+			//}
 		}
 		unmakeMove(m);
 	}

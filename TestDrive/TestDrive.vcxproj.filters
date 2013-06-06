@@ -44,8 +44,8 @@
     <ClCompile Include="..\Excalibur\move.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="perft.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\Excalibur\perft.cpp">
+      <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

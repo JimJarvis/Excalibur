@@ -1,6 +1,9 @@
 #include "position.h"
 #define update moveBuffer[index++] = mv // add an entry to the buffer
 
+Move moveBuffer[4096];
+int moveBufEnds[64];
+
 /* generate a pseudo-legal move and store it into a board buffer
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
@@ -192,13 +195,17 @@ bool Position::isBitAttacked(Bit Target, Color attacker_side)
 }
 
 
-StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
+//StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
+Position position_stack[STATE_RECORD_MAX];
+
 /*
  *	Make move and update the Position internal states
  */
+int state_pointer = 0;
 void Position::makeMove(Move& mv)
 {
-	state_record[state_pointer ++] = *this; // store the internal state for future recovery
+	//state_record[state_pointer ++] = *this; // store the internal state for future recovery
+	position_stack[state_pointer ++] = *this;
 
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
@@ -308,8 +315,7 @@ void Position::makeMove(Move& mv)
 }
 
 /*
- *	Unmake move and restore the Position internal states
- */
+// Unmake move and restore the Position internal states
 void Position::unmakeMove(Move& mv)
 {
 	restoreState(state_record[--state_pointer]); // recover the state from previous position
@@ -382,7 +388,7 @@ void Position::unmakeMove(Move& mv)
 		Queens[turn] ^= FromToMap; break;
 	}
 
-	/* Deal with all kinds of captures, including en-passant */
+	// Deal with all kinds of captures, including en-passant
 	if (capt)
 	{
 		switch (capt)
@@ -401,6 +407,7 @@ void Position::unmakeMove(Move& mv)
 
 	Occupied = Pieces[W] | Pieces[B];
 }
+*/
 
 // return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
 int Position::mateStatus()

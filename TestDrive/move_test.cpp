@@ -21,7 +21,7 @@ TEST(Move, Generator1)
 	ASSERT_EQ(37, end);
 	static const Move generator_assertion[37] = {38497U, 39667U, 39927U, 46696U, 47272U, 48296U, 48744U, 46893U, 112557U, 243949U, 113133U, 48941U, 49069U, 54086U, 54214U, 54534U, 54982U, 55430U, 55878U, 56442U, 61048U, 61247U, 61311U, 61375U, 61504U, 61568U, 61632U, 61696U, 61760U, 127488U, 62016U, 62592U, 63168U, 129280U, 44219U, 372027U, 44859U};
 	for (int i = 0; i < end; i++)
-		ASSERT_EQ(generator_assertion[i], pos0.moveBuffer[i]);
+		ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
 }
 
 TEST(Move, Generator2)
@@ -31,7 +31,7 @@ TEST(Move, Generator2)
 	ASSERT_EQ(63, end);
 	static const Move generator_assertion[63] = {5518U, 6030U, 5583U, 5778U, 204077U, 400813U, 4071026U, 3546738U, 3022450U, 1973874U, 3677874U, 3153586U, 2629298U, 1580722U, 13013U, 14037U, 473045U, 14613U, 14741U, 20624U, 21072U, 22096U, 22672U, 23248U, 220432U, 20563U, 20819U, 21139U, 21267U, 22163U, 22291U, 22611U, 22867U, 23059U, 23443U, 89555U, 24579U, 24643U, 24707U, 25283U, 24900U, 25348U, 25860U, 26372U, 26884U, 27396U, 224516U, 29336U, 29784U, 30296U, 30360U, 30424U, 30488U, 30552U, 30616U, 489432U, 30744U, 30808U, 31256U, 227992U, 97304U, 8518U, 8646U};
 	for (int i = 0; i < end; i++)
-		ASSERT_EQ(generator_assertion[i], pos0.moveBuffer[i]);
+		ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
 }
 
 TEST(Move, Generator3)  // test special moves: castling and en-passant
@@ -41,7 +41,7 @@ TEST(Move, Generator3)  // test special moves: castling and en-passant
 	ASSERT_EQ(23, end);
 	static const Move generator_assertion[23] = {5128U, 5640U, 5193U, 5705U, 5323U, 333134U, 5518U, 6030U, 5583U, 6428U, 6623U, 6818U, 553720418U, 24640U, 24704U, 24768U, 24903U, 24967U, 8388U, 8516U, 8964U, 9028U, 4202884U};
 	for (int i = 0; i < end; i++)
-		ASSERT_EQ(generator_assertion[i], pos0.moveBuffer[i]);
+		ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
 }
 
 TEST(Move, Generator4)
@@ -51,7 +51,7 @@ TEST(Move, Generator4)
 	ASSERT_EQ(34, end);
 	static const Move generator_assertion[34] = {3838221U, 3313933U, 2789645U, 1741069U, 3707213U, 3182925U, 2658637U, 1610061U, 3903885U, 3379597U, 2855309U, 1806733U, 38237U, 503420317U, 38367U, 503420319U, 38497U, 38960U, 39472U, 39220U, 39732U, 61048U, 61112U, 61176U, 59903U, 60415U, 60927U, 257919U, 61375U, 44284U, 44412U, 44796U, 241532U, 8433340U};
 	for (int i = 0; i < end; i++)
-		ASSERT_EQ(generator_assertion[i], pos0.moveBuffer[i]);
+		ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
 }
 
 TEST(Move, Checks)
@@ -63,7 +63,7 @@ TEST(Move, Checks)
 	int check = 0, quiet = 0; // count checking moves
 	for (int i = 0; i < end; i++)
 	{
-		Move m = pos0.moveBuffer[i];
+		Move m = moveBuffer[i];
 		pos0.makeMove(m);
 		if (pos0.isOwnKingAttacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
@@ -174,6 +174,17 @@ TEST(Move, Judgement)
 	ASSERT_FALSE(m.isPawnMove());
 }
 
+int depthForPerft = 0;
+TEST(Move, InputForPerft)
+{
+	cout << "Input an FEN for Perft: " << endl;
+	char fen[100];
+	cin.getline(fen, 100);
+	pos0.parseFEN(fen);
+	cout << "depth: ";
+	cin >> depthForPerft;
+	cout << "Parsed successfully. Start perft timing at depth " << depthForPerft << ": \n";
+}
 
 /*
  *	Perft test result check
@@ -184,15 +195,18 @@ U64 perft_capture, perft_EP, perft_castle, perft_promo, perft_check, perft_mate;
 
 TEST(Move, Perft)
 {
-	pos0.parseFEN("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 6");
-	for (int depth = 1; depth <= 5; depth ++)
-	{
-		perft_capture = perft_EP = perft_castle = perft_promo = perft_check = perft_mate = 0;
-		cout << "Depth " << depth << endl;
-		cout << "Nodes searched: " << pos0.perft(depth) << endl;
-		cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Castles = " << perft_castle 
-			<< "; Promotions = " << perft_promo << "; Checks = " << perft_check << "; Mates = " << perft_mate << endl;
-	}
+	//for (int depth = 6; depth <= 6; depth ++)
+	//{
+		//perft_capture = perft_EP = perft_castle = perft_promo = perft_check = perft_mate = 0;
+		//cout << "Depth " << depth << endl;
+	clock_t start, end;
+	start = clock();
+		cout << "Nodes searched: " << pos0.perft(depthForPerft) <<  endl;
+	end = clock();
+	cout << end - start << endl;
+		//cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Castles = " << perft_castle 
+		//	<< "; Promotions = " << perft_promo << "; Checks = " << perft_check << "; Mates = " << perft_mate << endl;
+	//}
 }
 
 TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unmake
@@ -202,7 +216,7 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
 	int end = pos0.moveGen(0);
 	for (int i = 0; i < end; i++) // testing all possible moves
 	{
-		Move m = pos0.moveBuffer[i];
+		Move m = moveBuffer[i];
 		//cout << "Move: " << m << endl;
 		pos0.makeMove(m);
 		pos0.unmakeMove(m);
@@ -213,7 +227,7 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
 	ASSERT_EQ(end, pos0.moveGen(0));
 	for (int i = 0; i < end; i++) // testing all possible moves
 	{
-		Move m = pos0.moveBuffer[i];
+		Move m = moveBuffer[i];
 		//cout << "Move: " << m << endl;
 		pos0.makeMove(m);
 		pos0.unmakeMove(m);
@@ -231,25 +245,25 @@ TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 4. No
 	end1 = pos0.moveGen(0);
 	for (int i1 = 0; i1 < end1; i1++) // testing all possible moves up to 3 depths
 	{
-		m1 = pos0.moveBuffer[i1];
+		m1 = moveBuffer[i1];
 		pos0.makeMove(m1);
 		Position pos_orig2 = pos0;
 		end2 = pos0.moveGen(end1);
 		for (int i2 = end1; i2 < end2; i2++)
 		{
-			m2 = pos0.moveBuffer[i2];
+			m2 = moveBuffer[i2];
 			pos0.makeMove(m2);
 			Position pos_orig3 = pos0;
 			end3 = pos0.moveGen(end2);
 			for (int i3 = end2; i3 < end3; i3++)
 			{
-				m3 = pos0.moveBuffer[i3];
+				m3 = moveBuffer[i3];
 				pos0.makeMove(m3);
 				Position pos_orig4 = pos0;
 				end4 = pos0.moveGen(end3);
 				for (int i4 = end3; i4 < end4; i4++)
 				{
-					m4 = pos0.moveBuffer[i4];
+					m4 = moveBuffer[i4];
 					pos0.makeMove(m4);
 					pos0.unmakeMove(m4);
 					ASSERT_EQ(pos_orig4, pos0)<< "depth 4 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;

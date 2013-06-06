@@ -14,6 +14,7 @@ public:
 	Position(); // Default constructor
 	Position(string fen); // construct by FEN
 	Position(const Position& another); // copy ctor
+	const Position& operator=(const Position& another);  // assignment
 	friend bool operator==(const Position& pos1, const Position& pos2);
 	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
@@ -32,7 +33,7 @@ public:
 	uint epSquare; // en-passant square
 	int fiftyMove; // move since last pawn move or capture
 	int fullMove;  // starts at 1 and increments after black moves
-	int state_pointer;  // points to the current in "extern state_record" array
+	//int state_pointer;  // points to the current in "extern state_record" array
 	void restoreState(StateInfo& state); // inlined
 
 	void reset() { init_default(); }  // reset to initial position
@@ -43,8 +44,6 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
-	int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 	int moveGen(int index);   // return the new index in move buffer
 	bool isBitAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
 	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
@@ -119,6 +118,13 @@ public:
 };
 #define STATE_RECORD_MAX 1024
 extern StateInfo state_record[STATE_RECORD_MAX];  // keep track of the internal states
+
+extern Position position_stack[STATE_RECORD_MAX]; 
+extern int state_pointer;
+inline void Position::unmakeMove(Move& mv) { *this = position_stack[--state_pointer]; }
+
+extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
+extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 // restore from StateInfo
 inline void Position::restoreState(StateInfo& state)

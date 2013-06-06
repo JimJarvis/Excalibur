@@ -36,6 +36,9 @@
     <ClCompile Include="move.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="perft.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h">
