@@ -12,58 +12,10 @@ Position::Position(string fen)
 	parseFEN(fen);
 }
 
-// Copy ctor
-Position::Position(const Position& another)
-{
-	turn = another.turn;
-	epSquare = another.epSquare;
-	fiftyMove = another.fiftyMove;
-	fullMove = another.fullMove;
-	//state_pointer = another.state_pointer;
-	Occupied = another.Occupied;
-	for (Color c : COLORS)
-	{
-		castleRights[c] = another.castleRights[c];
-		kingSq[c] = another.kingSq[c];
-		Pawns[c] = another.Pawns[c];
-		Kings[c] = another.Kings[c];
-		Knights[c] = another.Knights[c];
-		Bishops[c] = another.Bishops[c];
-		Rooks[c] = another.Rooks[c];
-		Queens[c] = another.Queens[c];
-		Pieces[c] = another.Pieces[c];
-		for (PieceType piece : PIECE_TYPES)
-			pieceCount[c][piece] = another.pieceCount[c][piece];
-	}
-	for (int sq = 0; sq < SQ_N; sq++)
-		boardPiece[sq] = another.boardPiece[sq];
-}
-
 // Assignment
 const Position& Position::operator=(const Position& another)
 {
-	turn = another.turn;
-	epSquare = another.epSquare;
-	fiftyMove = another.fiftyMove;
-	fullMove = another.fullMove;
-	//state_pointer = another.state_pointer;
-	Occupied = another.Occupied;
-	for (Color c : COLORS)
-	{
-		castleRights[c] = another.castleRights[c];
-		kingSq[c] = another.kingSq[c];
-		Pawns[c] = another.Pawns[c];
-		Kings[c] = another.Kings[c];
-		Knights[c] = another.Knights[c];
-		Bishops[c] = another.Bishops[c];
-		Rooks[c] = another.Rooks[c];
-		Queens[c] = another.Queens[c];
-		Pieces[c] = another.Pieces[c];
-		for (PieceType piece : PIECE_TYPES)
-			pieceCount[c][piece] = another.pieceCount[c][piece];
-	}
-	for (int sq = 0; sq < SQ_N; sq++)
-		boardPiece[sq] = another.boardPiece[sq];
+	memcpy(this, &another, sizeof(Position));
 	return *this;
 }
 
@@ -103,11 +55,12 @@ void Position::init_default()
 		boardPiece[32 + sign*28] = KING;
 	}
 	// init special status
-	castleRights[W] = castleRights[B] = 3;
-	fiftyMove = 0;
-	fullMove = 1;
+	st = new StateInfo();
+	st->castleRights[W] = st->castleRights[B] = 3;
+	st->fiftyMove = 0;
+	st->fullMove = 1;
+	st->epSquare = 0;
 	turn = W;  // white goes first
-	epSquare = 0;
 	//state_pointer = 0;
 	moveBufEnds[0] = 0;
 }
@@ -129,6 +82,7 @@ void Position::refresh_maps()
  */
 void Position::parseFEN(string fen0)
 {
+	st = new StateInfo();
 	for (Color c : COLORS)
 	{
 		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
@@ -174,7 +128,7 @@ void Position::parseFEN(string fen0)
 	refresh_maps();
 	turn =  fen.get()=='w' ? W : B;  // indicate active part
 	fen.get(); // consume the space
-	castleRights[W] = castleRights[B] = 0;
+	st->castleRights[W] = st->castleRights[B] = 0;
 	while ((ch = fen.get()) != ' ')  // castle status. '-' if none available
 	{
 		Color c;
@@ -182,19 +136,19 @@ void Position::parseFEN(string fen0)
 		ch = tolower(ch);
 		switch (ch)
 		{
-		case 'k': castleRights[c] |= 1; break;
-		case 'q': castleRights[c] |= 2; break;
+		case 'k': st->castleRights[c] |= 1; break;
+		case 'q': st->castleRights[c] |= 2; break;
 		case '-': continue;
 		}
 	}
 	string ep; // en passent square
 	fen >> ep;  // see if there's an en passent square. '-' if none.
 	if (ep != "-")
-		epSquare = str2sq(ep);
+		st->epSquare = str2sq(ep);
 	else
-		epSquare = 0;
-	fen >> fiftyMove;
-	fen >> fullMove;
+		st->epSquare = 0;
+	fen >> st->fiftyMove;
+	fen >> st->fullMove;
 	//state_pointer = 0;
 	moveBufEnds[0] = 0;
 }
@@ -204,20 +158,20 @@ bool operator==(const Position& pos1, const Position& pos2)
 {
 	if (pos1.turn != pos2.turn) 
 		{ cout << "false turn: " << pos1.turn << " != " << pos2.turn << endl;	return false;}
-	if (pos1.epSquare != pos2.epSquare) 
-		{ cout << "false epSquare: " << pos1.epSquare << " != " << pos2.epSquare << endl;	return false;}
-	if (pos1.fiftyMove != pos2.fiftyMove) 
-		{ cout << "false fiftyMove: " << pos1.fiftyMove << " != " << pos2.fiftyMove << endl;	return false;}
-	if (pos1.fullMove != pos2.fullMove) 
-		{ cout << "false fullMove: " << pos1.fullMove << " != " << pos2.fullMove << endl;	return false;}
+	if (pos1.st->epSquare != pos2.st->epSquare) 
+		{ cout << "false state->epSquare: " << pos1.st->epSquare << " != " << pos2.st->epSquare << endl;	return false;}
+	if (pos1.st->fiftyMove != pos2.st->fiftyMove) 
+		{ cout << "false fiftyMove: " << pos1.st->fiftyMove << " != " << pos2.st->fiftyMove << endl;	return false;}
+	if (pos1.st->fullMove != pos2.st->fullMove) 
+		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
 	//if (pos1.state_pointer != pos2.state_pointer) 
 	//	{ cout << "false state_pointer: " << pos1.state_pointer << " != " << pos2.state_pointer << endl;	return false;}
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (Color c : COLORS)
 	{
-		if (pos1.castleRights[c] != pos2.castleRights[c]) 
-			{ cout << "false castleRights for Color " << c << ": " << pos1.castleRights[c] << " != " << pos2.castleRights[c] << endl;	return false;}
+		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
+			{ cout << "false castleRights for Color " << c << ": " << pos1.st->castleRights[c] << " != " << pos2.st->castleRights[c] << endl;	return false;}
 		if (pos1.kingSq[c] != pos2.kingSq[c])
 			{ cout << "false kingSq for Color" << c << ": " << pos1.kingSq[c] << " != " << pos2.kingSq[c] << endl; return false;	}
 		if (pos1.Pawns[c] != pos2.Pawns[c]) 

@@ -61,10 +61,11 @@ TEST(Move, Checks)
 	pos0.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
 	int end = pos0.moveGen(0);
 	int check = 0, quiet = 0; // count checking moves
+	StateInfo si; 
 	for (int i = 0; i < end; i++)
 	{
 		Move m = moveBuffer[i];
-		pos0.makeMove(m);
+		pos0.makeMove(m, si);
 		if (pos0.isOwnKingAttacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
 		else // display non-threatening moves to the opposite king
@@ -214,23 +215,15 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
 	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
 	Position pos_orig = pos0;
 	int end = pos0.moveGen(0);
+	StateInfo si;
 	for (int i = 0; i < end; i++) // testing all possible moves
 	{
 		Move m = moveBuffer[i];
 		//cout << "Move: " << m << endl;
-		pos0.makeMove(m);
+		pos0.makeMove(m, si);
 		pos0.unmakeMove(m);
 		// enable the verbose version by overloading the op== in position.cpp
 		//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-		ASSERT_EQ(pos_orig, pos0);
-	}
-	ASSERT_EQ(end, pos0.moveGen(0));
-	for (int i = 0; i < end; i++) // testing all possible moves
-	{
-		Move m = moveBuffer[i];
-		//cout << "Move: " << m << endl;
-		pos0.makeMove(m);
-		pos0.unmakeMove(m);
 		ASSERT_EQ(pos_orig, pos0);
 	}
 }

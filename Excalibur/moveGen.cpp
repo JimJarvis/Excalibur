@@ -45,17 +45,17 @@ int Position::moveGen(int index)
 			else
 				update;
 		}
-		if (epSquare) // en-passant
+		if (st->epSquare) // en-passant
 		{
-			if (pawn_attack(from) & setbit[epSquare])
+			if (pawn_attack(from) & setbit[st->epSquare])
 			{
 				// final check to avoid same color capture
-				uint ep_capture_sq = Board::backward_sq(epSquare, turn);
+				uint ep_capture_sq = Board::backward_sq(st->epSquare, turn);
 				if (Pawns[opponent] & setbit[ep_capture_sq])
 				{
 					mv.setEP(ep_capture_sq);
 					mv.setCapt(PAWN);
-					mv.setTo(epSquare);
+					mv.setTo(st->epSquare);
 					update;
 				}
 			}
@@ -152,13 +152,13 @@ int Position::moveGen(int index)
 			update;
 		}
 		// King side castling O-O
-		if (canCastleOO(castleRights[turn]))
+		if (canCastleOO(st->castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
 				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_EG], opponent))
 					moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
 		}
-		if (canCastleOOO(castleRights[turn]))
+		if (canCastleOOO(st->castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
 				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_CE], opponent))
@@ -195,17 +195,15 @@ bool Position::isBitAttacked(Bit Target, Color attacker_side)
 }
 
 
-//StateInfo state_record[STATE_RECORD_MAX];  // extern in position.h
-Position position_stack[STATE_RECORD_MAX];
-
 /*
  *	Make move and update the Position internal states
  */
-int state_pointer = 0;
-void Position::makeMove(Move& mv)
+void Position::makeMove(Move& mv, StateInfo& nextSt)
 {
-	//state_record[state_pointer ++] = *this; // store the internal state for future recovery
-	position_stack[state_pointer ++] = *this;
+	// copy to the next state and begin updating the new state object
+	memcpy(&nextSt, st, sizeof(StateInfo));
+	nextSt.st_prev = st;
+	st = &nextSt;
 
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
@@ -218,16 +216,16 @@ void Position::makeMove(Move& mv)
 	Pieces[turn] ^= FromToMap;
 	boardPiece[from] = NON;
 	boardPiece[to] = piece;
-	epSquare = 0;
-	if (turn == B)  fullMove ++;  // only increments after black moves
+	st->epSquare = 0;
+	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	switch (piece)
 	{
 	case PAWN:
 		Pawns[turn] ^= FromToMap;
-		fiftyMove = 0;  // any pawn move resets the fifty-move clock
+		st->fiftyMove = 0;  // any pawn move resets the fifty-move clock
 		if (ToMap == pawn_push2(from)) // if pawn double push
-			epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
+			st->epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
 		if (mv.isEP())  // en-passant capture
 		{
 			uint ep_sq = mv.getEP();
@@ -253,7 +251,7 @@ void Position::makeMove(Move& mv)
 	case KING:
 		Kings[turn] ^= FromToMap; 
 		kingSq[turn] = to; // update king square
-		castleRights[turn] = 0;  // cannot castle any more
+		st->castleRights[turn] = 0;  // cannot castle any more
 		if (mv.isCastleOO())
 		{
 			Rooks[turn] ^= MASK_OO_ROOK[turn];
@@ -273,9 +271,9 @@ void Position::makeMove(Move& mv)
 	case ROOK:
 		Rooks[turn] ^= FromToMap;
 		if (from == SQ_OO_ROOK[turn][0])   // if the rook moves, cancel the castle rights
-			deleteCastleOO(castleRights[turn]);
+			deleteCastleOO(st->castleRights[turn]);
 		else if (from == SQ_OOO_ROOK[turn][0])
-			deleteCastleOOO(castleRights[turn]);
+			deleteCastleOOO(st->castleRights[turn]);
 		break;
 
 	case KNIGHT:
@@ -296,29 +294,28 @@ void Position::makeMove(Move& mv)
 		case KNIGHT: Knights[opponent] ^= ToMap; break;
 		case BISHOP: Bishops[opponent] ^= ToMap; break;
 		case ROOK: // if rook is captured, the castling right is canceled
-			if (to == SQ_OO_ROOK[opponent][0])  deleteCastleOO(castleRights[opponent]);
-			else if (to == SQ_OOO_ROOK[opponent][0])  deleteCastleOOO(castleRights[opponent]);
+			if (to == SQ_OO_ROOK[opponent][0])  deleteCastleOO(st->castleRights[opponent]);
+			else if (to == SQ_OOO_ROOK[opponent][0])  deleteCastleOOO(st->castleRights[opponent]);
 			Rooks[opponent] ^= ToMap; 
 			break;
 		case QUEEN: Queens[opponent] ^= ToMap; break;
 		}
 		-- pieceCount[opponent][capt];
 		Pieces[opponent] ^= ToMap;
-		fiftyMove = 0;  // deal with fifty move counter
+		st->fiftyMove = 0;  // deal with fifty move counter
 	}
 	else if (piece != PAWN)
-		fiftyMove ++;
+		st->fiftyMove ++;
 
 	Occupied = Pieces[W] | Pieces[B];
 
 	turn = opponent;
 }
 
-/*
 // Unmake move and restore the Position internal states
 void Position::unmakeMove(Move& mv)
 {
-	restoreState(state_record[--state_pointer]); // recover the state from previous position
+	st = st->st_prev; // recover the state from previous position
 
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
@@ -407,7 +404,7 @@ void Position::unmakeMove(Move& mv)
 
 	Occupied = Pieces[W] | Pieces[B];
 }
-*/
+
 
 // return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
 int Position::mateStatus()
@@ -418,10 +415,11 @@ int Position::mateStatus()
 	const int start = 3878;  
 	int end = moveGen(start);
 	Move m;
+	StateInfo si;
 	for (int i = start; i < end; i++)
 	{
 		m = moveBuffer[i];
-		makeMove(m);
+		makeMove(m, si);
 		if (!isOppKingAttacked())  // make strictly legal move
 			isDead = false;  // found a legal move
 		unmakeMove(m);

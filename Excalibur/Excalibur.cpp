@@ -1,4 +1,5 @@
 #include "position.h"
+//#include "vld.h"
 using namespace std; 
 
 int main(int argc, char **argv)
@@ -10,7 +11,8 @@ int main(int argc, char **argv)
 	start = clock();
 	nodes = pos.perft(5);
 	end = clock();
-	cout << "Spend time = " << end - start << " ms" << endl;
-	cout << "Average speed = " << 1.0 * nodes / (end - start) << " kn/s" << endl;
+	cout << "Nodes = " << nodes << endl;
+	cout << "Time = " << end - start << " ms" << endl;
+	cout << "Speed = " << 1.0 * nodes / (end - start) << " kn/s" << endl;
 	return 0;
 }

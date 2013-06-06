@@ -4,7 +4,16 @@
 #include "move.h"
 #include "board.h"
 
-class StateInfo;  // forward declaration
+/* internal state of a position: used to unmake a move */
+struct StateInfo
+{
+	// additional important states
+	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
+	uint epSquare; // en-passant square
+	int fiftyMove; // move since last pawn move or capture
+	int fullMove;  // starts at 1 and increments after black moves
+	StateInfo *st_prev; // point to the previous state
+};
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
@@ -13,7 +22,8 @@ public:
 
 	Position(); // Default constructor
 	Position(string fen); // construct by FEN
-	Position(const Position& another); // copy ctor
+	Position(const Position& another) { *this = another; }; // copy ctor
+	~Position() { delete st; }  // destructor 
 	const Position& operator=(const Position& another);  // assignment
 	friend bool operator==(const Position& pos1, const Position& pos2);
 	
@@ -27,14 +37,9 @@ public:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
 	PieceType boardPiece[SQ_N];
 
-	// additional important states
-	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
-	Color turn; // white(0) or black(1)
-	uint epSquare; // en-passant square
-	int fiftyMove; // move since last pawn move or capture
-	int fullMove;  // starts at 1 and increments after black moves
-	//int state_pointer;  // points to the current in "extern state_record" array
-	void restoreState(StateInfo& state); // inlined
+	// Internal states are stored in StateInfo class. Accessed externally
+	Color turn;
+	StateInfo *st; // state pointer
 
 	void reset() { init_default(); }  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
@@ -49,7 +54,7 @@ public:
 	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
 	bool isOwnKingAttacked() { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check
 	bool isOppKingAttacked() { return isSqAttacked(kingSq[flipColor[turn]], turn); }
-	void makeMove(Move& mv);   // make the move and update internal states
+	void makeMove(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
 	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
 	// use exhaustive make/unmakeMove for stale/checkmate states. Very expensive.
 	int mateStatus();  // return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
@@ -91,46 +96,7 @@ inline bool Position::isSqAttacked(uint sq, Color attacker_side)
 	return false;
 }
 
-
-/* internal state of a position: used to unmake a move */
-class StateInfo
-{
-public:
-	byte castleRights[COLOR_N];
-	uint epSquare;
-	int fiftyMove;
-	int fullMove;
-
-	StateInfo() {}  // default ctor
-
-	StateInfo(Position& pos) : epSquare(pos.epSquare),  // ctor
-		fiftyMove(pos.fiftyMove), fullMove(pos.fullMove)
-	{
-		castleRights[W] = pos.castleRights[W]; castleRights[B] = pos.castleRights[B];
-	}
-	
-	const StateInfo& operator=(const StateInfo& another)
-	{
-		castleRights[W] = another.castleRights[W]; castleRights[B] = another.castleRights[B];
-		epSquare = another.epSquare; fiftyMove = another.fiftyMove; fullMove = another.fullMove;
-		return *this;
-	}
-};
-#define STATE_RECORD_MAX 1024
-extern StateInfo state_record[STATE_RECORD_MAX];  // keep track of the internal states
-
-extern Position position_stack[STATE_RECORD_MAX]; 
-extern int state_pointer;
-inline void Position::unmakeMove(Move& mv) { *this = position_stack[--state_pointer]; }
-
 extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
-
-// restore from StateInfo
-inline void Position::restoreState(StateInfo& state)
-{
-	castleRights[W] = state.castleRights[W]; castleRights[B] = state.castleRights[B];
-	epSquare = state.epSquare; fiftyMove = state.fiftyMove; fullMove = state.fullMove;
-}
 
 #endif // __position_h__

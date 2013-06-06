@@ -12,10 +12,11 @@ U64 Position::perft(int depth, int ply)
 	// generate from this ply
 	nextBuf = moveBufEnds[ply + 1] = moveGen(currentBuf = moveBufEnds[ply]);
 
+	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
 		m = moveBuffer[i];
-		makeMove(m);
+		makeMove(m, si);
 		if (!isOppKingAttacked())  // make strictly legal move
 		{
 			//U64 count = perft(depth - 1, ply + 1);

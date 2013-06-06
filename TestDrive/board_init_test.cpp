@@ -17,13 +17,13 @@ TEST(Board, FEN)
 
 	pos.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_EQ(pos.Occupied, 0xfffb00041000efff);	
-	ASSERT_TRUE(canCastleOO(pos.castleRights[W]));
-	ASSERT_TRUE(canCastleOOO(pos.castleRights[W]));
-	ASSERT_FALSE(canCastleOO(pos.castleRights[B]));
-	ASSERT_TRUE(canCastleOOO(pos.castleRights[B]));
-	ASSERT_EQ(pos.fiftyMove, 21);
-	ASSERT_EQ(pos.fullMove, 33);
-	ASSERT_EQ(pos.epSquare, 42);
+	ASSERT_TRUE(canCastleOO(pos.st->castleRights[W]));
+	ASSERT_TRUE(canCastleOOO(pos.st->castleRights[W]));
+	ASSERT_FALSE(canCastleOO(pos.st->castleRights[B]));
+	ASSERT_TRUE(canCastleOOO(pos.st->castleRights[B]));
+	ASSERT_EQ(pos.st->fiftyMove, 21);
+	ASSERT_EQ(pos.st->fullMove, 33);
+	ASSERT_EQ(pos.st->epSquare, 42);
 	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); 
 	ASSERT_EQ(pos.pieceCount[W][PAWN], 6);
 	ASSERT_EQ(pos.pieceCount[W][KING], 1);
