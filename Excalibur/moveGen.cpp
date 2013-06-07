@@ -8,11 +8,10 @@ int moveBufEnds[64];
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
-int Position::moveGenPseudo(int index)
+int Position::genHelper(int index, Bit Target, bool willKingMove)
 {
 	Color opponent = flipColor[turn];
 	Bit Freesq = ~Occupied;
-	Bit Target = ~Pieces[turn];   // attack the other side
 	Bit TempPiece, TempMove;
 	uint from, to;
 	Move mv;
@@ -25,10 +24,10 @@ int Position::moveGenPseudo(int index)
 	{
 		from = popLSB(TempPiece);
 		mv.setFrom(from);
-		TempMove = pawn_push(from) & Freesq;  // normal push
+		TempMove = pawn_push(from) & Freesq & Target;  // normal push
 		if (TempMove != 0) // double push possible
-			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= pawn_attack(from) & Pieces[opponent];  // pawn capture
+			TempMove |= pawn_push2(from) & Freesq & Target; 
+		TempMove |= pawn_attack(from) & Pieces[opponent] & Target;  // pawn capture
 		while (TempMove)
 		{
 			to = popLSB(TempMove);
@@ -47,7 +46,7 @@ int Position::moveGenPseudo(int index)
 		}
 		if (st->epSquare) // en-passant
 		{
-			if (pawn_attack(from) & setbit[st->epSquare])
+			if (pawn_attack(from) & setbit[st->epSquare] & Target)
 			{
 				// final check to avoid same color capture
 				uint ep_capture_sq = Board::backward_sq(st->epSquare, turn);
@@ -136,6 +135,8 @@ int Position::moveGenPseudo(int index)
 	}
 	mv.clear();
 
+	if (willKingMove)
+	{
 	/*************** Kings ****************/
 	mv.setPiece(KING);
 	TempPiece = Kings[turn];
@@ -166,8 +167,12 @@ int Position::moveGenPseudo(int index)
 		}
 	}
 
+	}  // willKingMove option.
+
 	return index;
 }
+
+
 
 /*
  *	Move legality test to see if any '1' in Target is attacked by the specific color
@@ -201,7 +206,7 @@ bool Position::isBitAttacked(Bit Target, Color attacker_side)
 void Position::makeMove(Move& mv, StateInfo& nextSt)
 {
 	// copy to the next state and begin updating the new state object
-	memcpy(&nextSt, st, sizeof(StateInfo));
+	memcpy(&nextSt, st, STATEINFO_COPY_SIZE);
 	nextSt.st_prev = st;
 	st = &nextSt;
 
@@ -413,7 +418,7 @@ int Position::mateStatus()
 	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
 	// 4096 - 218, 218 is the most move a legal position can ever make
 	const int start = 3878;  
-	int end = moveGenPseudo(start);
+	int end = genAllPseudoMove(start);
 	Move m;
 	StateInfo si;
 	for (int i = start; i < end; i++)

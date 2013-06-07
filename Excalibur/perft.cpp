@@ -10,7 +10,7 @@ U64 Position::perft(int depth, int ply)
 
 	int currentBuf, nextBuf; Move m;
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = moveGenPseudo(currentBuf = moveBufEnds[ply]);
+	nextBuf = moveBufEnds[ply + 1] = genAllPseudoMove(currentBuf = moveBufEnds[ply]);
 
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)

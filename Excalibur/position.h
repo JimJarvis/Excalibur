@@ -12,8 +12,15 @@ struct StateInfo
 	uint epSquare; // en-passant square
 	int fiftyMove; // move since last pawn move or capture
 	int fullMove;  // starts at 1 and increments after black moves
+
+	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "fullMove"
+	Bit CheckerMap; // a map that collects all checkers
+	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
 };
+
+// Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
+static const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, fullMove) / sizeof(U64) + 1;
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
@@ -49,7 +56,10 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	int moveGenPseudo(int index);   // generate all pseudo moves. No legality check
+	int genEvasions(int index);  // pseudo evasions - our king is in check
+	int genNonEvasions(int index);  // pseudo non-evasions
+	
+	int genAllPseudoMove(int index) { return genHelper(index, ~Pieces[turn], true); }  // generate all pseudo moves. No legality check
 	bool isBitAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
 	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
 	bool isOwnKingAttacked() { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check
@@ -76,10 +86,12 @@ public:
 	Bit rook_attack(int sq) { return Board::rook_attack(sq, Occupied); } // internal state
 	Bit bishop_attack(int sq) { return Board::bishop_attack(sq, Occupied); };
 	Bit queen_attack(int sq) { return rook_attack(sq) | bishop_attack(sq); }
-
+	
 private:
 	void init_default(); // initialize the default piece positions and internal states
 	void refresh_maps(); // refresh the Pieces[] and Occupied
+	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
+	int genHelper(int index, Bit Target, bool willKingMove);  // pseudo-moves
 };
 
 inline ostream& operator<<(ostream& os, Position pos)
