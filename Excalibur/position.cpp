@@ -59,8 +59,8 @@ void Position::init_default()
 	st->fiftyMove = 0;
 	st->fullMove = 1;
 	st->epSquare = 0;
+	st->capt = NON;
 	turn = W;  // white goes first
-	//state_pointer = 0;
 	moveBufEnds[0] = 0;
 }
 
@@ -149,7 +149,7 @@ void Position::parseFEN(string fen0)
 		st->epSquare = 0;
 	fen >> st->fiftyMove;
 	fen >> st->fullMove;
-	//state_pointer = 0;
+	st->capt = NON;
 	moveBufEnds[0] = 0;
 }
 
@@ -164,8 +164,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false fiftyMove: " << pos1.st->fiftyMove << " != " << pos2.st->fiftyMove << endl;	return false;}
 	if (pos1.st->fullMove != pos2.st->fullMove) 
 		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
-	if (pos1.Occupied != pos2.Occupied) 
-		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
+	if (pos1.st->capt != pos2.st->capt)
+		{ cout << "false capt: " << PIECE_NAME[pos1.st->capt] << " != " << PIECE_NAME[pos2.st->capt] << endl;	return false;}
 	for (Color c : COLORS)
 	{
 		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
@@ -188,6 +188,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 			if (pos1.pieceCount[c][piece] != pos2.pieceCount[c][piece]) 
 				{ cout << "false pieceCount for Color " << c << " " << PIECE_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
 	}
+	if (pos1.Occupied != pos2.Occupied) 
+		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (int sq = 0; sq < SQ_N; sq++)
 		if (pos1.boardPiece[sq] != pos2.boardPiece[sq]) 
 			{ cout << "false boardPiece for square " << SQ_NAME[sq] << ": " << PIECE_NAME[pos1.boardPiece[sq]] << " != " << PIECE_NAME[pos2.boardPiece[sq]] << endl;	return false;}

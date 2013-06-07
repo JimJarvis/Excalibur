@@ -4,7 +4,8 @@
 Move moveBuffer[4096];
 int moveBufEnds[64];
 
-/* generate a pseudo-legal move and store it into a board buffer
+/*
+ * generate a pseudo-legal move and store it into a board buffer
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
@@ -15,10 +16,8 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 	Bit TempPiece, TempMove;
 	uint from, to;
 	Move mv;
-	mv.setColor(turn);
 
 	/*************** Pawns ***************/
-	mv.setPiece(PAWN);
 	TempPiece = Pawns[turn];
 	while (TempPiece)
 	{
@@ -32,7 +31,6 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
 			{
 				mv.setPromo(QUEEN); update;
@@ -49,11 +47,9 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 			if (pawn_attack(from) & setbit[st->epSquare] & Target)
 			{
 				// final check to avoid same color capture
-				uint ep_capture_sq = Board::backward_sq(st->epSquare, turn);
-				if (Pawns[opponent] & setbit[ep_capture_sq])
+				if (Pawns[opponent] & setbit[Board::backward_sq(st->epSquare, turn)])
 				{
-					mv.setEP(ep_capture_sq);
-					mv.setCapt(PAWN);
+					mv.setEP();
 					mv.setTo(st->epSquare);
 					update;
 				}
@@ -61,10 +57,9 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		}
 		mv.clearSpecial();  // clear the EP and promo square.
 	}
-	mv.clear();  // clear all except the color bit
+	mv.clear();  
 
 	/*************** Knights ****************/
-	mv.setPiece(KNIGHT);
 	TempPiece = Knights[turn];
 	while (TempPiece)
 	{
@@ -75,14 +70,12 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			update;
 		}
 	}
 	mv.clear();
 
 	/*************** Bishops ****************/
-	mv.setPiece(BISHOP);
 	TempPiece = Bishops[turn];
 	while (TempPiece)
 	{
@@ -93,14 +86,12 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			update;
 		}
 	}
 	mv.clear();
 
 	/*************** Rooks ****************/
-	mv.setPiece(ROOK);
 	TempPiece = Rooks[turn];
 	while (TempPiece)
 	{
@@ -111,14 +102,12 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			update;
 		}
 	}
 	mv.clear();
 
 	/*************** Queens ****************/
-	mv.setPiece(QUEEN);
 	TempPiece = Queens[turn];
 	while (TempPiece)
 	{
@@ -129,7 +118,6 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			update;
 		}
 	}
@@ -138,7 +126,6 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 	if (willKingMove)
 	{
 	/*************** Kings ****************/
-	mv.setPiece(KING);
 	TempPiece = Kings[turn];
 	while (TempPiece)
 	{
@@ -149,7 +136,6 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 		{
 			to = popLSB(TempMove);
 			mv.setTo(to);
-			mv.setCapt(boardPiece[to]);
 			update;
 		}
 		// King side castling O-O
@@ -206,7 +192,7 @@ bool Position::isBitAttacked(Bit Target, Color attacker_side)
 void Position::makeMove(Move& mv, StateInfo& nextSt)
 {
 	// copy to the next state and begin updating the new state object
-	memcpy(&nextSt, st, STATEINFO_COPY_SIZE);
+	memcpy(&nextSt, st, STATEINFO_COPY_SIZE * sizeof(U64));
 	nextSt.st_prev = st;
 	st = &nextSt;
 
@@ -214,8 +200,9 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 	uint to = mv.getTo();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
-	PieceType piece = mv.getPiece();
-	PieceType capt = mv.getCapt();
+	PieceType piece = boardPiece[from];
+	PieceType capt = boardPiece[to];
+	PieceType promo;
 	Color opponent = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
@@ -233,13 +220,14 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 			st->epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
 		if (mv.isEP())  // en-passant capture
 		{
-			uint ep_sq = mv.getEP();
+			capt = PAWN;
+			uint ep_sq = Board::backward_sq(st->st_prev->epSquare, turn);
 			ToMap = setbit[ep_sq];  // the captured pawn location
 			boardPiece[ep_sq] = NON;
 		}
-		else if (mv.isPromo())
+		else if ((promo = mv.getPromo()) != NON)
 		{
-			PieceType promo = mv.getPromo();
+			Pawns[turn] ^= ToMap;  // the pawn's no longer there
 			-- pieceCount[turn][PAWN];
 			++ pieceCount[turn][promo];
 			boardPiece[to] = promo;
@@ -295,7 +283,6 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 		switch (capt)
 		{
 		case PAWN: Pawns[opponent] ^= ToMap; break;
-		case KING: Kings[opponent] ^= ToMap; break;
 		case KNIGHT: Knights[opponent] ^= ToMap; break;
 		case BISHOP: Bishops[opponent] ^= ToMap; break;
 		case ROOK: // if rook is captured, the castling right is canceled
@@ -304,6 +291,7 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 			Rooks[opponent] ^= ToMap; 
 			break;
 		case QUEEN: Queens[opponent] ^= ToMap; break;
+		case KING: Kings[opponent] ^= ToMap; break;
 		}
 		-- pieceCount[opponent][capt];
 		Pieces[opponent] ^= ToMap;
@@ -312,6 +300,7 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 	else if (piece != PAWN)
 		st->fiftyMove ++;
 
+	st->capt = capt;
 	Occupied = Pieces[W] | Pieces[B];
 
 	turn = opponent;
@@ -320,14 +309,13 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 // Unmake move and restore the Position internal states
 void Position::unmakeMove(Move& mv)
 {
-	st = st->st_prev; // recover the state from previous position
-
 	uint from = mv.getFrom();
 	uint to = mv.getTo();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
-	PieceType piece = mv.getPiece();
-	PieceType capt = mv.getCapt();
+	PieceType promo = mv.getPromo();
+	PieceType piece = (promo != NON) ? PAWN : boardPiece[to];
+	PieceType capt = st->capt;
 	Color opponent = turn;
 	turn = flipColor[turn];
 
@@ -341,15 +329,16 @@ void Position::unmakeMove(Move& mv)
 		Pawns[turn] ^= FromToMap;
 		if (mv.isEP())  // en-passant capture
 		{
-			uint ep_sq = mv.getEP();
+			uint ep_sq = Board::backward_sq(st->st_prev->epSquare, turn);
 			ToMap = setbit[ep_sq];  // the captured pawn location
 			to = ep_sq;  // will restore the captured pawn later, with all other capturing cases
 		}
-		else if (mv.isPromo())
+		else if (promo != NON)
 		{
-			PieceType promo = mv.getPromo();
+			Pawns[turn] ^= ToMap;  // flip back
 			++ pieceCount[turn][PAWN];
 			-- pieceCount[turn][promo];
+			boardPiece[from] = PAWN;
 			boardPiece[to] = NON;
 			switch (promo)  // flip back the promoted bit
 			{
@@ -396,11 +385,11 @@ void Position::unmakeMove(Move& mv)
 		switch (capt)
 		{
 		case PAWN: Pawns[opponent] ^= ToMap; break;
-		case KING: Kings[opponent] ^= ToMap; break;
 		case KNIGHT: Knights[opponent] ^= ToMap; break;
 		case BISHOP: Bishops[opponent] ^= ToMap; break;
 		case ROOK: Rooks[opponent] ^= ToMap; 	break;
 		case QUEEN: Queens[opponent] ^= ToMap; break;
+		case KING: Kings[opponent] ^= ToMap; break;
 		}
 		++ pieceCount[opponent][capt];
 		Pieces[opponent] ^= ToMap;
@@ -408,6 +397,8 @@ void Position::unmakeMove(Move& mv)
 	}
 
 	Occupied = Pieces[W] | Pieces[B];
+
+	st = st->st_prev; // recover the state from previous position
 }
 
 

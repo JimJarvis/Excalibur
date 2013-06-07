@@ -15,6 +15,7 @@ struct StateInfo
 
 	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "fullMove"
 	Bit CheckerMap; // a map that collects all checkers
+	Bit PinnedMap;  // a map that shows all the pinned pieces
 	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
 };
