@@ -20,9 +20,9 @@ class Position
 {
 public:
 
-	Position(); // Default constructor
-	Position(string fen); // construct by FEN
-	Position(const Position& another) { *this = another; }; // copy ctor
+	Position() { init_default(); } // Default constructor
+	Position(string fen) { st = new StateInfo(); parseFEN(fen); } // construct by FEN
+	Position(const Position& another); // copy ctor
 	~Position() { delete st; }  // destructor 
 	const Position& operator=(const Position& another);  // assignment
 	friend bool operator==(const Position& pos1, const Position& pos2);
@@ -41,7 +41,7 @@ public:
 	Color turn;
 	StateInfo *st; // state pointer
 
-	void reset() { init_default(); }  // reset to initial position
+	void reset() { delete st; init_default(); }  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Position); // inlined later
@@ -49,7 +49,7 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	int moveGen(int index);   // return the new index in move buffer
+	int moveGenPseudo(int index);   // generate all pseudo moves. No legality check
 	bool isBitAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
 	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
 	bool isOwnKingAttacked() { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check

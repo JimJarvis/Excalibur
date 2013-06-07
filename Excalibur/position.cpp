@@ -1,21 +1,20 @@
 #include "position.h"
 
-// Default constructor
-Position::Position()
+// Copy ctor
+Position::Position(const Position& another)
 {
-	init_default();
-}
-
-// Construct by FEN
-Position::Position(string fen)
-{
-	parseFEN(fen);
+	memcpy(this, &another, sizeof(Position));  // the st pointer gets copied to us too. 
+	st = new StateInfo();// we need to reallocate to avoid deleting the same stuff twice
+	memcpy(st, another.st, sizeof(StateInfo));
 }
 
 // Assignment
 const Position& Position::operator=(const Position& another)
 {
-	memcpy(this, &another, sizeof(Position));
+	delete st;
+	memcpy(this, &another, sizeof(Position));  // the st pointer gets copied to us too. 
+	st = new StateInfo();// we need to reallocate to avoid deleting the same stuff twice
+	memcpy(st, another.st, sizeof(StateInfo));
 	return *this;
 }
 
@@ -82,6 +81,7 @@ void Position::refresh_maps()
  */
 void Position::parseFEN(string fen0)
 {
+	delete st;  // free the previous resource
 	st = new StateInfo();
 	for (Color c : COLORS)
 	{
@@ -164,8 +164,6 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false fiftyMove: " << pos1.st->fiftyMove << " != " << pos2.st->fiftyMove << endl;	return false;}
 	if (pos1.st->fullMove != pos2.st->fullMove) 
 		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
-	//if (pos1.state_pointer != pos2.state_pointer) 
-	//	{ cout << "false state_pointer: " << pos1.state_pointer << " != " << pos2.state_pointer << endl;	return false;}
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (Color c : COLORS)

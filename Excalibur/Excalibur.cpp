@@ -1,15 +1,21 @@
 #include "position.h"
-//#include "vld.h"
 using namespace std; 
 
 int main(int argc, char **argv)
 {
 	Board::init_tables();
-	Position pos;
+	cout << "Input an FEN for Perft: " << endl;
+	char fen[100];
+	cin.getline(fen, 100);
+	Position pos(fen);
+	int depthForPerft;
+	cout << "depth: ";
+	cin >> depthForPerft;
+	cout << "Parsed successfully. Start perft timing at depth " << depthForPerft << ": \n";
 	U64 nodes;
 	clock_t start, end;
 	start = clock();
-	nodes = pos.perft(5);
+	nodes = pos.perft(depthForPerft);
 	end = clock();
 	cout << "Nodes = " << nodes << endl;
 	cout << "Time = " << end - start << " ms" << endl;

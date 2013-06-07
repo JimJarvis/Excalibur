@@ -8,7 +8,7 @@ int moveBufEnds[64];
  * The first free location in moveBuffer[] is given in parameter index
  * the new first location is returned
  */
-int Position::moveGen(int index)
+int Position::moveGenPseudo(int index)
 {
 	Color opponent = flipColor[turn];
 	Bit Freesq = ~Occupied;
@@ -413,7 +413,7 @@ int Position::mateStatus()
 	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
 	// 4096 - 218, 218 is the most move a legal position can ever make
 	const int start = 3878;  
-	int end = moveGen(start);
+	int end = moveGenPseudo(start);
 	Move m;
 	StateInfo si;
 	for (int i = start; i < end; i++)
