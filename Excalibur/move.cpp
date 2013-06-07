@@ -3,10 +3,8 @@
 Move::operator string()  // verbose algebraic notation: no disambiguation
 {
 	ostringstream ostr; 
-	if (isCastleOO())
-		ostr << "O-O";
-	else if (isCastleOOO())
-		ostr << "O-O-O";
+	if (isCastle())
+		ostr << (FILES[getTo()]==6 ? "O-O" : "O-O-O");
 	else if (isEP())
 		ostr << SQ_NAME[getFrom()] << "-" << SQ_NAME[getTo()] << "[EP]";
 	else

@@ -37,7 +37,7 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 				mv.setPromo(ROOK); update;
 				mv.setPromo(BISHOP); update;
 				mv.setPromo(KNIGHT); update;
-				mv.setPromo(NON);
+				mv.clearSpecial();
 			}
 			else
 				update;
@@ -202,7 +202,6 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 	Bit FromToMap = setbit[from] | ToMap;
 	PieceType piece = boardPiece[from];
 	PieceType capt = boardPiece[to];
-	PieceType promo;
 	Color opponent = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
@@ -225,8 +224,9 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 			ToMap = setbit[ep_sq];  // the captured pawn location
 			boardPiece[ep_sq] = NON;
 		}
-		else if ((promo = mv.getPromo()) != NON)
+		else if (mv.isPromo())
 		{
+			PieceType promo = mv.getPromo();
 			Pawns[turn] ^= ToMap;  // the pawn's no longer there
 			-- pieceCount[turn][PAWN];
 			++ pieceCount[turn][promo];
@@ -245,19 +245,22 @@ void Position::makeMove(Move& mv, StateInfo& nextSt)
 		Kings[turn] ^= FromToMap; 
 		kingSq[turn] = to; // update king square
 		st->castleRights[turn] = 0;  // cannot castle any more
-		if (mv.isCastleOO())
+		if (mv.isCastle())
 		{
-			Rooks[turn] ^= MASK_OO_ROOK[turn];
-			Pieces[turn] ^= MASK_OO_ROOK[turn];
-			boardPiece[SQ_OO_ROOK[turn][0]] = NON;  // from
-			boardPiece[SQ_OO_ROOK[turn][1]] = ROOK;  // to
-		}
-		else if (mv.isCastleOOO())
-		{
-			Rooks[turn] ^= MASK_OOO_ROOK[turn];
-			Pieces[turn] ^= MASK_OOO_ROOK[turn];
-			boardPiece[SQ_OOO_ROOK[turn][0]] = NON;  // from
-			boardPiece[SQ_OOO_ROOK[turn][1]] = ROOK;  // to
+			if (FILES[to] == 6)  // King side castle
+			{
+				Rooks[turn] ^= MASK_OO_ROOK[turn];
+				Pieces[turn] ^= MASK_OO_ROOK[turn];
+				boardPiece[SQ_OO_ROOK[turn][0]] = NON;  // from
+				boardPiece[SQ_OO_ROOK[turn][1]] = ROOK;  // to
+			}
+			else
+			{
+				Rooks[turn] ^= MASK_OOO_ROOK[turn];
+				Pieces[turn] ^= MASK_OOO_ROOK[turn];
+				boardPiece[SQ_OOO_ROOK[turn][0]] = NON;  // from
+				boardPiece[SQ_OOO_ROOK[turn][1]] = ROOK;  // to
+			}
 		}
 		break;
 
@@ -313,8 +316,8 @@ void Position::unmakeMove(Move& mv)
 	uint to = mv.getTo();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
-	PieceType promo = mv.getPromo();
-	PieceType piece = (promo != NON) ? PAWN : boardPiece[to];
+	bool isPromo = mv.isPromo();
+	PieceType piece = isPromo ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
 	Color opponent = turn;
 	turn = flipColor[turn];
@@ -333,8 +336,9 @@ void Position::unmakeMove(Move& mv)
 			ToMap = setbit[ep_sq];  // the captured pawn location
 			to = ep_sq;  // will restore the captured pawn later, with all other capturing cases
 		}
-		else if (promo != NON)
+		else if (isPromo)
 		{
+			PieceType promo = mv.getPromo();
 			Pawns[turn] ^= ToMap;  // flip back
 			++ pieceCount[turn][PAWN];
 			-- pieceCount[turn][promo];
@@ -353,19 +357,22 @@ void Position::unmakeMove(Move& mv)
 	case KING:
 		Kings[turn] ^= FromToMap;
 		kingSq[turn] = from; // restore the original king position
-		if (mv.isCastleOO())
+		if (mv.isCastle())
 		{
-			Rooks[turn] ^= MASK_OO_ROOK[turn];
-			Pieces[turn] ^= MASK_OO_ROOK[turn];
-			boardPiece[SQ_OO_ROOK[turn][0]] = ROOK;  // from
-			boardPiece[SQ_OO_ROOK[turn][1]] = NON;  // to
-		}
-		else if (mv.isCastleOOO())
-		{
-			Rooks[turn] ^= MASK_OOO_ROOK[turn];
-			Pieces[turn] ^= MASK_OOO_ROOK[turn];
-			boardPiece[SQ_OOO_ROOK[turn][0]] = ROOK;  // from
-			boardPiece[SQ_OOO_ROOK[turn][1]] = NON;  // to
+			if (FILES[to] == 6)  // king side castling
+			{
+				Rooks[turn] ^= MASK_OO_ROOK[turn];
+				Pieces[turn] ^= MASK_OO_ROOK[turn];
+				boardPiece[SQ_OO_ROOK[turn][0]] = ROOK;  // from
+				boardPiece[SQ_OO_ROOK[turn][1]] = NON;  // to
+			}
+			else
+			{
+				Rooks[turn] ^= MASK_OOO_ROOK[turn];
+				Pieces[turn] ^= MASK_OOO_ROOK[turn];
+				boardPiece[SQ_OOO_ROOK[turn][0]] = ROOK;  // from
+				boardPiece[SQ_OOO_ROOK[turn][1]] = NON;  // to
+			}
 		}
 		break;
 

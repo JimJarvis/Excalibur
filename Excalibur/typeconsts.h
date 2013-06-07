@@ -6,6 +6,7 @@
 typedef unsigned long long Bit;  // Bitboard
 typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
+typedef unsigned short ushort;
 typedef unsigned char byte;
 
 #define SQ_N 64

@@ -1,6 +1,7 @@
 #include "position.h"
 
 extern U64 perft_capture, perft_castle, perft_promo, perft_EP, perft_check, perft_mate;
+//extern int divideDepth;
 
 // return raw node count
 U64 Position::perft(int depth, int ply)
@@ -20,7 +21,7 @@ U64 Position::perft(int depth, int ply)
 		if (!isOppKingAttacked())  // make strictly legal move
 		{
 			//U64 count = perft(depth - 1, ply + 1);
-			//if (depth == 1)
+			//if (depth == divideDepth)
 			//{
 			//	cout << m << ": ";
 			//	cout << count << endl;
