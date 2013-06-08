@@ -1,20 +1,11 @@
 #include "position.h"
 
-// Copy ctor
-Position::Position(const Position& another)
-{
-	memcpy(this, &another, sizeof(Position));  // the st pointer gets copied to us too. 
-	st = new StateInfo();// we need to reallocate to avoid deleting the same stuff twice
-	memcpy(st, another.st, sizeof(StateInfo));
-}
-
 // Assignment
 const Position& Position::operator=(const Position& another)
 {
-	delete st;
 	memcpy(this, &another, sizeof(Position));  // the st pointer gets copied to us too. 
-	st = new StateInfo();// we need to reallocate to avoid deleting the same stuff twice
-	memcpy(st, another.st, sizeof(StateInfo));
+	startState = *st;
+	st = &startState;
 	return *this;
 }
 
@@ -54,12 +45,13 @@ void Position::init_default()
 		boardPiece[32 + sign*28] = KING;
 	}
 	// init special status
-	st = new StateInfo();
+	st = &startState;
 	st->castleRights[W] = st->castleRights[B] = 3;
 	st->fiftyMove = 0;
 	st->fullMove = 1;
 	st->epSquare = 0;
 	st->capt = NON;
+	st->CheckerMap = 0;
 	turn = W;  // white goes first
 	moveBufEnds[0] = 0;
 }
@@ -81,8 +73,7 @@ void Position::refresh_maps()
  */
 void Position::parseFEN(string fen0)
 {
-	delete st;  // free the previous resource
-	st = new StateInfo();
+	st = &startState;
 	for (Color c : COLORS)
 	{
 		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
@@ -141,15 +132,28 @@ void Position::parseFEN(string fen0)
 		case '-': continue;
 		}
 	}
-	string ep; // en passent square
-	fen >> ep;  // see if there's an en passent square. '-' if none.
+	string ep; // en passant square
+	fen >> ep;  // see if there's an en passant square. '-' if none.
 	if (ep != "-")
 		st->epSquare = str2sq(ep);
 	else
 		st->epSquare = 0;
-	fen >> st->fiftyMove;
-	fen >> st->fullMove;
+	// Now supports optional fiftyMove / fullMove
+	string str;
+	while (std::getline(fen, str, ' '))  // trim white space
+		if (!str.empty()) break;
+	if (str.empty())  // fill in default
+	{
+		st->fiftyMove = 0;
+		st->fullMove = 1;
+	}
+	else
+	{
+		istringstream(str) >> st->fiftyMove;
+		fen >> st->fullMove;
+	}
 	st->capt = NON;
+	st->CheckerMap = attackers_to(kingSq[turn],  flipColor[turn]);
 	moveBufEnds[0] = 0;
 }
 

@@ -10,7 +10,7 @@ uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];
 byte rook_key[SQ_N][4096]; Bit rook_tbl[4900]; 
 byte bishop_key[SQ_N][512]; Bit bishop_tbl[1428]; 
 Magics rook_magics[SQ_N]; Magics bishop_magics[SQ_N]; 
-Bit orthoslider_ray_tbl[SQ_N], diagslider_ray_tbl[SQ_N];
+Bit ray_rook_tbl[SQ_N], ray_bishop_tbl[SQ_N], ray_queen_tbl[SQ_N];
 Bit between_tbl[SQ_N][SQ_N];
 
 
@@ -30,13 +30,14 @@ void init_tables()
 		init_rook_magics(sq, x, y);
 		init_rook_key(sq, x, y);
 		init_rook_tbl(sq, x, y);  
-		init_orthoslider_ray(sq);
+		init_ray_rook_tbl(sq);
 
 		init_bishop_magics(sq, x, y);
 		init_bishop_key(sq, x, y);
 		init_bishop_tbl(sq, x, y);
-		init_diagslider_ray(sq);
+		init_ray_bishop_tbl(sq);
 
+		init_ray_queen_tbl(sq);
 		init_between_tbl(sq, x, y);
 
 		// pawn has different colors
@@ -135,11 +136,6 @@ void init_rook_tbl(int sq, int x, int y)
 	}
 }
 
-// just the rook's attackmap on an unoccupied board
-void init_orthoslider_ray(int sq)
-{
-	orthoslider_ray_tbl[sq] = rook_attack(sq, 0);
-}
 
 /* Bishop magic bitboard */
 void init_bishop_magics(int sq, int x, int y)
@@ -233,10 +229,20 @@ void init_bishop_tbl(int sq, int x, int y)
 	}
 }
 
-// just the bishop's attackmap on an unoccupied board
-void init_diagslider_ray(int sq)
+// just the rook's attackmap on an unoccupied board
+void init_ray_rook_tbl(int sq)
 {
-	diagslider_ray_tbl[sq] = bishop_attack(sq, 0);
+	ray_rook_tbl[sq] = rook_attack(sq, 0);
+}
+// just the bishop's attackmap on an unoccupied board
+void init_ray_bishop_tbl(int sq)
+{
+	ray_bishop_tbl[sq] = bishop_attack(sq, 0);
+}
+// just the queen's attackmap on an unoccupied board
+void init_ray_queen_tbl(int sq)
+{
+	ray_queen_tbl[sq] = ray_rook_tbl[sq] | ray_bishop_tbl[sq];
 }
 
 // knight attack table

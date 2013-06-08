@@ -34,10 +34,12 @@ namespace Board
 	void init_bishop_key(int sq, int x, int y);
 	extern Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
 	void init_bishop_tbl(int sq, int x, int y);
-	extern Bit orthoslider_ray_tbl[SQ_N];
-	void init_orthoslider_ray(int sq);  // the rook attack map on an unoccupied board
-	extern Bit diagslider_ray_tbl[SQ_N];
-	void init_diagslider_ray(int sq);   // the bishop attack map on an unoccupied board
+	extern Bit ray_rook_tbl[SQ_N];
+	void init_ray_rook_tbl(int sq);  // the rook attack map on an unoccupied board
+	extern Bit ray_bishop_tbl[SQ_N];
+	void init_ray_bishop_tbl(int sq);   // the bishop attack map on an unoccupied board
+	extern Bit ray_queen_tbl[SQ_N];
+	void init_ray_queen_tbl(int sq);   // the queen attack map on an unoccupied board
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -96,9 +98,13 @@ namespace Board
 
 	inline uint forward_sq(int sq, Color c) { return forward_sq_tbl[sq][c]; }
 	inline uint backward_sq(int sq, Color c) { return backward_sq_tbl[sq][c]; }
-	inline Bit orthoslider_ray(int sq) { return orthoslider_ray_tbl[sq]; }
-	inline Bit diagslider_ray(int sq) { return diagslider_ray_tbl[sq]; }
+	inline Bit ray_rook(int sq) { return ray_rook_tbl[sq]; }
+	inline Bit ray_bishop(int sq) { return ray_bishop_tbl[sq]; }
+	inline Bit ray_queen(int sq) { return ray_queen_tbl[sq]; }
 	inline Bit between(int sq1, int sq2) { return between_tbl[sq1][sq2]; }
+	inline bool is_aligned(int sq1, int sq2, int sq3)  // are sq1, 2, 3 aligned?
+	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
+				& ( setbit[sq1] | setbit[sq2] | setbit[sq3] )   ) != 0;  }
 }
 
 

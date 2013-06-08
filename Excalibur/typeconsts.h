@@ -55,8 +55,12 @@ static const Bit CASTLE_MASK[COLOR_N][4] =
 {  {setbit[5]|setbit[6], setbit[4]|setbit[5]|setbit[6], setbit[1]|setbit[2]|setbit[3], setbit[2]|setbit[3]|setbit[4]},
    {setbit[61]|setbit[62], setbit[60]|setbit[61]|setbit[62], setbit[57]|setbit[58]|setbit[59], setbit[58]|setbit[59]|setbit[60]} };
 
-static const int CHECKMATE = 1; // used as return value
-static const int STALEMATE = 2;
+static const enum GameStatus : byte
+{
+	NORMAL = 0,
+	CHECKMATE = 1,
+	STALEMATE = 2
+};
 
 // square index to algebraic notation
 static const char* SQ_NAME[SQ_N] = {

@@ -15,7 +15,6 @@ struct StateInfo
 
 	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "fullMove"
 	Bit CheckerMap; // a map that collects all checkers
-	Bit PinnedMap;  // a map that shows all the pinned pieces
 	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
 };
@@ -29,9 +28,8 @@ class Position
 public:
 
 	Position() { init_default(); } // Default constructor
-	Position(string fen) { st = new StateInfo(); parseFEN(fen); } // construct by FEN
-	Position(const Position& another); // copy ctor
-	~Position() { delete st; }  // destructor 
+	Position(string fen) { parseFEN(fen); } // construct by FEN
+	Position(const Position& another) { *this = another; }; // copy ctor
 	const Position& operator=(const Position& another);  // assignment
 	friend bool operator==(const Position& pos1, const Position& pos2);
 	
@@ -47,6 +45,7 @@ public:
 
 	// Internal states are stored in StateInfo class. Accessed externally
 	Color turn;
+	StateInfo startState;  // allocate on the stack, for initializing the state pointer
 	StateInfo *st; // state pointer
 
 	void reset() { delete st; init_default(); }  // reset to initial position
@@ -58,21 +57,24 @@ public:
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
 	int genEvasions(int index);  // pseudo evasions - our king is in check
-	int genNonEvasions(int index);  // pseudo non-evasions
+	int genNonEvasions(int index) { return genHelper(index, ~Pieces[turn], true); }  // generate all pseudo moves. No legality check
+	int genLegals(int index);  // generate only legal moves
+	bool isLegal(Move& mv, Bit pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
+	Bit pinnedMap(); // a bitmap of all pinned pieces
 	
-	int genAllPseudoMove(int index) { return genHelper(index, ~Pieces[turn], true); }  // generate all pseudo moves. No legality check
-	bool isBitAttacked(Bit Target, Color attacker_side);  // return if any '1' in the target bitmap is attacked.
-	bool isSqAttacked(uint sq, Color attacker_side);  // return if the specified square is attacked. Inlined.
+	void makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo = true);   // make the move. The new state will be recorded in nextState output parameter
+	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
+
+	bool isBitAttacked(Bit Target, Color attacker);  // return if any '1' in the target bitmap is attacked.
+	bool isSqAttacked(uint sq, Color attacker);  // return if the specified square is attacked. Inlined.
 	bool isOwnKingAttacked() { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check
 	bool isOppKingAttacked() { return isSqAttacked(kingSq[flipColor[turn]], turn); }
-	void makeMove(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
-	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
-	// use exhaustive make/unmakeMove for stale/checkmate states. Very expensive.
-	int mateStatus();  // return 0 - no mate; CHECKMATE or STALEMATE - defined in typeconsts.h
+	Bit attackers_to(uint sq, Color attacker);  // inlined
+	GameStatus mateStatus(); // use the genLegal implementation to see if there's any legal move left
+
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
-	U64 perft(int depth, int ply);
 	U64 perft(int depth) { return perft(depth, 0); } // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
@@ -92,24 +94,37 @@ private:
 	void init_default(); // initialize the default piece positions and internal states
 	void refresh_maps(); // refresh the Pieces[] and Occupied
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
-	int genHelper(int index, Bit Target, bool willKingMove);  // pseudo-moves
+	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
+	U64 perft(int depth, int ply);  // will be called with ply = 0
 };
 
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
 
 // Check if a single square is attacked. For check detection
-inline bool Position::isSqAttacked(uint sq, Color attacker_side)
+inline bool Position::isSqAttacked(uint sq, Color attacker)
 {
-	if (Knights[attacker_side] & Board::knight_attack(sq)) return true;
-	if (Kings[attacker_side] & Board::king_attack(sq)) return true;
-	if (Pawns[attacker_side] & Board::pawn_attack(sq, flipColor[attacker_side])) return true;
-	if ((Rooks[attacker_side] | Queens[attacker_side]) & rook_attack(sq)) return true; // orthogonal slider
-	if ((Bishops[attacker_side] | Queens[attacker_side]) & bishop_attack(sq)) return true; // diagonal slider
+	if (Knights[attacker] & Board::knight_attack(sq)) return true;
+	if (Kings[attacker] & Board::king_attack(sq)) return true;
+	if (Pawns[attacker] & Board::pawn_attack(sq, flipColor[attacker])) return true;
+	if ((Rooks[attacker] | Queens[attacker]) & rook_attack(sq)) return true; // orthogonal slider
+	if ((Bishops[attacker] | Queens[attacker]) & bishop_attack(sq)) return true; // diagonal slider
 	return false;
+}
+
+// Bitmap of attackers to a specific square
+inline Bit Position::attackers_to(uint sq, Color attacker)
+{
+	return (Pawns[attacker] & Board::pawn_attack(sq, flipColor[attacker]))
+		| (Knights[attacker] & Board::knight_attack(sq))
+		| (Kings[attacker] & Board::king_attack(sq))
+		| ((Rooks[attacker] | Queens[attacker]) & rook_attack(sq))
+		| ((Bishops[attacker] | Queens[attacker]) & bishop_attack(sq));
 }
 
 extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
+
+void perft_epd_verifier(string fileName);  // perft verifier, with an epd data file
 
 #endif // __position_h__
