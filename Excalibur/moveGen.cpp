@@ -158,7 +158,15 @@ int Position::genHelper(int index, Bit Target, bool willKingMove)
 	return index;
 }
 
-
+/*
+ *	Generate pseudo-legal check evasions. Include king's flee and blocking
+ */
+int Position::genEvasions(int index)
+{
+	Bit Ck = st->CheckerMap;
+	int ckCount = 0;
+	return 0;
+}
 
 /*
  *	Move legality test to see if any '1' in Target is attacked by the specific color

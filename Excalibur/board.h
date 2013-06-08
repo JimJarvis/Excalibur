@@ -12,7 +12,6 @@ namespace Board
 	extern Bit knight_tbl[SQ_N], king_tbl[SQ_N];
 	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
 	extern Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
-	extern uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
 	static const uint INVALID_SQ = 100;  // denote an invalid square in forward/backward tables
 	// for none-sliding pieces: private functions used only to initialize the tables
 	void init_knight_tbl(int sq, int x, int y);
@@ -20,7 +19,11 @@ namespace Board
 	void init_pawn_atk_tbl(int sq, int x, int y, Color c);
 	void init_pawn_push_tbl(int sq, int x, int y, Color c);
 	void init_pawn_push2_tbl(int sq, int x, int y, Color c);
+
+	extern uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
 	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
+	extern Bit between_tbl[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
+	void init_between_tbl(int sq1, int x1, int y1);  // will iterate inside for sq2, x2, y2
 
 	// Precalculated attack tables for sliding pieces. 
 	extern byte rook_key[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
@@ -31,6 +34,10 @@ namespace Board
 	void init_bishop_key(int sq, int x, int y);
 	extern Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
 	void init_bishop_tbl(int sq, int x, int y);
+	extern Bit orthoslider_ray_tbl[SQ_N];
+	void init_orthoslider_ray(int sq);  // the rook attack map on an unoccupied board
+	extern Bit diagslider_ray_tbl[SQ_N];
+	void init_diagslider_ray(int sq);   // the bishop attack map on an unoccupied board
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -71,6 +78,10 @@ namespace Board
 	#define rhash(sq, rook) ((rook) * ROOK_MAGIC[sq])>>52  // get the hash value of a rook &-result, shift 64-12
 	#define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
+	 // utility lambda's.
+	static auto min = [](int x, int y) { return (x < y) ? x : y; }; 
+	static auto max = [](int x, int y) { return (x > y) ? x : y; }; 
+
 	/* Functions that would actually be used to answer attack queries */
 	inline Bit rook_attack(int sq, Bit occup)
 		{ return rook_tbl[ rook_key[sq][rhash(sq, occup & rook_magics[sq].mask)] + rook_magics[sq].offset ]; }
@@ -82,8 +93,12 @@ namespace Board
 	inline Bit pawn_push(int sq, Color c) { return pawn_push_tbl[sq][c]; }
 	inline Bit pawn_push2(int sq, Color c) { return pawn_push2_tbl[sq][c]; }
 	inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
+
 	inline uint forward_sq(int sq, Color c) { return forward_sq_tbl[sq][c]; }
 	inline uint backward_sq(int sq, Color c) { return backward_sq_tbl[sq][c]; }
+	inline Bit orthoslider_ray(int sq) { return orthoslider_ray_tbl[sq]; }
+	inline Bit diagslider_ray(int sq) { return diagslider_ray_tbl[sq]; }
+	inline Bit between(int sq1, int sq2) { return between_tbl[sq1][sq2]; }
 }
 
 

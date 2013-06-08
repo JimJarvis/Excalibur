@@ -111,3 +111,36 @@ TEST(Board, Pawn)
 	ASSERT_EQ(ppush2("a7", B), 4294967296);
 }
 
+TEST(Board, SliderRay)
+{
+	for (int sq = 0; sq < SQ_N; sq++)
+	{
+		ASSERT_EQ(Board::rook_attack(sq, 0), Board::orthoslider_ray(sq));
+		ASSERT_EQ(Board::bishop_attack(sq, 0), Board::diagslider_ray(sq));
+	}
+}
+
+TEST(Board, Between)
+{
+	int sq1, sq2, x1, x2, y1, y2;
+	auto abs = [](int x) { return (x > 0 ? x : -x); };
+	for (sq1 = 0; sq1 < SQ_N; sq1++)
+	{
+		for (sq2 = 0; sq2 < SQ_N; sq2++)
+		{
+			x1 = FILES[sq1]; x2 = FILES[sq2];
+			y1 = RANKS[sq1]; y2 = RANKS[sq2];
+			if (x1 != x2 && y1 != y2 && abs(x1-x2)!=abs(y1-y2))
+				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+			if (x1 == x2 && y1 == y2)
+				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+			if (abs(x1 - x2)==1 && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==1 || abs(x1-x2)==1 && abs(y1-y2)==1 )
+				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+			for (int bitCnt = 2; bitCnt <= 7; bitCnt++)
+			{
+				if (abs(x1 - x2)==bitCnt && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==bitCnt || abs(x1-x2)==bitCnt && abs(y1-y2)==bitCnt )
+					ASSERT_EQ(bitCnt-1, bitCount(Board::between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+			}
+		}		
+	}
+}

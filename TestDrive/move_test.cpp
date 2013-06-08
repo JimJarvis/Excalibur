@@ -144,16 +144,16 @@ TEST(Move, Judgement)
 }
 
 int depthForPerft = 0;
-TEST(Move, InputForPerft)
-{
-	cout << "Input an FEN for Perft: " << endl;
-	char fen[100];
-	cin.getline(fen, 100);
-	pos0.parseFEN(fen);
-	cout << "depth: ";
-	cin >> depthForPerft;
-	cout << "Parsed successfully. Start perft timing at depth " << depthForPerft << ": \n";
-}
+//TEST(Move, InputForPerft)
+//{
+//	cout << "Input an FEN for Perft: " << endl;
+//	char fen[100];
+//	cin.getline(fen, 100);
+//	pos0.parseFEN(fen);
+//	cout << "depth: ";
+//	cin >> depthForPerft;
+//	cout << "Parsed successfully. Start perft timing at depth " << depthForPerft << ": \n";
+//}
 
 /*
  *	Perft test result check
@@ -163,24 +163,24 @@ TEST(Move, InputForPerft)
 U64 perft_capture, perft_EP, perft_castle, perft_promo, perft_check, perft_mate;
 
 int divideDepth;
-TEST(Move, Perft)
-{
-	//for (int depth = 6; depth <= 6; depth ++)
-	//{
-		//perft_capture = perft_EP = perft_castle = perft_promo = perft_check = perft_mate = 0;
-		//cout << "Depth " << depth << endl;
-		clock_t start, end;
-		divideDepth = depthForPerft;
-		start = clock();
-		U64 nodes = pos0.perft(depthForPerft);
-		end = clock();
-		cout << "Nodes = " << nodes << endl;
-		cout << "Time = " << end - start << " ms" << endl;
-		cout << "Speed = " << 1.0 * nodes / (end - start) << " kn/s" << endl;
-		//cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Castles = " << perft_castle 
-		//	<< "; Promotions = " << perft_promo << "; Checks = " << perft_check << "; Mates = " << perft_mate << endl;
-	//}
-}
+//TEST(Move, Perft)
+//{
+//	//for (int depth = 6; depth <= 6; depth ++)
+//	//{
+//		//perft_capture = perft_EP = perft_castle = perft_promo = perft_check = perft_mate = 0;
+//		//cout << "Depth " << depth << endl;
+//		clock_t start, end;
+//		divideDepth = depthForPerft;
+//		start = clock();
+//		U64 nodes = pos0.perft(depthForPerft);
+//		end = clock();
+//		cout << "Nodes = " << nodes << endl;
+//		cout << "Time = " << end - start << " ms" << endl;
+//		cout << "Speed = " << 1.0 * nodes / (end - start) << " kn/s" << endl;
+//		//cout << "Captures = " << perft_capture << "; EP = " << perft_EP << "; Castles = " << perft_castle 
+//		//	<< "; Promotions = " << perft_promo << "; Checks = " << perft_check << "; Mates = " << perft_mate << endl;
+//	//}
+//}
 
 TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unmake
 {

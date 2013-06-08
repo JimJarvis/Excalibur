@@ -10,6 +10,9 @@ uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];
 byte rook_key[SQ_N][4096]; Bit rook_tbl[4900]; 
 byte bishop_key[SQ_N][512]; Bit bishop_tbl[1428]; 
 Magics rook_magics[SQ_N]; Magics bishop_magics[SQ_N]; 
+Bit orthoslider_ray_tbl[SQ_N], diagslider_ray_tbl[SQ_N];
+Bit between_tbl[SQ_N][SQ_N];
+
 
 // initialize *_attack[][] tables
 void init_tables()
@@ -27,10 +30,14 @@ void init_tables()
 		init_rook_magics(sq, x, y);
 		init_rook_key(sq, x, y);
 		init_rook_tbl(sq, x, y);  
+		init_orthoslider_ray(sq);
 
 		init_bishop_magics(sq, x, y);
 		init_bishop_key(sq, x, y);
-		init_bishop_tbl(sq, x, y); 
+		init_bishop_tbl(sq, x, y);
+		init_diagslider_ray(sq);
+
+		init_between_tbl(sq, x, y);
 
 		// pawn has different colors
 		for (Color c : COLORS) // iterate through Color::W and B
@@ -128,6 +135,12 @@ void init_rook_tbl(int sq, int x, int y)
 	}
 }
 
+// just the rook's attackmap on an unoccupied board
+void init_orthoslider_ray(int sq)
+{
+	orthoslider_ray_tbl[sq] = rook_attack(sq, 0);
+}
+
 /* Bishop magic bitboard */
 void init_bishop_magics(int sq, int x, int y)
 {
@@ -159,9 +172,7 @@ void init_bishop_key(int sq, int x, int y)
 
 	uint possibility = 1 << n; // 2^n
 	// Xm stands for the maximum possible range along that diag direction. Counterclockwise with SE most significant
-	//int max = (x > y) ? x : y;
-	auto min = [](int x, int y) { return (x < y) ? x : y; };  // lambda!
-	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y);
+	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y); // min is a lambda function
 	nejug = nwjug = sejug = swjug = 0;
 	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
@@ -195,8 +206,7 @@ void init_bishop_tbl(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
 	uint ne, nw, se, sw, nei, nwi, sei, swi, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
-	auto min = [](int x, int y) { return (x < y) ? x : y; };  // lambda!
-	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y);
+	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y); // min is a lambda function
 	nejug = nwjug = sejug = swjug = 0;
 	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
@@ -221,6 +231,12 @@ void init_bishop_tbl(int sq, int x, int y)
 			}
 		}
 	}
+}
+
+// just the bishop's attackmap on an unoccupied board
+void init_diagslider_ray(int sq)
+{
+	diagslider_ray_tbl[sq] = bishop_attack(sq, 0);
 }
 
 // knight attack table
@@ -312,6 +328,33 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 		backward_sq_tbl[sq][c] = sq - offset;
 }
 
+// iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
+void init_between_tbl(int sq1, int x1, int y1)
+{
+	int sq2, x2, y2, delta, sqi; Bit mask;
+
+	for (sq2 = 0; sq2 < SQ_N; sq2++)
+	{
+		mask = 0;
+		delta = 0;
+		x2 = FILES[sq2];
+		y2 = RANKS[sq2];
+		if (x1 == x2)  // same file
+			delta = 8;
+		else if (y1 == y2)  // same file
+			delta = 1;
+		else if ((y1 - y2)==(x1 - x2))  // same NE-SW diag
+			delta = 9;
+		else if ((y1 - y2)==(x2 - x1))  // same NW-SE diag
+			delta = 7;
+		
+		if (delta != 0)
+			for (sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
+				mask |= setbit[sqi];
+
+		between_tbl[sq1][sq2] = mask;
+	}
+}
 
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()
