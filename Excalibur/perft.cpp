@@ -14,10 +14,10 @@ U64 Position::perft(int depth, int ply)
 	currentBuf = moveBufEnds[ply];
 
 	if (depth == 1) 
-		return genLegals(currentBuf) - currentBuf; 
+		return genLegal(currentBuf) - currentBuf; 
 
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = genLegals(currentBuf);
+	nextBuf = moveBufEnds[ply + 1] = genLegal(currentBuf);
 	Move m;
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
@@ -58,9 +58,13 @@ U64 Position::perft(int depth, int ply)
 	perft 6 119060324
 
 	Lines starting with # are considered comments
+
+	The speedometer displays only when depth 5 + depth 6 nodes exceed a certain limit, 
+	otherwise it's meaningless to test the speed because the denominator would be too small.
 */
-void perft_epd_verifier(string fileName)
+void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool verbose /* =false */)
 {
+	static const int SPEEDOMETER = 250000000;
 	ifstream fin(fileName.c_str());
 	if (!fin.is_open())
 	{
@@ -69,19 +73,21 @@ void perft_epd_verifier(string fileName)
 	}
 	Position ptest;
 	string str;
-	U64 ans, actual, totalTime, totalNodes, grandTime = 0, grandNodes = 0;
+	U64 ans, actual, roundTime, roundNodes, totalTime = 0, totalNodes = 0;
 	clock_t start, end;
+	bool pass = true;
 	while (getline(fin, str))
 	{
 		if (str.empty() || str[0] == '#') continue;
 		if (str.substr(0, 2) == "id")  // we begin a new test
 		{
-			totalTime = totalNodes = 0;
+			if (pass && str.substr(11, 100) != startID) continue; else pass = false;
 			cout << str << endl;
+			roundTime = roundNodes = 0;
 			getline(fin, str, ' ');  // consume the "epd" that precedes the FEN string
 			getline(fin, str); // the FEN string
 			ptest.parseFEN(str);
-			cout << "FEN parsed: " << str << endl;
+			if (verbose)	cout << "FEN parsed: " << str << endl;
 			for (int depth = 1; depth <= 6; depth++)  // the epd file always counts up to 6 plies
 			{
 				fin >> str >> str;  // read off "perft X"
@@ -90,16 +96,22 @@ void perft_epd_verifier(string fileName)
 				actual = ptest.perft(depth);
 				end = clock();
 				assert(actual == ans);  // Test our perft validity
-				if (4 <= depth && depth <=6)
+				if (5 <= depth && depth <=6)
 				{
-					totalNodes += actual;
-					totalTime += end - start;
+					roundNodes += actual;
+					roundTime += end - start;
 				}
-				grandTime += end - start;
-				grandNodes += actual;
-				cout << "Passed depth " << depth << ": " << ans << endl;
-				if (depth == 6)  // display speed info at depth 6
-					cout << "Speed = " << 1.0 * totalNodes / totalTime << " kn/s" << endl;
+				totalTime += end - start;
+				totalNodes += actual;
+				if (verbose) cout << "Passed depth " << depth << ": " << ans << endl;
+				// display speed info at depth 6. If nodes too few, the speedometer's meaningless
+				if (depth == 6)
+				{
+					if (roundNodes > SPEEDOMETER)
+						cout << "PASSED: Speed = " << 1.0 * roundNodes / roundTime << " kn/s" << endl;
+					else
+						cout << "PASSED: Speed N/A, not enough nodes" << endl;
+				}
 			}
 			cout << endl;
 		}
@@ -108,6 +120,6 @@ void perft_epd_verifier(string fileName)
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 	cout << "CONGRATULATIONS!!!!!! ALL TESTS PASSED" << endl;
-	cout << "TOTAL NODES = " << grandNodes << endl;
-	cout << "AVERAGE SPEED = " << 1.0*grandNodes / grandTime << endl;
+	cout << "TOTAL NODES = " << totalNodes << endl;
+	cout << "AVERAGE SPEED = " << 1.0 * totalNodes / totalTime << endl;
 }

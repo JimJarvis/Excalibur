@@ -56,10 +56,11 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	int genEvasions(int index);  // pseudo evasions - our king is in check
-	int genNonEvasions(int index) { return genHelper(index, ~Pieces[turn], true); }  // generate all pseudo moves. No legality check
-	int genLegals(int index);  // generate only legal moves
-	bool isLegal(Move& mv, Bit pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
+	int genEvasions(int index, bool legal = false, Bit pinned = 0);  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
+	int genNonEvasions(int index, bool legal = false, Bit pinned = 0) /* default: pseudo non-evasions */
+		{ return legal ? genLegalHelper(index, ~Pieces[turn], true, pinned) : genHelper(index, ~Pieces[turn], true); }
+	int genLegal(int index);  // generate only legal moves
+	bool isLegal(Move& mv, Bit& pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
 	Bit pinnedMap(); // a bitmap of all pinned pieces
 	
 	void makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo = true);   // make the move. The new state will be recorded in nextState output parameter
@@ -95,11 +96,20 @@ private:
 	void refresh_maps(); // refresh the Pieces[] and Occupied
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
 	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
+	int genLegalHelper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };
 
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
+
+inline int Position::genLegal(int index)
+{
+	Bit pinned = pinnedMap();
+	return st->CheckerMap ? 
+		genEvasions(index, true, pinned) : 
+		genLegalHelper(index, ~Pieces[turn], true, pinned);
+}
 
 // Check if a single square is attacked. For check detection
 inline bool Position::isSqAttacked(uint sq, Color attacker)
@@ -125,6 +135,8 @@ inline Bit Position::attackers_to(uint sq, Color attacker)
 extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
-void perft_epd_verifier(string fileName);  // perft verifier, with an epd data file
+// perft verifier, with an epd data file. 
+// You can supply an optional "startID" to skip until the first test that matches the ID. The ID is the part after "id gentest-"
+void perft_epd_verifier(string fileName, string startID = "initial", bool verbose = false);  
 
 #endif // __position_h__

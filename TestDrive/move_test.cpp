@@ -2,11 +2,14 @@
 #include "tests.h"
 Position pos0;
 
-TEST(Move, Generator1)
+TEST(Move, Generator)
 {
 	pos0.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
-	
-	/* Generate the assertion results
+	pos0.parseFEN("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
+	pos0.parseFEN("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
+	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
+	/* 
+	Generate the assertion results
 	int end = pos2.genAllPseudoMove(0);
 	ofstream fout;
 	fout.open("record.txt");
@@ -17,36 +20,9 @@ TEST(Move, Generator1)
 	}
 	*/
 	
-	int end = pos0.genNonEvasions(0);
-	ASSERT_EQ(37, end);
-	for (int i = 0; i < end; i++)
-	{
-
-	}
 	//static const Move generator_assertion[37] = {38497U, 39667U, 39927U, 46696U, 47272U, 48296U, 48744U, 46893U, 112557U, 243949U, 113133U, 48941U, 49069U, 54086U, 54214U, 54534U, 54982U, 55430U, 55878U, 56442U, 61048U, 61247U, 61311U, 61375U, 61504U, 61568U, 61632U, 61696U, 61760U, 127488U, 62016U, 62592U, 63168U, 129280U, 44219U, 372027U, 44859U};
 	//for (int i = 0; i < end; i++)
 	//	ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
-}
-
-TEST(Move, Generator2)
-{
-	pos0.parseFEN("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
-	int end = pos0.genNonEvasions(0);
-	ASSERT_EQ(63, end);
-}
-
-TEST(Move, Generator3)  // test special moves: castling and en-passant
-{
-	pos0.parseFEN("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
-	int end = pos0.genNonEvasions(0);
-	ASSERT_EQ(23, end);
-}
-
-TEST(Move, Generator4)
-{
-	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
-	int end = pos0.genNonEvasions(0);
-	ASSERT_EQ(34, end);
 }
 
 TEST(Move, Checks)
