@@ -9,13 +9,13 @@ extern int divideDepth;
 /* Classical performance test. Return raw node count */
 U64 Position::perft(int depth, int ply)
 {
-	U64 nodeCount = 0;
 	int currentBuf, nextBuf; 
 	currentBuf = moveBufEnds[ply];
 
 	if (depth == 1) 
 		return genLegal(currentBuf) - currentBuf; 
 
+	U64 nodeCount = 0;
 	// generate from this ply
 	nextBuf = moveBufEnds[ply + 1] = genLegal(currentBuf);
 	Move m;

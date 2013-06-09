@@ -105,6 +105,7 @@ inline ostream& operator<<(ostream& os, Position pos)
 
 inline int Position::genLegal(int index)
 {
+	//return st->CheckerMap ? genEvasions(index, true, pinnedMap()) : genNonEvasions(index, true, pinnedMap());
 	Bit pinned = pinnedMap();
 	return st->CheckerMap ? 
 		genEvasions(index, true, pinned) : 

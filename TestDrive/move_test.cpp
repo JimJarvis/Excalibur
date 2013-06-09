@@ -1,13 +1,13 @@
 /* Move tests */
 #include "tests.h"
-Position pos0;
+Position pos;
 
 TEST(Move, Generator)
 {
-	pos0.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
-	pos0.parseFEN("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
-	pos0.parseFEN("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
-	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
+	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
+	pos.parseFEN("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
+	pos.parseFEN("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
+	pos.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
 	/* 
 	Generate the assertion results
 	int end = pos2.genAllPseudoMove(0);
@@ -29,19 +29,19 @@ TEST(Move, Checks)
 {
 	bool verbose = false;
 	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
-	pos0.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
-	int end = pos0.genNonEvasions(0);
+	pos.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
+	int end = pos.genNonEvasions(0);
 	int check = 0, quiet = 0; // count checking moves
 	StateInfo si; 
 	for (int i = 0; i < end; i++)
 	{
 		Move m = moveBuffer[i];
-		pos0.makeMove(m, si);
-		if (pos0.isOwnKingAttacked())  // display checking moves
+		pos.makeMove(m, si);
+		if (pos.isOwnKingAttacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
 		else // display non-threatening moves to the opposite king
 			{ if (verbose) cout << "non: " <<  m << endl;  quiet ++; }
-		pos0.unmakeMove(m);
+		pos.unmakeMove(m);
 	}
 	ASSERT_EQ(16, check);
 	ASSERT_EQ(43, quiet);
@@ -124,7 +124,7 @@ TEST(Move, Perft)
 	cout << "Input an FEN for Perft: " << endl;
 	char fen[100];
 	cin.getline(fen, 100);
-	pos0.parseFEN(fen);
+	pos.parseFEN(fen);
 	int depthForPerft;
 	cout << "depth: ";
 	cin >> depthForPerft;
@@ -133,7 +133,7 @@ TEST(Move, Perft)
 	divideDepth = depthForPerft;
 	clock_t start, end;
 	start = clock();
-	nodes = pos0.perft(depthForPerft);
+	nodes = pos.perft(depthForPerft);
 	end = clock();
 	cout << "Nodes = " << nodes << endl;
 	cout << "Time = " << end - start << " ms" << endl;
@@ -145,32 +145,32 @@ TEST(Move, Perft)
 
 TEST(Move, Mates)
 {
-	pos0.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
-	ASSERT_EQ(pos0.mateStatus(), CHECKMATE);
-	pos0.parseFEN("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
-	ASSERT_EQ(pos0.mateStatus(), STALEMATE);
-	pos0.parseFEN("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
-	ASSERT_EQ(pos0.mateStatus(), CHECKMATE);
+	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
+	ASSERT_EQ(pos.mateStatus(), CHECKMATE);
+	pos.parseFEN("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
+	ASSERT_EQ(pos.mateStatus(), STALEMATE);
+	pos.parseFEN("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
+	ASSERT_EQ(pos.mateStatus(), CHECKMATE);
 }
 
 
 TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unmake
 {
-	pos0.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
-	Position pos_orig = pos0;
-	int end = pos0.genNonEvasions(0);
+	pos.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
+	Position pos_orig = pos;
+	int end = pos.genNonEvasions(0);
 	
 	StateInfo si;
 	for (int i = end - 1; i < end; i++) // testing all possible moves
 	{
 		Move m = moveBuffer[i];
 		
-		pos0.makeMove(m, si);
+		pos.makeMove(m, si);
 		
-		pos0.unmakeMove(m);
+		pos.unmakeMove(m);
 		// enable the verbose version by overloading the op== in position.cpp
 		//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-		ASSERT_EQ(pos_orig, pos0) << string(m);
+		ASSERT_EQ(pos_orig, pos) << string(m);
 	}
 }
 
@@ -178,57 +178,59 @@ TEST(Move, MakeUnmake1)  // test board internal state consistency after make/unm
  * Use a huge EPD file (perft test results) to verify our move generator 
  * Should build under Release mode, otherwise the perft would be way too slow. 
  */
+/*
 TEST(Move, PerftEPD)
 {
 	perft_epd_verifier("perftsuite.epd");
 }
+*/
 
 /*
 TEST(Move, MakeUnmake2)  // test board consistency: check move up to depth 4. Non-recursive version
 {
-	pos0.parseFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"); 
+	pos.parseFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"); 
 	int end1, end2, end3, end4;
 	Move m1, m2, m3, m4;
-	Position pos_orig1 = pos0;
-	end1 = pos0.genAllPseudoMove(0);
+	Position pos_orig1 = pos;
+	end1 = pos.genAllPseudoMove(0);
 	StateInfo si1;
 	for (int i1 = 0; i1 < end1; i1++) // testing all possible moves up to 3 depths
 	{
 		m1 = moveBuffer[i1];
-		pos0.makeMove(m1, si1);
-		Position pos_orig2 = pos0;
-		end2 = pos0.genAllPseudoMove(end1);
+		pos.makeMove(m1, si1);
+		Position pos_orig2 = pos;
+		end2 = pos.genAllPseudoMove(end1);
 		StateInfo si2;
 		for (int i2 = end1; i2 < end2; i2++)
 		{
 			m2 = moveBuffer[i2];
-			pos0.makeMove(m2, si2);
-			Position pos_orig3 = pos0;
-			end3 = pos0.genAllPseudoMove(end2);
+			pos.makeMove(m2, si2);
+			Position pos_orig3 = pos;
+			end3 = pos.genAllPseudoMove(end2);
 			StateInfo si3;
 			for (int i3 = end2; i3 < end3; i3++)
 			{
 				m3 = moveBuffer[i3];
-				pos0.makeMove(m3, si3);
-				Position pos_orig4 = pos0;
-				end4 = pos0.genAllPseudoMove(end3);
+				pos.makeMove(m3, si3);
+				Position pos_orig4 = pos;
+				end4 = pos.genAllPseudoMove(end3);
 				StateInfo si4;
 				for (int i4 = end3; i4 < end4; i4++)
 				{
 					m4 = moveBuffer[i4];
-					pos0.makeMove(m4, si4);
-					pos0.unmakeMove(m4);
-					ASSERT_EQ(pos_orig4, pos0)<< "depth 4 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
+					pos.makeMove(m4, si4);
+					pos.unmakeMove(m4);
+					ASSERT_EQ(pos_orig4, pos)<< "depth 4 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 				}
 				// begin unmaking all 3 moves consecutively
-				pos0.unmakeMove(m3);
-				ASSERT_EQ(pos_orig3, pos0) << "depth 3 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
+				pos.unmakeMove(m3);
+				ASSERT_EQ(pos_orig3, pos) << "depth 3 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 			}
-			pos0.unmakeMove(m2);
-			ASSERT_EQ(pos_orig2, pos0) << "depth 2 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
+			pos.unmakeMove(m2);
+			ASSERT_EQ(pos_orig2, pos) << "depth 2 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 		}
-		pos0.unmakeMove(m1);
-		ASSERT_EQ(pos_orig1, pos0) << "depth 1 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
+		pos.unmakeMove(m1);
+		ASSERT_EQ(pos_orig1, pos) << "depth 1 fail - moves 1. "<< m1 << "; 2. " << m2 << "; 3. " <<  m3 << "; 4. " << m4 ;
 	}
 } 
 */
