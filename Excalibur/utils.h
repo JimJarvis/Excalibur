@@ -11,6 +11,8 @@
 #include <bitset>
 #include <cctype>
 #include <cstdlib>  // for rand
+#include <cstring>
+#include "stddef.h"
 #include <ctime>
 #include "typeconsts.h"
 using namespace std; 
@@ -24,8 +26,8 @@ inline U64 rand_U64_sparse()  { return rand_U64() & rand_U64(); }  // the more &
  * BitScan and get the position of the least significant bit 
  * bitmap = 0 would be undefined for this func 
  * BITSCAN_MAGIC and INDEX64 are constants needed for LSB algorithm */
-static const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-static const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
+const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
+const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
 inline uint LSB(U64 bitmap)
 { return BITSCAN_INDEX[((bitmap & (~bitmap + 1)) * BITSCAN_MAGIC) >> 58]; }
 inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
@@ -56,5 +58,12 @@ inline Bit oMask(uint pos) { return rankMask(pos) ^ fileMask(pos); } // orthogon
 Bit d1Mask(uint pos);  // diagonal (1/4*pi) parallel to a1-h8
 Bit d3Mask(uint pos);  // anti-diagonal (3/4*pi) parallel to a8-h1
 inline Bit dMask(uint pos) { return d1Mask(pos) ^ d3Mask(pos); } // diagonal mask
+
+// Special RKISS random number generator for hashkeys
+namespace PseudoRand
+{
+	void init();
+	U64 rand();
+}
 
 #endif // __utils_h__

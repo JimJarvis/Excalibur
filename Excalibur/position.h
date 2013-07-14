@@ -20,7 +20,7 @@ struct StateInfo
 };
 
 // Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
-static const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, fullMove) / sizeof(U64) + 1;
+const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, fullMove) / sizeof(U64) + 1;
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
@@ -105,11 +105,9 @@ inline ostream& operator<<(ostream& os, Position pos)
 
 inline int Position::genLegal(int index)
 {
-	//return st->CheckerMap ? genEvasions(index, true, pinnedMap()) : genNonEvasions(index, true, pinnedMap());
-	Bit pinned = pinnedMap();
 	return st->CheckerMap ? 
-		genEvasions(index, true, pinned) : 
-		genLegalHelper(index, ~Pieces[turn], true, pinned);
+		genEvasions(index, true, pinnedMap()) : 
+		genNonEvasions(index, true, pinnedMap());
 }
 
 // Check if a single square is attacked. For check detection

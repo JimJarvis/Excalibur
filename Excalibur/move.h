@@ -4,8 +4,8 @@
 #include "utils.h"
 
 // Masks for promotion types: N-00, B-01, R-10, Q-11
-static const ushort PROMO_MASK[PIECE_TYPE_N] = {0, 0, 0, 0x0, 0, 0x1000, 0x2000, 0x3000};
-static const PieceType PIECE_FROM_PROMO[4] = { KNIGHT, BISHOP, ROOK, QUEEN};
+const ushort PROMO_MASK[PIECE_TYPE_N] = {0, 0, 0, 0x0, 0, 0x1000, 0x2000, 0x3000};
+const PieceType PIECE_FROM_PROMO[4] = { KNIGHT, BISHOP, ROOK, QUEEN};
 
 class Move
 {
@@ -50,12 +50,12 @@ inline ostream& operator<<(ostream& os, Move& m)
 }
 
 /* Constants for castling */
-static const Move MOVE_OO_KING[COLOR_N] = { 0x4184U, 0x4fbcU };
-static const Move MOVE_OOO_KING[COLOR_N] = { 0x4084U, 0x4ebcU };
+const Move MOVE_OO_KING[COLOR_N] = { 0x4184U, 0x4fbcU };
+const Move MOVE_OOO_KING[COLOR_N] = { 0x4084U, 0x4ebcU };
 // location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
-static const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
-static const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
-static const Bit MASK_OO_ROOK[COLOR_N] = { setbit[7] | setbit[5], setbit[63] | setbit[61] };
-static const Bit MASK_OOO_ROOK[COLOR_N] = { setbit[0] | setbit[3], setbit[56] | setbit[59] };
+const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+const Bit MASK_OO_ROOK[COLOR_N] = { setbit[7] | setbit[5], setbit[63] | setbit[61] };
+const Bit MASK_OOO_ROOK[COLOR_N] = { setbit[0] | setbit[3], setbit[56] | setbit[59] };
 
 #endif // __move_h__

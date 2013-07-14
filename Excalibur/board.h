@@ -12,7 +12,7 @@ namespace Board
 	extern Bit knight_tbl[SQ_N], king_tbl[SQ_N];
 	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
 	extern Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
-	static const uint INVALID_SQ = 100;  // denote an invalid square in forward/backward tables
+	const uint INVALID_SQ = 100;  // denote an invalid square in forward/backward tables
 	// for none-sliding pieces: private functions used only to initialize the tables
 	void init_knight_tbl(int sq, int x, int y);
 	void init_king_tbl(int sq, int x, int y);
