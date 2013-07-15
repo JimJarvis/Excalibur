@@ -95,7 +95,9 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 				start = clock();
 				actual = ptest.perft(depth);
 				end = clock();
+
 				assert(actual == ans);  // Test our perft validity
+
 				if (5 <= depth && depth <=6)
 				{
 					roundNodes += actual;

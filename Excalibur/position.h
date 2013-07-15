@@ -37,8 +37,8 @@ public:
 	friend bool operator==(const Position& pos1, const Position& pos2);
 	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
-	Bit Pawns[COLOR_N], Kings[COLOR_N], Knights[COLOR_N], Bishops[COLOR_N], Rooks[COLOR_N], Queens[COLOR_N];
-	Bit Pieces[COLOR_N];  // entire white/black army
+	Bit Pieces[PIECE_TYPE_N][COLOR_N];
+	Bit Oneside[COLOR_N];  // entire white/black army
 	Bit Occupied;  // everything
 	uint kingSq[COLOR_N];  // king square
 
@@ -62,8 +62,13 @@ public:
 	 */
 	int genEvasions(int index, bool legal = false, Bit pinned = 0);  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
 	int genNonEvasions(int index, bool legal = false, Bit pinned = 0) /* default: pseudo non-evasions */
-		{ return legal ? genLegalHelper(index, ~Pieces[turn], true, pinned) : genHelper(index, ~Pieces[turn], true); }
-	int genLegal(int index);  // generate only legal moves
+		{ return legal ? genLegalHelper(index, ~Oneside[turn], true, pinned) : genHelper(index, ~Oneside[turn], true); }
+
+	int genLegal(int index)  { return st->CheckerMap ? 
+		genEvasions(index, true, pinnedMap()) : 	genNonEvasions(index, true, pinnedMap()); }  // generate only legal moves
+	int genPseudoLegal(int index)  { return st->CheckerMap ?
+		genEvasions(index) : genNonEvasions(index); }// generate pseudo legal moves
+
 	bool isLegal(Move& mv, Bit& pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
 	Bit pinnedMap(); // a bitmap of all pinned pieces
 	
@@ -83,17 +88,12 @@ public:
 	U64 perft(int depth) { return perft(depth, 0); } // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
-	// non-sliding pieces
-	//Bit knight_attack(int sq) { return Board::knight_attack(sq); }
-	//Bit king_attack(int sq) { return Board::king_attack(sq); }
-	Bit pawn_attack(int sq) const { return Board::pawn_attack(sq, turn); }
+	// Use explicit template instantiation
+	template<PieceType> Bit attack_map(uint sq) const;
+
+	// Pawn push masks
 	Bit pawn_push(int sq) const { return Board::pawn_push(sq, turn); }
 	Bit pawn_push2(int sq) const { return Board::pawn_push2(sq, turn); }
-
-	// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
-	Bit rook_attack(int sq) const { return Board::rook_attack(sq, Occupied); } // internal state
-	Bit bishop_attack(int sq) const { return Board::bishop_attack(sq, Occupied); };
-	Bit queen_attack(int sq) const { return rook_attack(sq) | bishop_attack(sq); }
 
 private:
 	void init_default(); // initialize the default piece positions and internal states
@@ -114,35 +114,53 @@ private:
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };
 
+// Explicit attack mask template instantiation. Attack from a specific square.
+// non-sliding pieces
+template<>
+inline Bit Position::attack_map<PAWN>(uint sq) const { return Board::pawn_attack(sq, turn); }
+template<>
+inline Bit Position::attack_map<KNIGHT>(uint sq) const { return Board::knight_attack(sq); }
+template<>
+inline Bit Position::attack_map<KING>(uint sq) const { return Board::king_attack(sq); }
+// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
+template<>
+inline Bit Position::attack_map<ROOK>(uint sq) const { return Board::rook_attack(sq, Occupied); }
+template<>
+inline Bit Position::attack_map<BISHOP>(uint sq) const { return Board::bishop_attack(sq, Occupied); }
+template<>
+inline Bit Position::attack_map<QUEEN>(uint sq) const { return Board::rook_attack(sq, Occupied) | Board::bishop_attack(sq, Occupied); }
+
+
+// A few useful pseudonyms
+#define Pawnmap Pieces[PAWN]
+#define Kingmap Pieces[KING]
+#define Knightmap Pieces[KNIGHT]
+#define Bishopmap Pieces[BISHOP]
+#define Rookmap Pieces[ROOK]
+#define Queenmap Pieces[QUEEN]
+
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
-
-inline int Position::genLegal(int index)
-{
-	return st->CheckerMap ? 
-		genEvasions(index, true, pinnedMap()) : 
-		genNonEvasions(index, true, pinnedMap());
-}
 
 // Check if a single square is attacked. For check detection
 inline bool Position::isSqAttacked(uint sq, Color attacker) const
 {
-	if (Knights[attacker] & Board::knight_attack(sq)) return true;
-	if (Kings[attacker] & Board::king_attack(sq)) return true;
-	if (Pawns[attacker] & Board::pawn_attack(sq, flipColor[attacker])) return true;
-	if ((Rooks[attacker] | Queens[attacker]) & rook_attack(sq)) return true; // orthogonal slider
-	if ((Bishops[attacker] | Queens[attacker]) & bishop_attack(sq)) return true; // diagonal slider
+	if (Knightmap[attacker] & Board::knight_attack(sq)) return true;
+	if (Kingmap[attacker] & Board::king_attack(sq)) return true;
+	if (Pawnmap[attacker] & Board::pawn_attack(sq, flipColor[attacker])) return true;
+	if ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq)) return true; // orthogonal slider
+	if ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq)) return true; // diagonal slider
 	return false;
 }
 
 // Bitmap of attackers to a specific square
 inline Bit Position::attackers_to(uint sq, Color attacker) const
 {
-	return (Pawns[attacker] & Board::pawn_attack(sq, flipColor[attacker]))
-		| (Knights[attacker] & Board::knight_attack(sq))
-		| (Kings[attacker] & Board::king_attack(sq))
-		| ((Rooks[attacker] | Queens[attacker]) & rook_attack(sq))
-		| ((Bishops[attacker] | Queens[attacker]) & bishop_attack(sq));
+	return (Pawnmap[attacker] & Board::pawn_attack(sq, flipColor[attacker]))
+		| (Knightmap[attacker] & Board::knight_attack(sq))
+		| (Kingmap[attacker] & Board::king_attack(sq))
+		| ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq))
+		| ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq));
 }
 
 extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.

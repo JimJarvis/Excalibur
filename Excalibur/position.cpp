@@ -69,18 +69,18 @@ const Position& Position::operator=(const Position& another)
 // initialize the default position bitmaps
 void Position::init_default()
 {
-	Kings[W] = 0x10;
-	Queens[W]  = 0x8;
-	Rooks[W]  = 0x81;
-	Bishops[W]  = 0x24;
-	Knights[W]  = 0x42;
-	Pawns[W]  = 0xff00;
-	Kings[B] = 0x1000000000000000;
-	Queens[B] = 0x800000000000000;
-	Rooks[B] = 0x8100000000000000;
-	Bishops[B] = 0x2400000000000000;
-	Knights[B] = 0x4200000000000000;
-	Pawns[B] = 0x00ff000000000000;
+	Kingmap[W] = 0x10;
+	Queenmap[W]  = 0x8;
+	Rookmap[W]  = 0x81;
+	Bishopmap[W]  = 0x24;
+	Knightmap[W]  = 0x42;
+	Pawnmap[W]  = 0xff00;
+	Kingmap[B] = 0x1000000000000000;
+	Queenmap[B] = 0x800000000000000;
+	Rookmap[B] = 0x8100000000000000;
+	Bishopmap[B] = 0x2400000000000000;
+	Knightmap[B] = 0x4200000000000000;
+	Pawnmap[B] = 0x00ff000000000000;
 	refresh_maps();
 	
 	for (int sq = 0; sq < SQ_N; sq++)
@@ -128,10 +128,13 @@ void Position::refresh_maps()
 {
 	for (Color c : COLORS)
 	{
-		Pieces[c] = Pawns[c] | Kings[c] | Knights[c] | Bishops[c] | Rooks[c] | Queens[c];
-		kingSq[c] = LSB(Kings[c]);
+		Oneside[c] = 0;
+		for (PieceType pt : PIECE_TYPES)
+			Oneside[c] |= Pieces[pt][c];
+
+		kingSq[c] = LSB(Kingmap[c]);
 	}
-	Occupied = Pieces[W] | Pieces[B];
+	Occupied = Oneside[W] | Oneside[B];
 }
 
 /* Parse an FEN string
@@ -143,9 +146,11 @@ void Position::parseFEN(string fen0)
 	st = &startState;
 	for (Color c : COLORS)
 	{
-		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
 		for (PieceType pt : PIECE_TYPES)
+		{
+			Pieces[pt][c] = 0;
 			pieceCount[c][pt] = 0;
+		}
 	}
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
@@ -176,12 +181,12 @@ void Position::parseFEN(string fen0)
 			PieceType pt;
 			switch (ch)
 			{
-			case 'p': Pawns[c] |= mask; pt = PAWN; break;
-			case 'n': Knights[c] |= mask; pt = KNIGHT; break;
-			case 'b': Bishops[c] |= mask; pt = BISHOP; break;
-			case 'r': Rooks[c] |= mask; pt = ROOK; break;
-			case 'q': Queens[c] |= mask; pt = QUEEN; break;
-			case 'k': Kings[c] |= mask; pt = KING; break;
+			case 'p': Pawnmap[c] |= mask; pt = PAWN; break;
+			case 'n': Knightmap[c] |= mask; pt = KNIGHT; break;
+			case 'b': Bishopmap[c] |= mask; pt = BISHOP; break;
+			case 'r': Rookmap[c] |= mask; pt = ROOK; break;
+			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
+			case 'k': Kingmap[c] |= mask; pt = KING; break;
 			}
 			++ pieceCount[c][pt]; 
 			boardPiece[SQUARES[file][rank]] = pt;
@@ -268,18 +273,11 @@ bool operator==(const Position& pos1, const Position& pos2)
 			{ cout << "false castleRights for Color " << c << ": " << pos1.st->castleRights[c] << " != " << pos2.st->castleRights[c] << endl;	return false;}
 		if (pos1.kingSq[c] != pos2.kingSq[c])
 			{ cout << "false kingSq for Color" << c << ": " << pos1.kingSq[c] << " != " << pos2.kingSq[c] << endl; return false;	}
-		if (pos1.Pawns[c] != pos2.Pawns[c]) 
-			{ cout << "false Pawns for Color " << c << ": " << pos1.Pawns[c] << " != " << pos2.Pawns[c] << endl;	return false;}
-		if (pos1.Kings[c] != pos2.Kings[c]) 
-			{ cout << "false Kings for Color " << c << ": " << pos1.Kings[c] << " != " << pos2.Kings[c] << endl;	return false;}
-		if (pos1.Knights[c] != pos2.Knights[c]) 
-			{ cout << "false Knights for Color " << c << ": " << pos1.Knights[c] << " != " << pos2.Knights[c] << endl;	return false;}
-		if (pos1.Bishops[c] != pos2.Bishops[c]) 
-			{ cout << "false Bishops for Color " << c << ": " << pos1.Bishops[c] << " != " << pos2.Bishops[c] << endl;	return false;}
-		if (pos1.Rooks[c] != pos2.Rooks[c]) 
-			{ cout << "false Rooks for Color " << c << ": " << pos1.Rooks[c] << " != " << pos2.Rooks[c] << endl;	return false;}
-		if (pos1.Queens[c] != pos2.Queens[c])
-			{ cout << "false Queens for Color " << c << ": " << pos1.Queens[c] << " != " << pos2.Queens[c] << endl;	return false;}
+
+		for (PieceType pt : PIECE_TYPES)
+			if (pos1.Pieces[pt][c] != pos2.Pieces[pt][c])
+				{ cout << "false" << PIECE_FULL_NAME[pt] << " Pawns for Color " << c << ": " << pos1.Pieces[pt][c] << " != " << pos2.Pieces[pt][c] << endl;	return false;}
+
 		for (PieceType piece : PIECE_TYPES)
 			if (pos1.pieceCount[c][piece] != pos2.pieceCount[c][piece]) 
 				{ cout << "false pieceCount for Color " << c << " " << PIECE_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
@@ -302,8 +300,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 // Display the full board with letters
 void Position::display()
 {
-	bitset<64> wk(Kings[W]), wq(Queens[W]), wr(Rooks[W]), wb(Bishops[W]), wn(Knights[W]), wp(Pawns[W]);
-	bitset<64> bk(Kings[B]), bq(Queens[B]), br(Rooks[B]), bb(Bishops[B]), bn(Knights[B]), bp(Pawns[B]);
+	bitset<64> wk(Kingmap[W]), wq(Queenmap[W]), wr(Rookmap[W]), wb(Bishopmap[W]), wn(Knightmap[W]), wp(Pawnmap[W]);
+	bitset<64> bk(Kingmap[B]), bq(Queenmap[B]), br(Rookmap[B]), bb(Bishopmap[B]), bn(Knightmap[B]), bp(Pawnmap[B]);
 	for (int i = 7; i >= 0; i--)
 	{
 		cout << i+1 << "  ";
