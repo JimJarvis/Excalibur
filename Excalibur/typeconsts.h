@@ -8,10 +8,22 @@ typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned char byte;
+typedef int Value;
+enum Score : int {};
 
 #define SQ_N 64
 #define COLOR_N 2
 #define PIECE_TYPE_N 8
+#define FILE_N 8
+
+enum Color : byte
+{
+	W = 0,
+	B = 1,
+	NON_COLOR = 2
+};
+const Color COLORS[COLOR_N] = {W, B}; // for iterator
+const Color flipColor[COLOR_N] = {B, W};
 
 /* Piece identifiers, 4 bits each.
  * &8: white or black; &4: sliders; &2: horizontal/vertical slider; &1: diagonal slider
@@ -19,14 +31,6 @@ typedef unsigned char byte;
  * major pieces (without color bits set), are > 5
  * minor and major pieces (without color bits set), are > 2
  */
-enum Color : byte
-{
-	W = 0,
-	B = 1
-};
-const Color COLORS[COLOR_N] = {W, B}; // for iterator
-const Color flipColor[COLOR_N] = {B, W};
-
 enum PieceType : byte
 {
 	NON = 0,
@@ -60,6 +64,12 @@ enum GameStatus : byte
 	NORMAL = 0,
 	CHECKMATE = 1,
 	STALEMATE = 2
+};
+
+enum Phase {
+	PHASE_ENDGAME = 0,
+	PHASE_MIDGAME = 128,
+	MG = 0, EG = 1
 };
 
 // square index to algebraic notation
@@ -97,7 +107,7 @@ const int RANKS[SQ_N] = { // sq >> 3
 	7, 7, 7, 7, 7, 7, 7, 7,
 };
 // position[FILE][RANK], fast lookup
-const int SQUARES[8][8] = {  
+const int SQUARES[FILE_N][FILE_N] = {  
 	{0, 8, 16, 24, 32, 40, 48, 56},
 	{1, 9, 17, 25, 33, 41, 49, 57},
 	{2, 10, 18, 26, 34, 42, 50, 58},
@@ -108,8 +118,17 @@ const int SQUARES[8][8] = {
 	{7, 15, 23, 31, 39, 47, 55, 63},
 };
 
+#include <vector>
+// Hashtable implementation. For pawn and material table
+template<class T, int Size>
+class HashTable
+{
+public:
+	HashTable(): data(Size, T()) {}
+	T* operator[](U64 key) { return &data[(uint)key & (Size - 1)]; }
 
-// Evaluation scores
-
+private:
+	std::vector<T> data;
+};
 
 #endif // __typeconsts_h__

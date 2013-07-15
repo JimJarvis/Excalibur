@@ -1,4 +1,5 @@
 #include "board.h"
+using std::min; using std::max;
 
 namespace Board
 {

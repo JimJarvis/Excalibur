@@ -12,6 +12,7 @@
 #include <cctype>
 #include <cstdlib>  // for rand
 #include <cstring>
+#include <algorithm>
 #include "stddef.h"
 #include <ctime>
 #include "typeconsts.h"
@@ -62,8 +63,32 @@ inline Bit dMask(uint pos) { return d1Mask(pos) ^ d3Mask(pos); } // diagonal mas
 // Special RKISS random number generator for hashkeys
 namespace PseudoRand
 {
-	void init();
+	void init_seed(int seed = 73);
 	U64 rand();
+}
+
+
+// Evaluation Scores
+/* Score keeps a midgame and endgame value
+* LSB 16 bits are used to store the endgame value, while upper 16 bits for midgame
+*/
+inline Score make_score(int mg, int eg) { return Score((mg << 16) + eg); }
+/* Extracting the signed lower and upper 16 bits it not so trivial because
+* according to the standard a simple cast to short is implementation defined
+ and so is a right shift of a signed integer. */
+inline Value mg_value(Score s) { return ((s + 32768) & ~0xffff) / 0x10000; }
+inline Value eg_value(Score s) {
+	return (int)(unsigned(s) & 0x7fffu) - (int)(unsigned(s) & 0x8000u);
+}
+/// Division of a Score must be handled separately for each term
+inline Score operator/(Score s, int i) {
+	return make_score(mg_value(s) / i, eg_value(s) / i);
+}
+
+/// Weight score v by score w trying to prevent overflow
+inline Score apply_weight(Score v, Score w) {
+	return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
+		(int(eg_value(v)) * eg_value(w)) / 0x100);
 }
 
 #endif // __utils_h__

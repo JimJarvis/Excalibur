@@ -80,10 +80,6 @@ namespace Board
 	#define rhash(sq, rook) ((rook) * ROOK_MAGIC[sq])>>52  // get the hash value of a rook &-result, shift 64-12
 	#define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
-	 // utility lambda's.
-	static auto min = [](int x, int y) { return (x < y) ? x : y; }; 
-	static auto max = [](int x, int y) { return (x > y) ? x : y; }; 
-
 	/* Functions that would actually be used to answer attack queries */
 	inline Bit rook_attack(int sq, Bit occup)
 		{ return rook_tbl[ rook_key[sq][rhash(sq, occup & rook_magics[sq].mask)] + rook_magics[sq].offset ]; }

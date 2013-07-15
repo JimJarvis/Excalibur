@@ -4,7 +4,8 @@
 
 TEST(Misc, Other)
 {
-	
+	Position pp;
+	Eval::evaluate(pp);
 }
 
 /* We must define this main "entry point" if we are to build the project in Release mode */

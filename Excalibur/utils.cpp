@@ -162,34 +162,31 @@ inline uint LSB(U64 bitmap)
  - Thread safe
  */
 
-//namespace PseudoRand {
-//
-//	// Keep variables always together
-//	struct PseudoRandHelper { U64 a, b, c, d; } s;
-//
-//	inline U64 rotate(U64 x, U64 k) {
-//		return (x << k) | (x >> (64 - k));
-//	}
-//
-//	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
-//	U64 rand64() {
-//
-//		const U64
-//			e = s.a - rotate(s.b,  7);
-//		s.a = s.b ^ rotate(s.c, 13);
-//		s.b = s.c + rotate(s.d, 37);
-//		s.c = s.d + e;
-//		return s.d = e + s.a;
-//	}
-//
-//public:
-//	RKISS(int seed = 73) {
-//
-//		s.a = 0xf1ea5eed;
-//		s.b = s.c = s.d = 0xd4e12c77;
-//		for (int i = 0; i < seed; i++) // Scramble a few rounds
-//			rand64();
-//	}
-//
-//	template<typename T> T rand() { return T(rand64()); }
-//};
+namespace PseudoRand {
+
+	// Keep variables always together
+	struct PseudoRandHelper { U64 a, b, c, d; } s;
+
+	inline U64 rotate(U64 x, U64 k) {
+		return (x << k) | (x >> (64 - k));
+	}
+
+	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
+	U64 rand() {
+
+		const U64
+			e = s.a - rotate(s.b,  7);
+		s.a = s.b ^ rotate(s.c, 13);
+		s.b = s.c + rotate(s.d, 37);
+		s.c = s.d + e;
+		return s.d = e + s.a;
+	}
+
+	void init_seed(int seed) {
+
+		s.a = 0xf1ea5eed;
+		s.b = s.c = s.d = 0xd4e12c77;
+		for (int i = 0; i < seed; i++) // Scramble a few rounds
+			rand();
+	}
+};

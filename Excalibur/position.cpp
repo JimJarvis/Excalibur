@@ -1,5 +1,62 @@
 #include "position.h"
 
+namespace Zobrist {
+
+	U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
+	U64 enpassant[FILE_N];
+	const int CASTLE_RIGHT_NB = 16;
+	U64 castle[CASTLE_RIGHT_NB];
+	U64 side;
+	U64 exclusion;
+
+	/// init() initializes at startup the various arrays used to compute hash keys
+	/// and the piece square tables. The latter is a two-step operation: First, the
+	/// white halves of the tables are copied from PSQT[] tables. Second, the black
+	/// halves of the tables are initialized by flipping and changing the sign of
+	/// the white scores.
+
+	/*
+	void init() {
+
+		for (Color c : COLORS)
+			for (PieceType pt : PIECE_TYPES)
+				for (int sq = 0; sq < SQ_N; sq ++)
+					psq[c][pt][sq] = PseudoRand::rand();
+
+		for (int file = 0; file < FILE_N; file++)
+			enpassant[file] = PseudoRand::rand();
+
+		for (int cr = CASTLES_NONE; cr <= ALL_CASTLES; cr++)
+		{
+			Bitboard b = cr;
+			while (b)
+			{
+				U64 k = castle[1ULL << pop_lsb(&b)];
+				castle[cr] ^= k ? k : rk.rand<U64>();
+			}
+		}
+
+		side = PseudoRand::rand();
+		exclusion  = PseudoRand::rand();
+
+		for (PieceType pt = PAWN; pt <= KING; pt++)
+		{
+			PieceValue[MG][make_piece(BLACK, pt)] = PieceValue[MG][pt];
+			PieceValue[EG][make_piece(BLACK, pt)] = PieceValue[EG][pt];
+
+			Score v = make_score(PieceValue[MG][pt], PieceValue[EG][pt]);
+
+			for (Square s = SQ_A1; s <= SQ_H8; s++)
+			{
+				pieceSquareTable[make_piece(WHITE, pt)][ s] =  (v + PSQT[pt][s]);
+				pieceSquareTable[make_piece(BLACK, pt)][~s] = -(v + PSQT[pt][s]);
+			}
+		}
+	}
+
+	*/
+} // namespace Zobrist
+
 // Assignment
 const Position& Position::operator=(const Position& another)
 {
@@ -26,8 +83,17 @@ void Position::init_default()
 	Pawns[B] = 0x00ff000000000000;
 	refresh_maps();
 	
-	for (int pos = 0; pos < SQ_N; pos++)
-		boardPiece[pos] = NON;
+	for (int sq = 0; sq < SQ_N; sq++)
+	{
+		boardPiece[sq] = NON;
+		// fill the color occupation
+		if (sq < 16)
+			boardColor[sq] = W;
+		else if (sq >= 48)
+			boardColor[sq] = B;
+		else
+			boardColor[sq] = NON_COLOR;
+	}
 	for (Color c : COLORS)  
 	{
 		// init pieceCount[COLOR_N][PIECE_TYPE_N]
@@ -52,6 +118,7 @@ void Position::init_default()
 	st->epSquare = 0;
 	st->capt = NON;
 	st->CheckerMap = 0;
+	st->materialKey = calc_material_key();
 	turn = W;  // white goes first
 	moveBufEnds[0] = 0;
 }
@@ -77,10 +144,15 @@ void Position::parseFEN(string fen0)
 	for (Color c : COLORS)
 	{
 		Pawns[c] = Kings[c] = Knights[c] = Bishops[c] = Rooks[c] = Queens[c] = 0;
-		pieceCount[c][PAWN] = pieceCount[c][KING] = pieceCount[c][KNIGHT] = pieceCount[c][BISHOP] = pieceCount[c][ROOK] = pieceCount[c][QUEEN] = 0;
+		for (PieceType pt : PIECE_TYPES)
+			pieceCount[c][pt] = 0;
 	}
-	for (int pos = 0; pos < SQ_N; pos++)
-		boardPiece[pos] = NON;
+	for (int sq = 0; sq < SQ_N; sq++)
+	{
+		boardPiece[sq] = NON;
+		boardColor[sq] = NON_COLOR;
+	}
+
 	istringstream fen(fen0);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
@@ -113,6 +185,7 @@ void Position::parseFEN(string fen0)
 			}
 			++ pieceCount[c][pt]; 
 			boardPiece[SQUARES[file][rank]] = pt;
+			boardColor[SQUARES[file][rank]] = c;
 			file ++;
 		}
 	}
@@ -154,7 +227,26 @@ void Position::parseFEN(string fen0)
 	}
 	st->capt = NON;
 	st->CheckerMap = attackers_to(kingSq[turn],  flipColor[turn]);
+	st->materialKey = calc_material_key();
 	moveBufEnds[0] = 0;
+}
+
+
+/*
+ *	Hash key computations. Used at initialization and debugging. 
+ * Usually incrementally updated.
+ */
+
+U64 Position::calc_material_key() const
+{
+	U64 key = 0;
+
+	for (Color c : COLORS)
+		for (PieceType pt : PIECE_TYPES)
+			for (uint count = 0; count < pieceCount[c][pt]; count++)
+				key ^= Zobrist::psq[c][pt][count];
+
+	return key;
 }
 
 // for debugging purpose
@@ -195,8 +287,13 @@ bool operator==(const Position& pos1, const Position& pos2)
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (int sq = 0; sq < SQ_N; sq++)
+	{
 		if (pos1.boardPiece[sq] != pos2.boardPiece[sq]) 
 			{ cout << "false boardPiece for square " << SQ_NAME[sq] << ": " << PIECE_NAME[pos1.boardPiece[sq]] << " != " << PIECE_NAME[pos2.boardPiece[sq]] << endl;	return false;}
+		if (pos1.boardColor[sq] != pos2.boardColor[sq]) 
+			{ cout << "false boardColor for square " << SQ_NAME[sq] << ": " << pos1.boardColor[sq] << " != " << pos2.boardColor[sq] << endl;	return false;}
+	}
+
 
 	return true; // won't display anything if the test passes
 }

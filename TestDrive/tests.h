@@ -16,6 +16,7 @@ using namespace std;
 
 // include headers in Excalibur
 #include "position.h"
+#include "eval.h"
 
 /* test-oriented functions */
 void blank();

@@ -454,7 +454,7 @@ int Position::genLegal(int index)
  *	Move legality test to see if any '1' in Target is attacked by the specific color
  * for check detection and castling legality
  */
-bool Position::isBitAttacked(Bit Target, Color attacker)
+bool Position::isBitAttacked(Bit Target, Color attacker) const
 {
 	uint to;
 	Color defender_side = flipColor[attacker];
@@ -501,8 +501,8 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 	Color opponent = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
-	boardPiece[from] = NON;
-	boardPiece[to] = piece;
+	boardPiece[from] = NON;  boardColor[from] = NON_COLOR;
+	boardPiece[to] = piece;  boardColor[to] = turn;
 	st->epSquare = 0;
 	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
@@ -518,7 +518,7 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 			capt = PAWN;
 			uint ep_sq = Board::backward_sq(st->st_prev->epSquare, turn);
 			ToMap = setbit[ep_sq];  // the captured pawn location
-			boardPiece[ep_sq] = NON;
+			boardPiece[ep_sq] = NON; boardColor[ep_sq] = NON_COLOR;
 		}
 		else if (mv.isPromo())
 		{
@@ -543,19 +543,24 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 		st->castleRights[turn] = 0;  // cannot castle any more
 		if (mv.isCastle())
 		{
+			uint tmpsq;
 			if (FILES[to] == 6)  // King side castle
 			{
 				Rooks[turn] ^= MASK_OO_ROOK[turn];
 				Pieces[turn] ^= MASK_OO_ROOK[turn];
-				boardPiece[SQ_OO_ROOK[turn][0]] = NON;  // from
-				boardPiece[SQ_OO_ROOK[turn][1]] = ROOK;  // to
+				tmpsq = SQ_OO_ROOK[turn][0];
+				boardPiece[tmpsq] = NON; boardColor[tmpsq] = NON_COLOR;  // from
+				tmpsq = SQ_OO_ROOK[turn][1];
+				boardPiece[tmpsq] = ROOK; boardColor[tmpsq] = turn; // to
 			}
 			else
 			{
 				Rooks[turn] ^= MASK_OOO_ROOK[turn];
 				Pieces[turn] ^= MASK_OOO_ROOK[turn];
-				boardPiece[SQ_OOO_ROOK[turn][0]] = NON;  // from
-				boardPiece[SQ_OOO_ROOK[turn][1]] = ROOK;  // to
+				tmpsq = SQ_OOO_ROOK[turn][0];
+				boardPiece[tmpsq] = NON; boardColor[tmpsq] = NON_COLOR;  // from
+				tmpsq = SQ_OOO_ROOK[turn][1];
+				boardPiece[tmpsq] = ROOK; boardColor[tmpsq] = turn; // to
 			}
 		}
 		break;
@@ -619,12 +624,12 @@ void Position::unmakeMove(Move& mv)
 	bool isPromo = mv.isPromo();
 	PieceType piece = isPromo ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
-	Color opponent = turn;
+	Color opp = turn;
 	turn = flipColor[turn];
 
 	Pieces[turn] ^= FromToMap;
-	boardPiece[from] = piece; // restore
-	boardPiece[to] = NON;
+	boardPiece[from] = piece; boardColor[from] = turn; // restore
+	boardPiece[to] = NON; boardColor[to] = NON_COLOR;
 
 	switch (piece)
 	{
@@ -659,19 +664,24 @@ void Position::unmakeMove(Move& mv)
 		kingSq[turn] = from; // restore the original king position
 		if (mv.isCastle())
 		{
+			uint tmpsq;
 			if (FILES[to] == 6)  // king side castling
 			{
 				Rooks[turn] ^= MASK_OO_ROOK[turn];
 				Pieces[turn] ^= MASK_OO_ROOK[turn];
-				boardPiece[SQ_OO_ROOK[turn][0]] = ROOK;  // from
-				boardPiece[SQ_OO_ROOK[turn][1]] = NON;  // to
+				tmpsq = SQ_OO_ROOK[turn][0];
+				boardPiece[tmpsq] = ROOK;  boardColor[tmpsq] = turn;  // from
+				tmpsq = SQ_OO_ROOK[turn][1];
+				boardPiece[tmpsq] = NON;  boardColor[tmpsq] = NON_COLOR; // to
 			}
 			else
 			{
 				Rooks[turn] ^= MASK_OOO_ROOK[turn];
 				Pieces[turn] ^= MASK_OOO_ROOK[turn];
-				boardPiece[SQ_OOO_ROOK[turn][0]] = ROOK;  // from
-				boardPiece[SQ_OOO_ROOK[turn][1]] = NON;  // to
+				tmpsq = SQ_OOO_ROOK[turn][0];
+				boardPiece[tmpsq] = ROOK;  boardColor[tmpsq] = turn;  // from
+				tmpsq = SQ_OOO_ROOK[turn][1];
+				boardPiece[tmpsq] = NON;  boardColor[tmpsq] = NON_COLOR; // to
 			}
 		}
 		break;
@@ -691,16 +701,17 @@ void Position::unmakeMove(Move& mv)
 	{
 		switch (capt)
 		{
-		case PAWN: Pawns[opponent] ^= ToMap; break;
-		case KNIGHT: Knights[opponent] ^= ToMap; break;
-		case BISHOP: Bishops[opponent] ^= ToMap; break;
-		case ROOK: Rooks[opponent] ^= ToMap; 	break;
-		case QUEEN: Queens[opponent] ^= ToMap; break;
-		case KING: Kings[opponent] ^= ToMap; break;
+		case PAWN: Pawns[opp] ^= ToMap; break;
+		case KNIGHT: Knights[opp] ^= ToMap; break;
+		case BISHOP: Bishops[opp] ^= ToMap; break;
+		case ROOK: Rooks[opp] ^= ToMap; 	break;
+		case QUEEN: Queens[opp] ^= ToMap; break;
+		case KING: Kings[opp] ^= ToMap; break;
 		}
-		++ pieceCount[opponent][capt];
-		Pieces[opponent] ^= ToMap;
+		++ pieceCount[opp][capt];
+		Pieces[opp] ^= ToMap;
 		boardPiece[to] = capt;  // restore the captured piece
+		boardColor[to] = opp;
 	}
 
 	Occupied = Pieces[W] | Pieces[B];
