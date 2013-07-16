@@ -3,6 +3,7 @@
 
 #include "move.h"
 #include "board.h"
+#include "zobrist.h"
 
 /* internal state of a position: used to unmake a move */
 struct StateInfo
@@ -10,6 +11,7 @@ struct StateInfo
 	// State hash keys
 	U64 pawnKey, materialKey, key;
 	Value npMaterial[COLOR_N];  // non-pawn material
+	Score psqScore;
 	// additional important states
 	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
 	uint epSquare; // en-passant square
@@ -95,21 +97,22 @@ public:
 	Bit pawn_push(int sq) const { return Board::pawn_push(sq, turn); }
 	Bit pawn_push2(int sq) const { return Board::pawn_push2(sq, turn); }
 
-private:
-	void init_default(); // initialize the default piece positions and internal states
-	void refresh_maps(); // refresh the Pieces[] and Occupied
-	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
-	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
-	int genLegalHelper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
-
 	/* Hash key computation */
 	// Calculate from scratch: used for initialization and debugging
 	U64 calc_key() const;
 	U64 calc_material_key() const;
 	U64 calc_pawn_key() const;
 	// Calculate incremental eval scores and material
-	Score compute_psq_score() const;
-	Value compute_non_pawn_material(Color c) const;
+	Score calc_psq_score() const;
+	Value calc_non_pawn_material(Color c) const;
+
+
+private:
+	void init_default(); // initialize the default piece positions and internal states
+	void refresh_maps(); // refresh the Pieces[] and Occupied
+	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
+	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
+	int genLegalHelper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
 
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };

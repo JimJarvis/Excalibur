@@ -79,3 +79,5 @@ namespace Eval
 		}
 	}
 }
+
+#undef S

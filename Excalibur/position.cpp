@@ -1,62 +1,5 @@
 #include "position.h"
 
-namespace Zobrist {
-
-	U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
-	U64 enpassant[FILE_N];
-	const int CASTLE_RIGHT_NB = 16;
-	U64 castle[CASTLE_RIGHT_NB];
-	U64 side;
-	U64 exclusion;
-
-	/// init() initializes at startup the various arrays used to compute hash keys
-	/// and the piece square tables. The latter is a two-step operation: First, the
-	/// white halves of the tables are copied from PSQT[] tables. Second, the black
-	/// halves of the tables are initialized by flipping and changing the sign of
-	/// the white scores.
-
-	/*
-	void init() {
-
-		for (Color c : COLORS)
-			for (PieceType pt : PIECE_TYPES)
-				for (int sq = 0; sq < SQ_N; sq ++)
-					psq[c][pt][sq] = PseudoRand::rand();
-
-		for (int file = 0; file < FILE_N; file++)
-			enpassant[file] = PseudoRand::rand();
-
-		for (int cr = CASTLES_NONE; cr <= ALL_CASTLES; cr++)
-		{
-			Bitboard b = cr;
-			while (b)
-			{
-				U64 k = castle[1ULL << pop_lsb(&b)];
-				castle[cr] ^= k ? k : rk.rand<U64>();
-			}
-		}
-
-		side = PseudoRand::rand();
-		exclusion  = PseudoRand::rand();
-
-		for (PieceType pt = PAWN; pt <= KING; pt++)
-		{
-			PieceValue[MG][make_piece(BLACK, pt)] = PieceValue[MG][pt];
-			PieceValue[EG][make_piece(BLACK, pt)] = PieceValue[EG][pt];
-
-			Score v = make_score(PieceValue[MG][pt], PieceValue[EG][pt]);
-
-			for (Square s = SQ_A1; s <= SQ_H8; s++)
-			{
-				pieceSquareTable[make_piece(WHITE, pt)][ s] =  (v + PSQT[pt][s]);
-				pieceSquareTable[make_piece(BLACK, pt)][~s] = -(v + PSQT[pt][s]);
-			}
-		}
-	}
-
-	*/
-} // namespace Zobrist
-
 // Assignment
 const Position& Position::operator=(const Position& another)
 {
@@ -118,7 +61,12 @@ void Position::init_default()
 	st->epSquare = 0;
 	st->capt = NON;
 	st->CheckerMap = 0;
+
+	st->key = calc_key();
 	st->materialKey = calc_material_key();
+	st->psqScore = calc_psq_score();
+	for (Color c : COLORS)
+		st->npMaterial[c] = calc_non_pawn_material(c);
 	turn = W;  // white goes first
 	moveBufEnds[0] = 0;
 }
@@ -232,15 +180,47 @@ void Position::parseFEN(string fen0)
 	}
 	st->capt = NON;
 	st->CheckerMap = attackers_to(kingSq[turn],  flipColor[turn]);
+
+	st->key = calc_key();
 	st->materialKey = calc_material_key();
+	st->psqScore = calc_psq_score();
+	for (Color c : COLORS)
+		st->npMaterial[c] = calc_non_pawn_material(c);
+
 	moveBufEnds[0] = 0;
 }
 
 
 /*
- *	Hash key computations. Used at initialization and debugging. 
+ *	Hash key computations. Used at initialization and debugging, to verify 
+ * the correctness of makeMove() and unmakeMove() pairs. 
  * Usually incrementally updated.
  */
+U64 Position::calc_key() const
+{
+	U64 key = 0;
+	for (Color c : COLORS)  // castling hash
+	{
+		if (st->castleRights[c] & 1)
+			key ^= Zobrist::castleOO[c];
+		if (st->castleRights[c] & 2)
+			key ^= Zobrist::castleOOO[c];
+	}
+
+	PieceType pt;
+	int sq;
+	for (sq = 0; sq < SQ_N; sq++)
+		if ((pt = boardPiece[sq]) != NON)
+			key ^= Zobrist::psq[boardColor[sq]][pt][sq];
+
+	if ((sq = st->epSquare) != 0)
+		key ^= Zobrist::enpassant[FILES[sq]];
+
+	if (turn == B)
+		key ^= Zobrist::side;
+
+	return key;
+}
 
 U64 Position::calc_material_key() const
 {
@@ -253,6 +233,37 @@ U64 Position::calc_material_key() const
 
 	return key;
 }
+
+// Used at debugging and initialization. Usually incrementally updated
+Score Position::calc_psq_score() const 
+{
+	Score score = Score(0);
+
+	PieceType pt;
+	for (int sq = 0; sq < SQ_N; sq++)
+		if ((pt = boardPiece[sq]) != NON)
+			score += pieceSquareTable[boardColor[sq]][pt][sq];
+
+	return score;
+}
+
+/* Calcs the total non-pawn middle game material value for the given side. Material values are updated
+ incrementally during the search, this function is only used while initializing a new Position object. */
+
+Value Position::calc_non_pawn_material(Color c) const 
+{
+
+	Value value = 0;
+
+	for (PieceType pt : PIECE_TYPES)
+	{
+		if (pt == PAWN) continue;
+		else
+			value += pieceCount[c][pt] * pieceVALUE[MG][pt];
+	}
+	return value;
+}
+
 
 // for debugging purpose
 bool operator==(const Position& pos1, const Position& pos2)
@@ -295,7 +306,6 @@ bool operator==(const Position& pos1, const Position& pos2)
 
 	return true; // won't display anything if the test passes
 }
-
 
 // Display the full board with letters
 void Position::display()

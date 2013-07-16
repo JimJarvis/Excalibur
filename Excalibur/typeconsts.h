@@ -12,10 +12,9 @@ typedef int Value;
 enum Score : int {};
 
 #define SQ_N 64
-#define COLOR_N 2
-#define PIECE_TYPE_N 8
 #define FILE_N 8
 
+#define COLOR_N 2
 enum Color : byte
 {
 	W = 0,
@@ -31,6 +30,7 @@ const Color flipColor[COLOR_N] = {B, W};
  * major pieces (without color bits set), are > 5
  * minor and major pieces (without color bits set), are > 2
  */
+#define PIECE_TYPE_N 8
 enum PieceType : byte
 {
 	NON = 0,
@@ -67,6 +67,7 @@ enum GameStatus : byte
 	STALEMATE = 2
 };
 
+#define PHASE_N 2
 enum Phase {
 	PHASE_ENDGAME = 0,
 	PHASE_MIDGAME = 128,

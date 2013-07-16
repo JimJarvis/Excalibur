@@ -18,11 +18,6 @@
 #include "typeconsts.h"
 using namespace std; 
 
-// random 64-bit
-inline U64 rand_U64() 
-{ return (U64(rand()) & 0xFFFF) | ((U64(rand()) & 0xFFFF) << 16) | ((U64(rand()) & 0xFFFF) << 32) | ((U64(rand()) & 0xFFFF) << 48); }
-inline U64 rand_U64_sparse()  { return rand_U64() & rand_U64(); }  // the more & the sparser 
-
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
  * bitmap = 0 would be undefined for this func 
@@ -43,6 +38,7 @@ inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline bool isSlider(PieceType p) { return (p & 4) == 4; }
 inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank
 inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  // slider along the diagonal
+
 // castle right query
 inline bool canCastleOO(byte castleRight) { return (castleRight & 1) == 1; }
 inline bool canCastleOOO(byte castleRight) { return (castleRight & 2) == 2; }
@@ -64,7 +60,8 @@ inline Bit dMask(uint pos) { return d1Mask(pos) ^ d3Mask(pos); } // diagonal mas
 namespace PseudoRand
 {
 	void init_seed(int seed = 73);
-	U64 rand();
+	U64 rand64();
+	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
 }
 
 
@@ -90,5 +87,16 @@ inline Score apply_weight(Score v, Score w) {
 	return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
 		(int(eg_value(v)) * eg_value(w)) / 0x100);
 }
+
+#define DEF_OPERATOR(T)                                         \
+	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \
+	inline T operator-(const T d1, const T d2) { return T(int(d1) - int(d2)); } \
+	inline T operator*(int i, const T d) { return T(i * int(d)); }              \
+	inline T operator*(const T d, int i) { return T(int(d) * i); }              \
+	inline T operator-(const T d) { return T(-int(d)); }                        \
+	inline T& operator+=(T& d1, const T d2) { d1 = d1 + d2; return d1; }        \
+	inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
+	inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }
+DEF_OPERATOR(Score);  // operators enabled
 
 #endif // __utils_h__

@@ -172,7 +172,7 @@ namespace PseudoRand {
 	}
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
-	U64 rand() {
+	U64 rand64() {
 
 		const U64
 			e = s.a - rotate(s.b,  7);
@@ -187,6 +187,6 @@ namespace PseudoRand {
 		s.a = 0xf1ea5eed;
 		s.b = s.c = s.d = 0xd4e12c77;
 		for (int i = 0; i < seed; i++) // Scramble a few rounds
-			rand();
+			rand64();
 	}
 };
