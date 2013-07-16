@@ -21,7 +21,7 @@ enum Color : byte
 	B = 1,
 	NON_COLOR = 2
 };
-const Color COLORS[COLOR_N] = {W, B}; // for iterator
+const Color COLORS[COLOR_N] = {W, B}; // iterator
 const Color flipColor[COLOR_N] = {B, W};
 
 /* Piece identifiers, 4 bits each.
@@ -42,7 +42,8 @@ enum PieceType : byte
 	QUEEN = 7,      //  111
 };
 const PieceType PIECE_TYPES[PIECE_TYPE_N - 2] = {PAWN, KING, KNIGHT, BISHOP, ROOK, QUEEN}; // for iterators
-static const char* PIECE_NAME[PIECE_TYPE_N] = {"", "", "K", "N", "", "B", "R", "Q"};
+static const char* PIECE_NOTATION[PIECE_TYPE_N] = {"", "", "K", "N", "", "B", "R", "Q"};
+static const char* PIECE_FEN[COLOR_N][PIECE_TYPE_N] = { {"", "P", "K", "N", "", "B", "R", "Q"}, {"", "p", "k", "n", "", "b", "r", "q"} };  // FEN name. White - capital letters.
 static const char* PIECE_FULL_NAME[PIECE_TYPE_N] = {"", "Pawn", "King", "Knight", "", "Bishop", "Rook", "Queen"};
 
 // single-bit masks

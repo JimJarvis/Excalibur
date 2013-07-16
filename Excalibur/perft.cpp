@@ -72,7 +72,7 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 		return;
 	}
 	Position ptest;
-	string str;
+	string str, FEN;
 	U64 ans, actual, roundTime, roundNodes, totalTime = 0, totalNodes = 0;
 	clock_t start, end;
 	bool pass = true;
@@ -86,7 +86,8 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 			roundTime = roundNodes = 0;
 			getline(fin, str, ' ');  // consume the "epd" that precedes the FEN string
 			getline(fin, str); // the FEN string
-			ptest.parseFEN(str);
+			FEN = str;
+			ptest.parseFEN(FEN);
 			if (verbose)	cout << "FEN parsed: " << str << endl;
 			for (int depth = 1; depth <= 6; depth++)  // the epd file always counts up to 6 plies
 			{
@@ -96,7 +97,13 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 				actual = ptest.perft(depth);
 				end = clock();
 
-				assert(actual == ans);  // Test our perft validity
+				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)
+				{
+					cout << "FATAL ERROR at depth " << depth << endl;
+					cout << FEN << endl;
+					cout << "Expected = " << ans << "    Actual = " << actual << endl;
+					exit(1);
+				}
 
 				if (5 <= depth && depth <=6)
 				{

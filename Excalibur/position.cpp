@@ -9,7 +9,7 @@ const Position& Position::operator=(const Position& another)
 	return *this;
 }
 
-// initialize the default position bitmaps
+/* initialize the default position bitmaps
 void Position::init_default()
 {
 	Kingmap[W] = 0x10;
@@ -64,32 +64,21 @@ void Position::init_default()
 
 	st->key = calc_key();
 	st->materialKey = calc_material_key();
+	st->pawnKey = calc_pawn_key();
 	st->psqScore = calc_psq_score();
 	for (Color c : COLORS)
 		st->npMaterial[c] = calc_non_pawn_material(c);
 	turn = W;  // white goes first
 	moveBufEnds[0] = 0;
 }
+*/
 
-// refresh the maps and king position
-void Position::refresh_maps()
-{
-	for (Color c : COLORS)
-	{
-		Oneside[c] = 0;
-		for (PieceType pt : PIECE_TYPES)
-			Oneside[c] |= Pieces[pt][c];
-
-		kingSq[c] = LSB(Kingmap[c]);
-	}
-	Occupied = Oneside[W] | Oneside[B];
-}
-
-/* Parse an FEN string
+/* 
+ * Parse an FEN string
  * FEN format:
- * positions active_color castle_status en_passant halfmoves fullmoves
+ * positions active_color castle_status en_passant halfMoves fullMoves
  */
-void Position::parseFEN(string fen0)
+void Position::parseFEN(string fenstr)
 {
 	st = &startState;
 	for (Color c : COLORS)
@@ -106,7 +95,7 @@ void Position::parseFEN(string fen0)
 		boardColor[sq] = NON_COLOR;
 	}
 
-	istringstream fen(fen0);
+	istringstream fen(fenstr);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
 	int file = 0;  // leftmost file
@@ -142,7 +131,17 @@ void Position::parseFEN(string fen0)
 			file ++;
 		}
 	}
-	refresh_maps();
+
+	for (Color c : COLORS)
+	{
+		Oneside[c] = 0;
+		for (PieceType pt : PIECE_TYPES)
+			Oneside[c] |= Pieces[pt][c];
+
+		kingSq[c] = LSB(Kingmap[c]);
+	}
+	Occupied = Oneside[W] | Oneside[B];
+
 	turn =  fen.get()=='w' ? W : B;  // indicate active part
 	fen.get(); // consume the space
 	st->castleRights[W] = st->castleRights[B] = 0;
@@ -183,6 +182,7 @@ void Position::parseFEN(string fen0)
 
 	st->key = calc_key();
 	st->materialKey = calc_material_key();
+	st->pawnKey = calc_pawn_key();
 	st->psqScore = calc_psq_score();
 	for (Color c : COLORS)
 		st->npMaterial[c] = calc_non_pawn_material(c);
@@ -190,38 +190,83 @@ void Position::parseFEN(string fen0)
 	moveBufEnds[0] = 0;
 }
 
+// Convert the current position to an FEN
+string Position::toFEN()
+{
+	ostringstream fen;
+	int space;
+	string piece;
+	for (int i = 7; i >= 0; i--)
+	{
+		space = 0;
+		for (int j = 0; j < 8; j++)
+		{
+			int sq = SQUARES[j][i];
+			if (boardPiece[sq] == NON)
+			{
+				space ++;
+				if (j == 7)  fen << space;   // the last file
+			}
+			else
+			{
+				piece = PIECE_FEN[boardColor[sq]][boardPiece[sq]];
+				if (space == 0)
+					fen << piece;
+				else
+				{ fen << space << piece; space = 0; }
+			}
+		}
+		if (i != 0)  fen << "/";
+	}
+
+	fen << " " << (turn == W ? "w" : "b") << " ";  // side to move
+
+	if (st->castleRights[W] == 0 && st->castleRights[B] == 0) // castle rights
+		fen << "-";
+	else
+		fen << (canCastleOO(st->castleRights[W]) ? "K":"") 
+			<< (canCastleOOO(st->castleRights[W]) ? "Q":"")
+			<< (canCastleOO(st->castleRights[B]) ? "k":"") 
+			<< (canCastleOOO(st->castleRights[B]) ? "q":"");  
+
+	fen << " " << (st->epSquare == 0 ? "-" : sq2str(st->epSquare)); // enpassant
+	fen << " " << st->fiftyMove << " " << st->fullMove;
+
+	return fen.str();
+}
 
 /*
  *	Hash key computations. Used at initialization and debugging, to verify 
  * the correctness of makeMove() and unmakeMove() pairs. 
  * Usually incrementally updated.
  */
+// Zobrist key for the position state
 U64 Position::calc_key() const
 {
 	U64 key = 0;
 	for (Color c : COLORS)  // castling hash
 	{
-		if (st->castleRights[c] & 1)
+		if (canCastleOO(st->castleRights[c]))
 			key ^= Zobrist::castleOO[c];
-		if (st->castleRights[c] & 2)
+		if (canCastleOOO(st->castleRights[c]))
 			key ^= Zobrist::castleOOO[c];
 	}
 
 	PieceType pt;
-	int sq;
-	for (sq = 0; sq < SQ_N; sq++)
+	for (int sq = 0; sq < SQ_N; sq++)
 		if ((pt = boardPiece[sq]) != NON)
 			key ^= Zobrist::psq[boardColor[sq]][pt][sq];
 
-	if ((sq = st->epSquare) != 0)
-		key ^= Zobrist::enpassant[FILES[sq]];
+	if ( st->epSquare != 0)
+		key ^= Zobrist::ep[FILES[st->epSquare]];
 
 	if (turn == B)
-		key ^= Zobrist::side;
+		key ^= Zobrist::turn;
 
 	return key;
 }
 
+// material key
 U64 Position::calc_material_key() const
 {
 	U64 key = 0;
@@ -230,6 +275,21 @@ U64 Position::calc_material_key() const
 		for (PieceType pt : PIECE_TYPES)
 			for (uint count = 0; count < pieceCount[c][pt]; count++)
 				key ^= Zobrist::psq[c][pt][count];
+
+	return key;
+}
+
+// Pawn structure key
+U64 Position::calc_pawn_key() const {
+
+	U64 key = 0;
+	Bit pawns = Pawnmap[W] | Pawnmap[B];
+
+	while (pawns)
+	{
+		int sq = popLSB(pawns);
+		key ^= Zobrist::psq[boardColor[sq]][PAWN][sq];
+	}
 
 	return key;
 }
@@ -277,7 +337,7 @@ bool operator==(const Position& pos1, const Position& pos2)
 	if (pos1.st->fullMove != pos2.st->fullMove) 
 		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
 	if (pos1.st->capt != pos2.st->capt)
-		{ cout << "false capt: " << PIECE_NAME[pos1.st->capt] << " != " << PIECE_NAME[pos2.st->capt] << endl;	return false;}
+		{ cout << "false capt: " << PIECE_FULL_NAME[pos1.st->capt] << " != " << PIECE_FULL_NAME[pos2.st->capt] << endl;	return false;}
 	for (Color c : COLORS)
 	{
 		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
@@ -291,16 +351,16 @@ bool operator==(const Position& pos1, const Position& pos2)
 
 		for (PieceType piece : PIECE_TYPES)
 			if (pos1.pieceCount[c][piece] != pos2.pieceCount[c][piece]) 
-				{ cout << "false pieceCount for Color " << c << " " << PIECE_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
+				{ cout << "false pieceCount for Color " << c << " " << PIECE_FULL_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
 	}
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
 		if (pos1.boardPiece[sq] != pos2.boardPiece[sq]) 
-			{ cout << "false boardPiece for square " << SQ_NAME[sq] << ": " << PIECE_NAME[pos1.boardPiece[sq]] << " != " << PIECE_NAME[pos2.boardPiece[sq]] << endl;	return false;}
+			{ cout << "false boardPiece for square " << sq2str(sq) << ": " << PIECE_FULL_NAME[pos1.boardPiece[sq]] << " != " << PIECE_FULL_NAME[pos2.boardPiece[sq]] << endl;	return false;}
 		if (pos1.boardColor[sq] != pos2.boardColor[sq]) 
-			{ cout << "false boardColor for square " << SQ_NAME[sq] << ": " << pos1.boardColor[sq] << " != " << pos2.boardColor[sq] << endl;	return false;}
+			{ cout << "false boardColor for square " << sq2str(sq) << ": " << pos1.boardColor[sq] << " != " << pos2.boardColor[sq] << endl;	return false;}
 	}
 
 
@@ -310,29 +370,18 @@ bool operator==(const Position& pos1, const Position& pos2)
 // Display the full board with letters
 void Position::display()
 {
-	bitset<64> wk(Kingmap[W]), wq(Queenmap[W]), wr(Rookmap[W]), wb(Bishopmap[W]), wn(Knightmap[W]), wp(Pawnmap[W]);
-	bitset<64> bk(Kingmap[B]), bq(Queenmap[B]), br(Rookmap[B]), bb(Bishopmap[B]), bn(Knightmap[B]), bp(Pawnmap[B]);
 	for (int i = 7; i >= 0; i--)
 	{
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			int n = SQUARES[j][i];
-			char c;
-			if (wk[n]) c = 'K';
-			else if (wq[n]) c = 'Q';
-			else if (wr[n])	 c = 'R';
-			else if (wb[n]) c = 'B';
-			else if (wn[n]) c = 'N';
-			else if (wp[n]) c = 'P';
-			else if (bk[n]) c = 'k';
-			else if (bq[n]) c = 'q';
-			else if (br[n])	 c = 'r';
-			else if (bb[n]) c = 'b';
-			else if (bn[n]) c = 'n';
-			else if (bp[n]) c = 'p';
-			else c = '.';
-			cout << c << " ";
+			int sq = SQUARES[j][i];
+			string str;
+			if (boardPiece[sq] == NON)
+				str = ".";
+			else
+				str = PIECE_FEN[boardColor[sq]][boardPiece[sq]];
+			cout << str << " ";
 		}
 		cout << endl;
 	}

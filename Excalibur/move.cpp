@@ -6,10 +6,10 @@ Move::operator string()  // verbose algebraic notation: no disambiguation
 	if (isCastle())
 		ostr << (FILES[getTo()]==6 ? "O-O" : "O-O-O");
 	else if (isEP())
-		ostr << SQ_NAME[getFrom()] << "-" << SQ_NAME[getTo()] << "[EP]";
+		ostr << sq2str(getFrom()) << "-" << sq2str(getTo()) << "[EP]";
 	else
-		ostr << SQ_NAME[getFrom()] << "-" << SQ_NAME[getTo()]
-			<< (isPromo() ? string("=")+PIECE_NAME[getPromo()] : "" );
+		ostr << sq2str(getFrom()) << "-" << sq2str(getTo())
+			<< (isPromo() ? string("=")+PIECE_NOTATION[getPromo()] : "" );
 
 	return ostr.str();
 }

@@ -392,6 +392,9 @@ bool Position::isBitAttacked(Bit Target, Color attacker) const
  */
 void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 {
+	// First get the previous Zobrist key
+	U64 key = st->key;
+
 	// copy to the next state and begin updating the new state object
 	memcpy(&nextSt, st, STATEINFO_COPY_SIZE * sizeof(U64));
 	nextSt.st_prev = st;
@@ -409,65 +412,101 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 	Oneside[turn] ^= FromToMap;
 	boardPiece[from] = NON;  boardColor[from] = NON_COLOR;
 	boardPiece[to] = piece;  boardColor[to] = turn;
-	st->epSquare = 0;
+
+	// hash keys and incremental score
+	key ^= Zobrist::turn;  // update side-to-move
+	key ^= Zobrist::psq[turn][piece][from] ^ Zobrist::psq[turn][piece][to];
+	st->psqScore += pieceSquareTable[turn][piece][to] - pieceSquareTable[turn][piece][from];
+	if (st->epSquare != 0)  // reset epSquare and its hash key
+	{
+		key ^=Zobrist::ep[FILES[st->epSquare]];
+		st->epSquare = 0;
+	}
 	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	switch (piece)
 	{
 	case PAWN:
 		st->fiftyMove = 0;  // any pawn move resets the fifty-move clock
+		// update pawn structure key
+		st->pawnKey ^= Zobrist::psq[turn][PAWN][from] ^ Zobrist::psq[turn][PAWN][to];
+
 		if (ToMap == pawn_push2(from)) // if pawn double push
+		{
 			st->epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
+			key ^=Zobrist::ep[FILES[st->epSquare]]; // update ep key
+		}
 		if (mv.isEP())  // en-passant capture
 		{
 			capt = PAWN;
-			uint ep_sq = Board::backward_sq(st->st_prev->epSquare, turn);
-			ToMap = setbit[ep_sq];  // the captured pawn location
-			boardPiece[ep_sq] = NON; boardColor[ep_sq] = NON_COLOR;
+			to = Board::backward_sq(st->st_prev->epSquare, turn);
+			ToMap = setbit[to];  // the captured pawn location
+			boardPiece[to] = NON; boardColor[to] = NON_COLOR;
 		}
 		else if (mv.isPromo())
 		{
 			PieceType promo = mv.getPromo();
 			Pawnmap[turn] ^= ToMap;  // the pawn's no longer there
-			-- pieceCount[turn][PAWN];
-			++ pieceCount[turn][promo];
 			boardPiece[to] = promo;
 			Pieces[promo][turn] ^= ToMap;
+
+			// update hash keys and incremental scores
+			key ^= Zobrist::psq[turn][PAWN][to] ^ Zobrist::psq[turn][promo][to];
+			st->pawnKey ^= Zobrist::psq[turn][PAWN][to];
+			st->materialKey ^= Zobrist::psq[turn][promo][pieceCount[turn][promo]++]
+					^ Zobrist::psq[turn][PAWN][--pieceCount[turn][PAWN]];
+			st->psqScore += pieceSquareTable[turn][promo][to] - pieceSquareTable[turn][PAWN][to];
+			st->npMaterial[turn] += pieceVALUE[MG][promo];
 		}
 		break;
 
 	case KING:
 		kingSq[turn] = to; // update king square
+		// update castling hash keys
+		if (canCastleOO(st->castleRights[turn]))  key ^= Zobrist::castleOO[turn];
+		if (canCastleOOO(st->castleRights[turn]))  key ^= Zobrist::castleOOO[turn];
 		st->castleRights[turn] = 0;  // cannot castle any more
 		if (mv.isCastle())
 		{
-			uint tmpsq;
+			uint rfrom, rto;
 			if (FILES[to] == 6)  // King side castle
 			{
 				Rookmap[turn] ^= MASK_OO_ROOK[turn];
 				Oneside[turn] ^= MASK_OO_ROOK[turn];
-				tmpsq = SQ_OO_ROOK[turn][0];
-				boardPiece[tmpsq] = NON; boardColor[tmpsq] = NON_COLOR;  // from
-				tmpsq = SQ_OO_ROOK[turn][1];
-				boardPiece[tmpsq] = ROOK; boardColor[tmpsq] = turn; // to
+				rfrom = SQ_OO_ROOK[turn][0];
+				boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
+				rto = SQ_OO_ROOK[turn][1];
+				boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 			}
 			else
 			{
 				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
 				Oneside[turn] ^= MASK_OOO_ROOK[turn];
-				tmpsq = SQ_OOO_ROOK[turn][0];
-				boardPiece[tmpsq] = NON; boardColor[tmpsq] = NON_COLOR;  // from
-				tmpsq = SQ_OOO_ROOK[turn][1];
-				boardPiece[tmpsq] = ROOK; boardColor[tmpsq] = turn; // to
+				rfrom = SQ_OOO_ROOK[turn][0];
+				boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
+				rto = SQ_OOO_ROOK[turn][1];
+				boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 			}
+			// update the hash key for the moving rook
+			key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
+			// update incremental score
+			st->psqScore += pieceSquareTable[turn][ROOK][rto] - pieceSquareTable[turn][ROOK][rfrom];
 		}
 		break;
 
 	case ROOK:
 		if (from == SQ_OO_ROOK[turn][0])   // if the rook moves, cancel the castle rights
-			deleteCastleOO(st->castleRights[turn]);
+		{	if (canCastleOO(st->castleRights[turn]))
+			{
+				key ^= Zobrist::castleOO[turn];  // update castling hash key
+				deleteCastleOO(st->castleRights[turn]);
+			}	}
 		else if (from == SQ_OOO_ROOK[turn][0])
-			deleteCastleOOO(st->castleRights[turn]);
+		{	if (canCastleOOO(st->castleRights[turn]))
+			{
+				key ^= Zobrist::castleOOO[turn];
+				deleteCastleOOO(st->castleRights[turn]);
+			}	}
 		break;
 	}
 
@@ -477,17 +516,36 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 		Pieces[capt][opp] ^= ToMap;
 		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
 		{
-			if (to == SQ_OO_ROOK[opp][0])  deleteCastleOO(st->castleRights[opp]);
-			else if (to == SQ_OOO_ROOK[opp][0])  deleteCastleOOO(st->castleRights[opp]);
+		 	if (to == SQ_OO_ROOK[opp][0])  
+			{	if (canCastleOO(st->castleRights[opp]))
+				{
+					key ^= Zobrist::castleOO[opp];  // update castling hash key
+					deleteCastleOO(st->castleRights[opp]);
+				}  }
+			else if (to == SQ_OOO_ROOK[opp][0])  
+			{	if (canCastleOOO(st->castleRights[opp]))
+				{
+					key ^= Zobrist::castleOOO[opp];
+					deleteCastleOOO(st->castleRights[opp]);
+				}  }
 		}
-		-- pieceCount[opp][capt];
 		Oneside[opp] ^= ToMap;
 		st->fiftyMove = 0;  // deal with fifty move counter
+
+		// update hash keys and incremental scores
+		key ^= Zobrist::psq[opp][capt][to];
+		if (capt == PAWN)
+			st->pawnKey ^= Zobrist::psq[opp][PAWN][to];
+		else
+			st->npMaterial[opp] -= pieceVALUE[MG][capt];
+		st->materialKey ^= Zobrist::psq[opp][capt][--pieceCount[opp][capt]];
+		st->psqScore -= pieceSquareTable[opp][capt][to];
 	}
 	else if (piece != PAWN)
 		st->fiftyMove ++;
 
 	st->capt = capt;
+	st->key = key;
 	Occupied = Oneside[W] | Oneside[B];
 
 	// now we look from our opponents' perspective and update checker info
@@ -520,9 +578,9 @@ void Position::unmakeMove(Move& mv)
 	case PAWN:
 		if (mv.isEP())  // en-passant capture
 		{
-			uint ep_sq = Board::backward_sq(st->st_prev->epSquare, turn);
-			ToMap = setbit[ep_sq];  // the captured pawn location
-			to = ep_sq;  // will restore the captured pawn later, with all other capturing cases
+			// will restore the captured pawn later, with all other capturing cases
+			to = Board::backward_sq(st->st_prev->epSquare, turn);
+			ToMap = setbit[to];  // the captured pawn location
 		}
 		else if (isPromo)
 		{
@@ -540,24 +598,24 @@ void Position::unmakeMove(Move& mv)
 		kingSq[turn] = from; // restore the original king position
 		if (mv.isCastle())
 		{
-			uint tmpsq;
+			uint rfrom, rto;
 			if (FILES[to] == 6)  // king side castling
 			{
 				Rookmap[turn] ^= MASK_OO_ROOK[turn];
 				Oneside[turn] ^= MASK_OO_ROOK[turn];
-				tmpsq = SQ_OO_ROOK[turn][0];
-				boardPiece[tmpsq] = ROOK;  boardColor[tmpsq] = turn;  // from
-				tmpsq = SQ_OO_ROOK[turn][1];
-				boardPiece[tmpsq] = NON;  boardColor[tmpsq] = NON_COLOR; // to
+				rfrom = SQ_OO_ROOK[turn][0];
+				boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
+				rto = SQ_OO_ROOK[turn][1];
+				boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
 			}
 			else
 			{
 				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
 				Oneside[turn] ^= MASK_OOO_ROOK[turn];
-				tmpsq = SQ_OOO_ROOK[turn][0];
-				boardPiece[tmpsq] = ROOK;  boardColor[tmpsq] = turn;  // from
-				tmpsq = SQ_OOO_ROOK[turn][1];
-				boardPiece[tmpsq] = NON;  boardColor[tmpsq] = NON_COLOR; // to
+				rfrom = SQ_OOO_ROOK[turn][0];
+				boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
+				rto = SQ_OOO_ROOK[turn][1];
+				boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
 			}
 		}
 		break;
@@ -569,8 +627,7 @@ void Position::unmakeMove(Move& mv)
 		Pieces[capt][opp] ^= ToMap;
 		++ pieceCount[opp][capt];
 		Oneside[opp] ^= ToMap;
-		boardPiece[to] = capt;  // restore the captured piece
-		boardColor[to] = opp;
+		boardPiece[to] = capt; boardColor[to] = opp;  // restore the captured piece
 	}
 
 	Occupied = Oneside[W] | Oneside[B];

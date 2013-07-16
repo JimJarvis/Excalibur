@@ -397,7 +397,7 @@ void rook_magicU64_generator()
 		string endchar = sq==63 ? "\n};\n" : ((sq&7)==7 ? ",\n" : ", ");
 		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
-			magic = PseudoRand::rand64_sparse();
+			magic = RKiss::rand64_sparse();
 			for (i = 0; i < 4096; i++)	{ hashcheck[i] = -1; } // init: must NOT initialize to 0, otherwise collision possible.
 			for (i = 0, fail = false; i < possibility && !fail; i++)
 			{
@@ -445,7 +445,7 @@ void bishop_magicU64_generator()
 		string endchar = sq==63 ? "\n};\n" : ((sq&7)==7 ? ",\n" : ", ");
 		for (tries = 0; tries < 10000000; tries++)  // trial and error
 		{
-			magic = PseudoRand::rand64_sparse();
+			magic = RKiss::rand64_sparse();
 			for (i = 0; i < 512; i++)	{ hashcheck[i] = -1; } // init: must NOT initialize to 0, otherwise collision possible.
 			for (i = 0, fail = false; i < possibility && !fail; i++)
 			{

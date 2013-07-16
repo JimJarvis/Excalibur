@@ -18,6 +18,10 @@ using namespace std;
 #include "position.h"
 #include "eval.h"
 
+const int TEST_SIZE = 200;
+extern string fenList[TEST_SIZE];
+extern Position pos;
+
 /* test-oriented functions */
 void blank();
 

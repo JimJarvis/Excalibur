@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-extern Score pieceSquareTable[PIECE_TYPE_N][COLOR_N][SQ_N];
+extern Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 static const Value pieceVALUE[PHASE_N][PIECE_TYPE_N] = {
 	// MG (middle game): 0, pawn, king, knight, 0, bishop, rook ,queen
 	{ 0, 198, 0, 817, 0, 836, 1270, 2521 },
@@ -85,9 +85,9 @@ static const Score PSQT[PIECE_TYPE_N][SQ_N] = {
 namespace Zobrist
 {
 	extern U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
-	extern U64 enpassant[FILE_N];
+	extern U64 ep[FILE_N];
 	extern U64 castleOO[COLOR_N], castleOOO[COLOR_N];
-	extern U64 side;
+	extern U64 turn;
 	extern U64 exclusion;
 	void init();
 }

@@ -29,6 +29,7 @@
     <ClCompile Include="..\Excalibur\perft.cpp" />
     <ClCompile Include="..\Excalibur\position.cpp" />
     <ClCompile Include="..\Excalibur\utils.cpp" />
+    <ClCompile Include="..\Excalibur\zobrist.cpp" />
     <ClCompile Include="board_init_test.cpp" />
     <ClCompile Include="move_test.cpp" />
     <ClCompile Include="other_test.cpp" />

@@ -9,7 +9,7 @@
 struct StateInfo
 {
 	// State hash keys
-	U64 pawnKey, materialKey, key;
+	U64 pawnKey, materialKey;
 	Value npMaterial[COLOR_N];  // non-pawn material
 	Score psqScore;
 	// additional important states
@@ -18,21 +18,23 @@ struct StateInfo
 	int fiftyMove; // move since last pawn move or capture
 	int fullMove;  // starts at 1 and increments after black moves
 
-	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "fullMove"
+	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "key" excluded
+	U64 key;
 	Bit CheckerMap; // a map that collects all checkers
 	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
 };
 
 // Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
-const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, fullMove) / sizeof(U64) + 1;
+const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, key) / sizeof(U64) + 1;
 
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
 {
 public:
 
-	Position() { init_default(); } // Default constructor
+	    // Default constructor: initial position
+	Position() { parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); } 
 	Position(string fen) { parseFEN(fen); } // construct by FEN
 	Position(const Position& another) { *this = another; }; // copy ctor
 	const Position& operator=(const Position& another);  // assignment
@@ -54,10 +56,11 @@ public:
 	StateInfo startState;  // allocate on the stack, for initializing the state pointer
 	StateInfo *st; // state pointer
 
-	void reset() { delete st; init_default(); }  // reset to initial position
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
-	friend ostream& operator<<(ostream&, Position); // inlined later
+	friend ostream& operator<<(ostream&, Position); // inlined later. Display as a command line graphical board
+	operator string() { return toFEN(); }  // convert the current board state to an FEN string
+	string toFEN();
 	
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
@@ -108,8 +111,6 @@ public:
 
 
 private:
-	void init_default(); // initialize the default piece positions and internal states
-	void refresh_maps(); // refresh the Pieces[] and Occupied
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
 	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
 	int genLegalHelper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check

@@ -1,13 +1,13 @@
 #include "zobrist.h"
 
-Score pieceSquareTable[PIECE_TYPE_N][COLOR_N][SQ_N];
+Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 
 namespace Zobrist {
 
 	U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
-	U64 enpassant[FILE_N];
+	U64 ep[FILE_N];
 	U64 castleOO[COLOR_N], castleOOO[COLOR_N];
-	U64 side;
+	U64 turn;
 	U64 exclusion;
 
 	/// init() initializes at startup the various arrays used to compute hash keys
@@ -21,19 +21,19 @@ namespace Zobrist {
 		for (Color c : COLORS)
 			for (PieceType pt : PIECE_TYPES)
 				for (int sq = 0; sq < SQ_N; sq ++)
-					psq[c][pt][sq] = PseudoRand::rand64();
+					psq[c][pt][sq] = RKiss::rand64();
 
 		for (int file = 0; file < FILE_N; file++)
-			enpassant[file] = PseudoRand::rand64();
+			ep[file] = RKiss::rand64();
 
 		for (Color c : COLORS)
 		{
-			castleOO[c] = PseudoRand::rand64();
-			castleOOO[c] = PseudoRand::rand64();
+			castleOO[c] = RKiss::rand64();
+			castleOOO[c] = RKiss::rand64();
 		}
 
-		side = PseudoRand::rand64();
-		exclusion  = PseudoRand::rand64();
+		turn = RKiss::rand64();
+		exclusion  = RKiss::rand64();
 
 		for (PieceType pt : PIECE_TYPES)
 		{
@@ -41,8 +41,8 @@ namespace Zobrist {
 
 			for (int sq = 0; sq < SQ_N; sq++)
 			{
-				pieceSquareTable[pt][W][sq] =  v + PSQT[pt][sq];
-				pieceSquareTable[pt][B][sq ^ 56] = -(v + PSQT[pt][sq]); // vertical flip
+				pieceSquareTable[W][pt][sq] =  v + PSQT[pt][sq];
+				pieceSquareTable[B][pt][sq ^ 56] = -(v + PSQT[pt][sq]); // vertical flip
 			}
 		}
 	}
