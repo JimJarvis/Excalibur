@@ -16,7 +16,7 @@ using namespace std;
 
 // include headers in Excalibur
 #include "position.h"
-#include "eval.h"
+#include "evaluators.h"
 
 const int TEST_SIZE = 200;
 extern string fenList[TEST_SIZE];

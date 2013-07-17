@@ -15,6 +15,8 @@
 #include <algorithm>
 #include "stddef.h"
 #include <ctime>
+#include <map>
+#include <memory>
 #include "typeconsts.h"
 using namespace std; 
 

@@ -9,6 +9,7 @@ typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef int Value;
+typedef int ScaleFactor;
 enum Score : int {};
 
 #define SQ_N 64
@@ -120,6 +121,12 @@ const int SQUARES[FILE_N][FILE_N] = {
 	{6, 14, 22, 30, 38, 46, 54, 62},
 	{7, 15, 23, 31, 39, 47, 55, 63},
 };
+
+// Scale factors used in endgames
+const ScaleFactor SCALE_FACTOR_DRAW   = 0;
+const ScaleFactor SCALE_FACTOR_NORMAL = 64;
+const ScaleFactor SCALE_FACTOR_MAX    = 128;
+const ScaleFactor SCALE_FACTOR_NONE   = 255;
 
 #include <vector>
 // Hashtable implementation. For pawn and material table

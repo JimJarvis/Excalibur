@@ -1,9 +1,12 @@
-#ifndef __eval_h__
-#define __eval_h__
+/* Contains the main eval function, material evaluation and pawn structure evaluation */
+
+#ifndef __evaluators_h__
+#define __evaluators_h__
 
 #include "position.h"
+#include "endgame.h"
 
-namespace Eval
+namespace Eval  // evaluation engine
 {
 	void init();
 	// return the evaluation result
@@ -15,10 +18,15 @@ namespace Material
 	struct Entry 
 	{
 		Score material_value() const { return make_score(value, value); }
+		ScaleFactor scale_factor(const Position& pos, Color c) const;
+
 		U64 key;
 		short value;
+		byte factor[COLOR_N];
 		int spaceWeight;
 		Phase gamePhase;
+		EndEvaluatorBase* evalFunc;
+		EndEvaluatorBase* scalingFunc[COLOR_N];
 	};
 
 	extern HashTable<Entry, 8192> materialTable;
@@ -33,13 +41,11 @@ namespace Material
 	/// the position. For instance, in KBP vs K endgames, a scaling function
 	/// which checks for draws with rook pawns and wrong-colored bishops.
 
-	/*
 	inline ScaleFactor Entry::scale_factor(const Position& pos, Color c) const {
 
-		return !scalingFunction[c] || (*scalingFunction[c])(pos) == SCALE_FACTOR_NONE
-			? ScaleFactor(factor[c]) : (*scalingFunction[c])(pos);
+		return !scalingFunc[c] || (*scalingFunc[c])(pos) == SCALE_FACTOR_NONE
+			? ScaleFactor(factor[c]) : (*scalingFunc[c])(pos);
 	}
-	*/
 }
 
-#endif // __eval_h__
+#endif // __evaluators_h__

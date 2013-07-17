@@ -14,8 +14,11 @@ string fenList[TEST_SIZE];  // 200 FEN literals
 
 TEST(Misc, Setup)
 {
-	// Init all test suite:
+	// initialize
+	RKiss::init_seed();
 	Board::init_tables();
+	Zobrist::init();
+	Endgame::init();
 
 	// Read from FEN.epd
 	ifstream fin("FEN.epd");
@@ -27,9 +30,7 @@ TEST(Misc, Setup)
 		fenList[i] = fenstr;
 	}
 
-	// initialize a few namespaces
-	RKiss::init_seed();
-	Zobrist::init();
+	
 }
 
 TEST(Board, Sliders1)
