@@ -11,10 +11,10 @@ int moveBufEnds[64];
  */
 // Define a macro to facilitate the update of each piece
 #define genPseudoMacro(pt)  \
-TempPiece = Pieces[pt][turn];  \
-while (TempPiece)   \
-{  \
-	from = popLSB(TempPiece);  \
+tempPiece = piece_list(turn, pt); \
+for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
+{ \
+	from = tempPiece[iter]; \
 	mv.set_from(from);  \
 	TempMove = attack_map<pt>(from) & Target;  \
 	while (TempMove)  \
@@ -31,15 +31,16 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 {
 	Color op = flipColor[turn];
 	Bit Freesq = ~Occupied;
-	Bit TempPiece, TempMove;
-	uint from, to;
+	Bit TempMove;
+	const uint *tempPiece;
+	uint from, to, iter;
 	Move mv;
 
 	/*************** Pawns ***************/
-	TempPiece = Pawnmap[turn];
-	while (TempPiece)
+	tempPiece = piece_list(turn, PAWN);
+	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
 	{
-		from = popLSB(TempPiece);
+		from = tempPiece[iter];
 		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
@@ -116,10 +117,10 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 /* An almost exact clone of genHelper, but with built in legality check */
 // Define a handy macro to update various pieces
 #define genLegalMacro(pt) \
-	TempPiece = Pieces[pt][turn]; \
-	while (TempPiece) \
+	tempPiece = piece_list(turn, pt); \
+	for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
 	{ \
-		from = popLSB(TempPiece); \
+		from = tempPiece[iter]; \
 		mv.set_from(from); \
 		TempMove = attack_map<pt>(from) & Target; \
 		while (TempMove) \
@@ -137,15 +138,16 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 	Color op = flipColor[turn];
 	uint kSq = king_sq(turn);
 	Bit Freesq = ~Occupied;
-	Bit TempPiece, TempMove;
-	uint from, to;
+	Bit TempMove;
+	const uint *tempPiece;
+	uint from, to, iter;
 	Move mv;
 
 	/*************** Pawns ***************/
-	TempPiece = Pawnmap[turn];
-	while (TempPiece)
+	tempPiece = piece_list(turn, PAWN);
+	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
 	{
-		from = popLSB(TempPiece);
+		from = tempPiece[iter];
 		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible

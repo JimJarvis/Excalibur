@@ -63,9 +63,10 @@ public:
 	operator string() const { return toFEN(); }  // convert the current board state to an FEN string
 	string toFEN() const;
 	
-	/*
-	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
-	 */
+	uint king_sq(Color c) const { return pieceList[c][KING][0]; }
+	const uint *piece_list(Color c, PieceType pt) const { return pieceList[c][pt]; }
+
+	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
 	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
 	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) const /* default: pseudo non-evasions */
 		{ return legal ? gen_legal_helper(index, ~Oneside[turn], true, pinned) : gen_helper(index, ~Oneside[turn], true); }
@@ -85,7 +86,6 @@ public:
 
 	bool is_bit_attacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
 	bool is_sq_attacked(uint sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
-	uint king_sq(Color c) const { return pieceList[c][KING][0]; }
 	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), flipColor[turn]); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(flipColor[turn]), turn); }
 	Bit attackers_to(uint sq, Color attacker) const;  // inlined
