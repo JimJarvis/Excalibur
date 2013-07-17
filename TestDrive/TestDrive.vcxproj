@@ -34,7 +34,6 @@
     <ClCompile Include="board_init_test.cpp" />
     <ClCompile Include="move_test.cpp" />
     <ClCompile Include="other_test.cpp" />
-    <ClCompile Include="test_util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">

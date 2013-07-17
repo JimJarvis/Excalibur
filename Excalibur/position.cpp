@@ -127,10 +127,9 @@ void Position::parseFEN(string fenstr)
 			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
 			case 'k': Kingmap[c] |= mask; pt = KING; break;
 			}
-			++pieceCount[c][pt];
 			uint sq = SQUARES[file][rank];
-			//plistIndex[sq] = pieceCount[c][pt] ++;
-			//pieceList[c][pt][plistIndex[sq]] = sq;
+			plistIndex[sq] = pieceCount[c][pt] ++;
+			pieceList[c][pt][plistIndex[sq]] = sq;
 			boardPiece[sq] = pt;
 			boardColor[sq] = c;
 			file ++;
@@ -142,8 +141,6 @@ void Position::parseFEN(string fenstr)
 		Oneside[c] = 0;
 		for (PieceType pt : PIECE_TYPES)
 			Oneside[c] |= Pieces[pt][c];
-
-		kingSq[c] = LSB(Kingmap[c]);
 	}
 	Occupied = Oneside[W] | Oneside[B];
 
@@ -183,7 +180,7 @@ void Position::parseFEN(string fenstr)
 		fen >> st->fullMove;
 	}
 	st->capt = NON;
-	st->CheckerMap = attackers_to(kingSq[turn],  flipColor[turn]);
+	st->CheckerMap = attackers_to(king_sq(turn),  flipColor[turn]);
 
 	st->key = calc_key();
 	st->materialKey = calc_material_key();
@@ -347,33 +344,22 @@ bool operator==(const Position& pos1, const Position& pos2)
 	{
 		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
 			{ cout << "false castleRights for Color " << c << ": " << pos1.st->castleRights[c] << " != " << pos2.st->castleRights[c] << endl;	return false;}
-		if (pos1.kingSq[c] != pos2.kingSq[c])
-			{ cout << "false kingSq for Color" << c << ": " << pos1.kingSq[c] << " != " << pos2.kingSq[c] << endl; return false;	}
-
+	
 		for (PieceType pt : PIECE_TYPES)
 		{
 			if (pos1.Pieces[pt][c] != pos2.Pieces[pt][c])
 				{ cout << "false" << PIECE_FULL_NAME[pt] << " Pawns for Color " << c << ": " << pos1.Pieces[pt][c] << " != " << pos2.Pieces[pt][c] << endl;	return false;}
 			if (pos1.pieceCount[c][pt] != pos2.pieceCount[c][pt]) 
 				{ cout << "false pieceCount for Color " << c << " " << PIECE_FULL_NAME[pt] << ": " << pos1.pieceCount[c][pt] << " != " << pos2.pieceCount[c][pt] << endl;	return false;}
-			//// test pieceList invariant
-			//std::unordered_set<int> plset1, plset2;
-			//for (uint pc = 0; pc < pos1.pieceCount[c][pt]; pc++)
-			//{
-			//	plset1.insert(pos1.pieceList[c][pt][pc]);
-			//	plset2.insert(pos2.pieceList[c][pt][pc]);
-			//}
-			//if (plset1 != plset2)
-			//	{ cout << "false pieceList" << endl;	
-			//cout << "First:" << endl;
-			//for (int aa : plset1)
-			//	cout << aa << endl;
-			//cout << "Second:" << endl;
-			//for (int aa : plset2)
-			//	cout << aa << endl;
-			//return false; }
-			//if (!(pos1.pieceList[c][pt] == pos2.pieceList[c][pt]))
-			//{  cout << "false pieceList" << endl; return false;  }
+			// test pieceList invariant
+			std::unordered_set<int> plset1, plset2;
+			for (uint pc = 0; pc < pos1.pieceCount[c][pt]; pc++)
+			{
+				plset1.insert(pos1.pieceList[c][pt][pc]);
+				plset2.insert(pos2.pieceList[c][pt][pc]);
+			}
+			if (plset1 != plset2)
+				{ cout << "false pieceList" << endl; return false; }
 		}
 	}
 

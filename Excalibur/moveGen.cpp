@@ -86,7 +86,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 	if (isNonEvasion)
 	{
 	/*************** Kings ****************/
-		from = kingSq[turn];
+		from = king_sq(turn);
 		mv.set_from(from);
 		TempMove = Board::king_attack(from) & Target;
 		while (TempMove)
@@ -135,7 +135,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned) const
 {
 	Color op = flipColor[turn];
-	uint kSq = kingSq[turn];
+	uint kSq = king_sq(turn);
 	Bit Freesq = ~Occupied;
 	Bit TempPiece, TempMove;
 	uint from, to;
@@ -202,7 +202,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 	if (isNonEvasion)
 	{
 		/*************** Kings ****************/
-			from = kingSq[turn];
+			from = king_sq(turn);
 			mv.set_from(from);
 			TempMove = attack_map<KING>(from) & Target;
 			while (TempMove)
@@ -239,7 +239,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	Bit Ck = st->CheckerMap;
 	Bit SliderAttack = 0;  
 	int ckCount = 0;  // number of checkers - at least 1, at most 2
-	int kSq = kingSq[turn];
+	int kSq = king_sq(turn);
 	int checkSq;
 
 	// Remove squares attacked by sliders to skip illegal king evasions
@@ -292,7 +292,7 @@ Bit Position::pinned_map() const
 	Bit between, ans = 0;
 	Color op = flipColor[turn];
 	Bit pinners = Oneside[op];
-	uint kSq = kingSq[turn];
+	uint kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
 	pinners &= ((Rookmap[op] | Queenmap[op]) & Board::rook_ray(kSq))
 		| ((Bishopmap[op] | Queenmap[op]) & Board::bishop_ray(kSq));
@@ -316,7 +316,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
 	if (mv.is_ep()) // we do it by testing if the king is attacked after the move s made
 	{
-		uint kSq = kingSq[turn];
+		uint kSq = king_sq(turn);
 		Color op = flipColor[turn];
 		// Occupied ^ (From | To | Capt)
 		Bit newOccup = Occupied ^ ( setbit[from] | setbit[to] | setbit[Board::backward_sq(to, turn)] );
@@ -327,7 +327,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 	// A non-king move is legal iff :
 	return !pinned ||		// it isn't pinned at all
 		!(pinned & setbit[from]) ||    // pinned but doesn't move
-		( Board::is_aligned(from, to, kingSq[turn]) );  // the kSq, from and to squares are aligned: move along the pin direction.
+		( Board::is_aligned(from, to, king_sq(turn)) );  // the kSq, from and to squares are aligned: move along the pin direction.
 }
 
 /* Generate strictly legal moves */
@@ -336,7 +336,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 int Position::genLegal(int index) const
 {
 	Bit pinned = pinnedMap();
-	uint kSq = kingSq[turn];
+	uint kSq = king_sq(turn);
 	int end =st->CheckerMap ? genEvasions(index) : genNonEvasions(index);
 	while (index != end)
 	{
@@ -388,6 +388,11 @@ bool Position::is_bit_attacked(Bit Target, Color attacker) const
  *
  * StateInfo states[MAX_STACK_SIZE], *si = states;
  * makeMove(mv, *si++);
+ * 
+ * Special note: pieceList[][][] is VERY TRICKY to update. You must follow this sequence:
+ * make_move():  (1) capture   (2) move the piece  (3) promotion
+ * unmake_move():  (1) promotion  (2) move the piece  (3) capture
+ * inverse sequences guarantees the correct update. 
  */
 void Position::make_move(Move& mv, StateInfo& nextSt)
 {
@@ -404,8 +409,9 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
 	PieceType piece = boardPiece[from];
-	PieceType capt = boardPiece[to];
+	PieceType capt = mv.is_ep() ? PAWN : boardPiece[to];
 	Color opp = flipColor[turn];
+	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	Pieces[piece][turn] ^= FromToMap;
 	Oneside[turn] ^= FromToMap;
@@ -421,7 +427,68 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		key ^=Zobrist::ep[FILES[st->epSquare]];
 		st->epSquare = 0;
 	}
-	if (turn == B)  st->fullMove ++;  // only increments after black moves
+
+
+	// Deal with all kinds of captures, including en-passant
+	if (capt)
+	{
+		st->fiftyMove = 0;  // clear fifty move counter
+		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
+		{
+		 	if (to == SQ_OO_ROOK[opp][0])  
+			{	if (can_castleOO(st->castleRights[opp]))
+				{
+					key ^= Zobrist::castleOO[opp];  // update castling hash key
+					delete_castleOO(st->castleRights[opp]);
+				}  }
+			else if (to == SQ_OOO_ROOK[opp][0])  
+			{	if (can_castleOOO(st->castleRights[opp]))
+				{
+					key ^= Zobrist::castleOOO[opp];
+					delete_castleOOO(st->castleRights[opp]);
+				}  }
+		}
+		
+		uint captSq;  // consider EP capture
+		if (mv.is_ep()) 
+		{
+			captSq = Board::backward_sq(st->st_prev->epSquare, turn);
+			boardPiece[captSq] = NON; boardColor[captSq] = NON_COLOR;
+			ToMap = setbit[captSq];
+		}
+			else captSq = to;
+
+		Pieces[capt][opp] ^= ToMap;
+		Oneside[opp] ^= ToMap;
+
+		// Update piece list, move the last piece at index[capsq] position and
+		// shrink the list.
+		// WARNING: This is a not reversible operation. When we will reinsert the
+		// captured piece in undo_move() we will put it at the end of the list and
+		// not in its original place, it means index[] and pieceList[] are not
+		// guaranteed to be invariant to a do_move() + undo_move() sequence.
+		uint lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
+		plistIndex[lastSq] = plistIndex[captSq];
+		pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
+		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_INVALID;
+
+		// update hash keys and incremental scores
+		key ^= Zobrist::psq[opp][capt][captSq];
+		if (capt == PAWN)
+			st->pawnKey ^= Zobrist::psq[opp][PAWN][captSq];
+		else
+			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
+		st->materialKey ^= Zobrist::psq[opp][capt][pieceCount[opp][capt]];
+		st->psqScore -= pieceSquareTable[opp][capt][captSq];
+	}
+	else if (piece != PAWN)
+		st->fiftyMove ++;   // endif (capt)
+
+
+	// Update pieceList, index[from] is not updated and becomes stale. This
+	// works as long as index[] is accessed just by known occupied squares.
+	plistIndex[to] = plistIndex[from];
+	pieceList[turn][piece][plistIndex[to]] = to;
 
 	switch (piece)
 	{
@@ -435,32 +502,33 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			st->epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
 			key ^=Zobrist::ep[FILES[st->epSquare]]; // update ep key
 		}
-		if (mv.is_ep())  // en-passant capture
-		{
-			capt = PAWN;
-			to = Board::backward_sq(st->st_prev->epSquare, turn);
-			ToMap = setbit[to];  // the captured pawn location
-			boardPiece[to] = NON; boardColor[to] = NON_COLOR;
-		}
-		else if (mv.is_promo())
+		if (mv.is_promo())
 		{
 			PieceType promo = mv.get_promo();
 			Pawnmap[turn] ^= ToMap;  // the pawn's no longer there
 			boardPiece[to] = promo;
 			Pieces[promo][turn] ^= ToMap;
 
+			// Update piece lists, move the last pawn at index[to] position
+			// and shrink the list. Add a new promotion piece to the list.
+			uint lastSq = pieceList[turn][PAWN][-- pieceCount[turn][PAWN]];
+			plistIndex[lastSq] = plistIndex[to];
+			pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
+			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_INVALID;
+			plistIndex[to] = pieceCount[turn][promo];
+			pieceList[turn][promo][plistIndex[to]] = to;
+
 			// update hash keys and incremental scores
 			key ^= Zobrist::psq[turn][PAWN][to] ^ Zobrist::psq[turn][promo][to];
 			st->pawnKey ^= Zobrist::psq[turn][PAWN][to];
 			st->materialKey ^= Zobrist::psq[turn][promo][pieceCount[turn][promo]++]
-					^ Zobrist::psq[turn][PAWN][--pieceCount[turn][PAWN]];
+					^ Zobrist::psq[turn][PAWN][pieceCount[turn][PAWN]];
 			st->psqScore += pieceSquareTable[turn][promo][to] - pieceSquareTable[turn][PAWN][to];
 			st->npMaterial[turn] += PIECE_VALUE[MG][promo];
 		}
 		break;
 
 	case KING:
-		kingSq[turn] = to; // update king square
 		// update castling hash keys
 		if (can_castleOO(st->castleRights[turn]))  key ^= Zobrist::castleOO[turn];
 		if (can_castleOOO(st->castleRights[turn]))  key ^= Zobrist::castleOOO[turn];
@@ -485,9 +553,9 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
 			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 
-			//// move the rook in pieceList
-			//plistIndex[rto] = plistIndex[rfrom];
-			//pieceList[turn][ROOK][plistIndex[rto]] = rto;
+			// move the rook in pieceList
+			plistIndex[rto] = plistIndex[rfrom];
+			pieceList[turn][ROOK][plistIndex[rto]] = rto;
 
 			// update the hash key for the moving rook
 			key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
@@ -512,77 +580,12 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		break;
 	}
 
-	/* Deal with all kinds of captures, including en-passant */
-	if (capt)
-	{
-		Pieces[capt][opp] ^= ToMap;
-		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
-		{
-		 	if (to == SQ_OO_ROOK[opp][0])  
-			{	if (can_castleOO(st->castleRights[opp]))
-				{
-					key ^= Zobrist::castleOO[opp];  // update castling hash key
-					delete_castleOO(st->castleRights[opp]);
-				}  }
-			else if (to == SQ_OOO_ROOK[opp][0])  
-			{	if (can_castleOOO(st->castleRights[opp]))
-				{
-					key ^= Zobrist::castleOOO[opp];
-					delete_castleOOO(st->castleRights[opp]);
-				}  }
-		}
-		Oneside[opp] ^= ToMap;
-		st->fiftyMove = 0;  // deal with fifty move counter
-
-		//// Update piece list, move the last piece at index[capsq] position and
-		//// shrink the list.
-		//// WARNING: This is a not reversible operation. When we will reinsert the
-		//// captured piece in undo_move() we will put it at the end of the list and
-		//// not in its original place, it means index[] and pieceList[] are not
-		//// guaranteed to be invariant to a do_move() + undo_move() sequence.
-		//uint lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
-		//plistIndex[lastSq] = plistIndex[to];
-		//pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
-		//pieceList[opp][capt][pieceCount[opp][capt]] = SQ_INVALID;
-
-		// update hash keys and incremental scores
-		key ^= Zobrist::psq[opp][capt][to];
-		if (capt == PAWN)
-			st->pawnKey ^= Zobrist::psq[opp][PAWN][to];
-		else
-			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
-		st->materialKey ^= Zobrist::psq[opp][capt][--pieceCount[opp][capt]];
-		st->psqScore -= pieceSquareTable[opp][capt][to];
-	}
-	else if (piece != PAWN)
-		st->fiftyMove ++;
-
-
-	//// Update piece lists, index[from] is not updated and becomes stale. This
-	//// works as long as index[] is accessed just by known occupied squares.
-	//plistIndex[to] = plistIndex[from];
-	//pieceList[turn][piece][plistIndex[to]] = to;
-
-
-	//if (mv.is_promo())
-	//{
-	//	// Update piece lists, move the last pawn at index[to] position
-	//	// and shrink the list. Add a new promotion piece to the list.
-	//	uint lastSq = pieceList[turn][PAWN][pieceCount[turn][PAWN]];
-	//	plistIndex[lastSq] = plistIndex[to];
-	//	pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
-	//	pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_INVALID;
-	//	plistIndex[to] = pieceCount[turn][mv.get_promo()]-1;
-	//	pieceList[turn][mv.get_promo()][plistIndex[to]] = to;
-	//}
-
-
 	st->capt = capt;
 	st->key = key;
 	Occupied = Oneside[W] | Oneside[B];
 
 	// now we look from our opponents' perspective and update checker info
-	st->CheckerMap = attackers_to(kingSq[opp], turn);
+	st->CheckerMap = attackers_to(king_sq(opp), turn);
 
 	turn = opp;
 }
@@ -594,8 +597,7 @@ void Position::unmake_move(Move& mv)
 	uint to = mv.get_to();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
-	bool isPromo = mv.is_promo();
-	PieceType piece = isPromo ? PAWN : boardPiece[to];
+	PieceType piece = mv.is_promo() ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
 	Color opp = turn;
 	turn = flipColor[turn];
@@ -608,35 +610,28 @@ void Position::unmake_move(Move& mv)
 	switch (piece)
 	{
 	case PAWN:
-		if (mv.is_ep())  // en-passant capture
-		{
-			// will restore the captured pawn later, with all other capturing cases
-			to = Board::backward_sq(st->st_prev->epSquare, turn);
-			ToMap = setbit[to];  // the captured pawn location
-		}
-		else if (isPromo)
+		if (mv.is_promo())
 		{
 			PieceType promo = mv.get_promo();
 			Pawnmap[turn] ^= ToMap;  // flip back
-			++pieceCount[turn][PAWN];
-			--pieceCount[turn][promo];
+			//++pieceCount[turn][PAWN];
+			//--pieceCount[turn][promo];
 			boardPiece[from] = PAWN;
 			boardPiece[to] = NON;
 			Pieces[promo][turn] ^= ToMap;
 
-			//// Update piece lists, move the last promoted piece at index[to] position
-			//// and shrink the list. Add a new pawn to the list.
-			//uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
-			//plistIndex[lastSq] = plistIndex[to];
-			//pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
-			//pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
-			//plistIndex[to] = pieceCount[turn][PAWN]++;
-			//pieceList[turn][PAWN][plistIndex[to]] = to;
+			// Update piece lists, move the last promoted piece at index[to] position
+			// and shrink the list. Add a new pawn to the list.
+			uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
+			plistIndex[lastSq] = plistIndex[to];
+			pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
+			pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
+			plistIndex[to] = pieceCount[turn][PAWN]++;
+			pieceList[turn][PAWN][plistIndex[to]] = to;
 		}
 		break;
 
 	case KING:
-		kingSq[turn] = from; // restore the original king position
 		if (mv.is_castle())
 		{
 			uint rfrom, rto;
@@ -657,30 +652,36 @@ void Position::unmake_move(Move& mv)
 			boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
 			boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
 
-			//// un-move the rook in pieceList
-			//plistIndex[rfrom] = plistIndex[rto];
-			//pieceList[turn][ROOK][plistIndex[rfrom]] = rfrom;
+			// un-move the rook in pieceList
+			plistIndex[rfrom] = plistIndex[rto];
+			pieceList[turn][ROOK][plistIndex[rfrom]] = rfrom;
 		}
 		break;
 	}
 
-	//// Update piece lists, index[from] is not updated and becomes stale. This
-	//// works as long as index[] is accessed just by known occupied squares.
-	//plistIndex[to] = plistIndex[from];
-	//pieceList[turn][piece][plistIndex[to]] = to;
-
-
-	// Deal with all kinds of captures, including en-passant
+	// Update piece lists, index[from] is not updated and becomes stale. This
+	// works as long as index[] is accessed just by known occupied squares.
+	plistIndex[from] = plistIndex[to];
+	pieceList[turn][piece][plistIndex[from]] = from;
+	
+	// Restore all kinds of captures, including enpassant
 	if (capt)
 	{
+		// Deal with all kinds of captures, including en-passant
+		if (mv.is_ep())  // en-passant capture
+		{
+			// will restore the captured pawn later, with all other capturing cases
+			to = Board::backward_sq(st->st_prev->epSquare, turn);
+			ToMap = setbit[to];  // the captured pawn location
+		}
+
 		Pieces[capt][opp] ^= ToMap;
 		Oneside[opp] ^= ToMap;
 		boardPiece[to] = capt; boardColor[to] = opp;  // restore the captured piece
-		++ pieceCount[opp][capt];
 
-		//// Update piece list, add a new captured piece in capt square
-		//plistIndex[to] = pieceCount[opp][capt]++;
-		//pieceList[opp][capt][plistIndex[to]] = to;
+		// Update piece list, add a new captured piece in capt square
+		plistIndex[to] = pieceCount[opp][capt]++;
+		pieceList[opp][capt][plistIndex[to]] = to;
 	}
 
 	Occupied = Oneside[W] | Oneside[B];
@@ -696,7 +697,7 @@ GameStatus Position::mate_status() const
 	// 8192 - 218 = 7974, 218 is the most move a legal position can ever make
 	Bit pinned = pinned_map();
 	int start = 7974;
-	uint kSq = kingSq[turn];
+	uint kSq = king_sq(turn);
 	int end =st->CheckerMap ? gen_evasions(start) : gen_non_evasions(start);
 	while (start != end)
 	{

@@ -106,8 +106,8 @@ Value EndEvaluator<KXK>::operator()(const Position& pos) const
 		&& pos.count_legal() == 0)
 			return VALUE_DRAW;
 
-	uint winnerKSq = pos.kingSq[strongerSide];
-	uint loserKSq = pos.kingSq[weakerSide];
+	uint winnerKSq = pos.king_sq(strongerSide);
+	uint loserKSq = pos.king_sq(weakerSide);
 
 	Value result =   pos.non_pawn_material(strongerSide)
 		+ pos.pieceCount[strongerSide][PAWN] * PIECE_VALUE[EG][PAWN] + MateTable[loserKSq]

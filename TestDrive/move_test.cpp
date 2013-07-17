@@ -96,6 +96,39 @@ TEST(Move, Mates)
 	ASSERT_EQ(pos.mate_status(), CHECKMATE);
 }
 
+
+// Test pieceList[][][] consistency
+bool is_piece_list_invariant(Position& pos)
+{
+	uint pieceListStd[COLOR_N][PIECE_TYPE_N][16];
+	int index[COLOR_N][PIECE_TYPE_N];
+	for (Color c : COLORS)
+		for (PieceType pt : PIECE_TYPES)
+			index[c][pt] = 0;
+	for (int i = 0; i < SQ_N; i++)
+	{
+		Color c = pos.boardColor[i];
+		if (c == NON_COLOR) continue;
+		PieceType pt = pos.boardPiece[i];
+		pieceListStd[c][pt][index[c][pt]++] = i;
+	}
+	std::set<uint> setStd, setActual;
+	for (Color c : COLORS)
+		for (PieceType pt : PIECE_TYPES)
+		{
+			setStd.clear(); setActual.clear();
+			for (uint pc = 0; pc < pos.pieceCount[c][pt]; pc++)
+			{
+				setActual.insert(pos.pieceList[c][pt][pc]);
+				setStd.insert(pieceListStd[c][pt][pc]);
+			}
+			if(setStd != setActual)
+			{ EXPECT_EQ(setStd, setActual) << (c==W?"W":"B") << " " << PIECE_FULL_NAME[pt] << endl; return false; }
+		}
+
+	return true;
+}
+
 // test board internal state consistency after make/unmake
 TEST(Move, MakeUnmake)
 {
@@ -110,16 +143,18 @@ TEST(Move, MakeUnmake)
 		for (int i = 0; i < end; i++) // testing all possible moves
 		{
 			Move m = moveBuffer[i];
-
 			pos.make_move(m, si);
 
+			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << string(m) << "\n" << fenList[i];
+			
 			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-			ASSERT_EQ(pos_orig, pos) << "FEN: " << fenList[i] << string(m);
+			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << string(m);
 		} 
 	}
 }
+
 
 Move moveTrace[10];
 string currentFEN;
@@ -156,6 +191,8 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 		ASSERT_EQ(pos.calc_psq_score(), pos.st->psqScore) << errmsg; 
 		for (Color c : COLORS)
 			ASSERT_EQ(pos.calc_non_pawn_material(c), pos.st->npMaterial[c]) << errmsg;
+
+		//ASSERT_TRUE(is_piece_list_invariant(pos));
 
 		test_key_invariant(pos, depth - 1, ply + 1);
 

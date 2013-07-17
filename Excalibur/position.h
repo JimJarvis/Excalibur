@@ -44,7 +44,6 @@ public:
 	Bit Pieces[PIECE_TYPE_N][COLOR_N];
 	Bit Oneside[COLOR_N];  // entire white/black army
 	Bit Occupied;  // everything
-	uint kingSq[COLOR_N];  // king square
 
 	// Incrementally updated info, for fast access:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
@@ -86,12 +85,12 @@ public:
 
 	bool is_bit_attacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
 	bool is_sq_attacked(uint sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
-	bool is_own_king_attacked() const { return is_sq_attacked(kingSq[turn], flipColor[turn]); } // legality check
-	bool is_opp_king_attacked() const { return is_sq_attacked(kingSq[flipColor[turn]], turn); }
+	uint king_sq(Color c) const { return pieceList[c][KING][0]; }
+	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), flipColor[turn]); } // legality check
+	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(flipColor[turn]), turn); }
 	Bit attackers_to(uint sq, Color attacker) const;  // inlined
 	Bit checkermap() const { return st->CheckerMap; }
 	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
-
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
@@ -119,7 +118,6 @@ public:
 	U64 pawn_key() const { return st->pawnKey; }
 	Score psq_score() const { return st->psqScore; }
 	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
-
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.

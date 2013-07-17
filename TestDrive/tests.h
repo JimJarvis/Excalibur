@@ -2,8 +2,6 @@
 #define __alltest_h__
 #define pause system("pause")
 
-#include <iostream>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <cmath>
@@ -11,6 +9,7 @@
 #include <iomanip>
 #include <bitset>
 #include <Windows.h>
+#include <set>
 #include "gtest/gtest.h"
 using namespace std; 
 
@@ -23,6 +22,6 @@ extern string fenList[TEST_SIZE];
 extern Position pos;
 
 /* test-oriented functions */
-void blank();
+inline void blank(){ cout << "！！！！！！！！！！！！！！！！！！！！！" << endl; }
 
 #endif // __alltest_h__
