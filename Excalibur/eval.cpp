@@ -2,6 +2,26 @@
 
 #define S(mg, eg) make_score(mg, eg)
 
+/* A few bonus constants */
+
+const Score BishopPinBonus = S(66, 11);
+
+// Bonus for having the side to move (modified by Joona Kiiski)
+const Score Tempo = S(24, 11);
+
+// Rooks and queens on the 7th rank
+const Score RookOn7thBonus  = S(11, 20);
+const Score QueenOn7thBonus = S( 3,  8);
+
+// Rooks and queens attacking pawns on the same rank
+const Score RookOnPawnBonus  = S(10, 28);
+const Score QueenOnPawnBonus = S( 4, 20);
+
+// Rooks on open files (modified by Joona Kiiski)
+const Score RookOpenFileBonus = S(43, 21);
+const Score RookHalfOpenFileBonus = S(19, 10);
+
+
 // EvalInfo contains info computed and shared among various evaluators
 struct EvalInfo {
 
@@ -22,23 +42,22 @@ struct EvalInfo {
 	// f7, g7, h7, f6, g6 and h6.
 	Bit kingRing[COLOR_N];
 
-	// kingAttackersCount[color] is the number of pieces of the given color
+	// kingAttacksCount[color] is the number of pieces of the given color
 	// which attack a square in the kingRing of the enemy king.
-	int kingAttackersCount[COLOR_N];
+	int kingAttacksCount[COLOR_N];
 
 	// kingAttackersWeight[color] is the sum of the "weight" of the pieces of the
 	// given color which attack a square in the kingRing of the enemy king. The
 	// weights of the individual piece types are given by the variables
-	// QueenAttackWeight, RookAttackWeight, BishopAttackWeight and
-	// KnightAttackWeight in evaluate.cpp
-	int kingAttackersWeight[COLOR_N];
+	// QueenAttackWeight, RookAttackWeight, BishopAttackWeight and KnightAttackWeight
+	int kingAttacksWeight[COLOR_N];
 
-	// kingAdjacentZoneAttacksCount[color] is the number of attacks to squares
+	// kingAdjacentAttacksCount[color] is the number of attacks to squares
 	// directly adjacent to the king of the given color. Pieces which attack
 	// more than one square are counted multiple times. For instance, if black's
 	// king is on g8 and there's a white knight on g5, this knight adds
-	// 2 to kingAdjacentZoneAttacksCount[BLACK].
-	int kingAdjacentZoneAttacksCount[COLOR_N];
+	// 2 to kingAdjacentAttacksCount[BLACK].
+	int kingAdjacentAttacksCount[COLOR_N];
 };
 
 // Evaluation grain size, must be a power of 2
@@ -63,7 +82,12 @@ namespace Eval
 	*/
 	Value evaluate(const Position& pos)
 	{
-		return 0;
+		EvalInfo ei;
+		Score score, mobility[COLOR_N];
+		// Initialize score by reading the incrementally updated scores included
+		// in the position object (material + piece square tables) and adding
+		// Tempo bonus. Score is computed from the point of view of white.
+		score = pos.psq_score() + (pos.turn == W ? Tempo : -Tempo);
 	}
 
 	void init() {

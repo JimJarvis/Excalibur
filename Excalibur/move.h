@@ -4,7 +4,7 @@
 #include "utils.h"
 
 // Masks for promotion types: N-00, B-01, R-10, Q-11
-const ushort PROMO_MASK[PIECE_TYPE_N] = {0, 0, 0, 0x0, 0, 0x1000, 0x2000, 0x3000};
+const ushort PROMO_MASK[PIECE_TYPE_N] = {0, 0, 0x0, 0x1000, 0x2000, 0x3000};
 const PieceType PIECE_FROM_PROMO[4] = { KNIGHT, BISHOP, ROOK, QUEEN};
 
 class Move

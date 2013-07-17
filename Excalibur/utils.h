@@ -37,11 +37,6 @@ inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
 
-// a few type queries
-inline bool isSlider(PieceType p) { return (p & 4) == 4; }
-inline bool isOrthoSlider(PieceType p) { return (p & 4) == 4 && (p & 2) == 2; } // slider along file and rank
-inline bool isDiagSlider(PieceType p) { return (p & 4)==4 && (p & 1) == 1; }  // slider along the diagonal
-
 // castle right query
 inline bool canCastleOO(byte castleRight) { return (castleRight & 1) == 1; }
 inline bool canCastleOOO(byte castleRight) { return (castleRight & 2) == 2; }

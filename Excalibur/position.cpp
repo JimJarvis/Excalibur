@@ -191,7 +191,7 @@ void Position::parseFEN(string fenstr)
 }
 
 // Convert the current position to an FEN
-string Position::toFEN()
+string Position::toFEN() const
 {
 	ostringstream fen;
 	int space;

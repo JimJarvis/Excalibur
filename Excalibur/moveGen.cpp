@@ -385,7 +385,7 @@ bool Position::isBitAttacked(Bit Target, Color attacker) const
  *	Make move and update the Position internal states by change the state pointer.
  * The CheckerInfo update is default to be true.
  * Otherwise you can manually generate the CheckerMap by attacks_to(kingSq, flipColor[turn])
- * Use a stack of StateInfo, to continously makeMove:
+ * Use a stack of StateInfo, to continuously makeMove:
  *
  * StateInfo states[MAX_STACK_SIZE], *si = states;
  * makeMove(mv, *si++);

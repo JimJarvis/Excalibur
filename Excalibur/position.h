@@ -59,8 +59,8 @@ public:
 	void parseFEN(string fen); // parse a FEN position
 	void display(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Position); // inlined later. Display as a command line graphical board
-	operator string() { return toFEN(); }  // convert the current board state to an FEN string
-	string toFEN();
+	operator string() const { return toFEN(); }  // convert the current board state to an FEN string
+	string toFEN() const;
 	
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
@@ -108,6 +108,12 @@ public:
 	// Calculate incremental eval scores and material
 	Score calc_psq_score() const;
 	Value calc_non_pawn_material(Color c) const;
+	// Corresponding getter methods
+	U64 key() const { return st->key; }
+	U64 material_key() const { return st->materialKey; }
+	U64 pawn_key() const { return st->pawnKey; }
+	Score psq_score() const { return st->psqScore; }
+	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
 
 
 private:

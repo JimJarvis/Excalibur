@@ -47,30 +47,6 @@ TEST(Move, Checks)
 	ASSERT_EQ(43, quiet);
 }
 
-TEST(Move, Piece)
-{
-	PieceType nonsliders[3] = {KING, KNIGHT, PAWN};
-	for (PieceType p : nonsliders)
-	{
-		ASSERT_FALSE(isSlider(p));
-		ASSERT_FALSE(isOrthoSlider(p));
-		ASSERT_FALSE(isDiagSlider(p));
-	}
-	PieceType p;
-	p = QUEEN;
-	ASSERT_TRUE(isSlider(p));
-	ASSERT_TRUE(isOrthoSlider(p));
-	ASSERT_TRUE(isDiagSlider(p));
-	p = ROOK;
-	ASSERT_TRUE(isSlider(p));
-	ASSERT_TRUE(isOrthoSlider(p));
-	ASSERT_FALSE(isDiagSlider(p));
-	p = BISHOP;
-	ASSERT_TRUE(isSlider(p));
-	ASSERT_FALSE(isOrthoSlider(p));
-	ASSERT_TRUE(isDiagSlider(p));
-}
-
 TEST(Move, Judgement)
 {
 	Move m;
