@@ -13,17 +13,17 @@ U64 Position::perft(int depth, int ply)
 	currentBuf = moveBufEnds[ply];
 
 	if (depth == 1) 
-		return genLegal(currentBuf) - currentBuf; 
+		return gen_legal(currentBuf) - currentBuf; 
 
 	U64 nodeCount = 0;
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = genLegal(currentBuf);
+	nextBuf = moveBufEnds[ply + 1] = gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
 		m = moveBuffer[i];
-		makeMove(m, si);
+		make_move(m, si);
 			//U64 count = perft(depth - 1, ply + 1);
 			//if (depth == divideDepth)
 			//{
@@ -38,7 +38,7 @@ U64 Position::perft(int depth, int ply)
 			//	if (m.isCastle())  perft_castle ++;
 			//	if (m.isPromo()) perft_promo ++;
 			//}
-		unmakeMove(m);
+		unmake_move(m);
 	}
 	
 	return nodeCount;

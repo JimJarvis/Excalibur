@@ -25,7 +25,7 @@ Bit dispBit(Bit bitmap, bool flag)
 }
 
 // MIT HAKMEM algorithm, see http://graphics.stanford.edu/~seander/bithacks.html
-uint bitCount(U64 bitmap)
+uint bit_count(U64 bitmap)
 {
 	const U64 m1 = 0x5555555555555555; // 1 zero, 1 one ...
 	const U64 m2 = 0x3333333333333333; // 2 zeros, 2 ones ...

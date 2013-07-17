@@ -103,8 +103,7 @@ template<>
 Value EndEvaluator<KXK>::operator()(const Position& pos) const {
 
 	// Stalemate detection with lone king
-	if (    pos.turn == weakerSide
-		&& !pos.checkers()
+	if (    pos.turn == weakerSide && !pos.checkers()
 		&& !MoveList<LEGAL>(pos).size()) {
 			return VALUE_DRAW;
 	}

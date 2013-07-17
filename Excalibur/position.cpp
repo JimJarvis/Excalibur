@@ -224,10 +224,10 @@ string Position::toFEN() const
 	if (st->castleRights[W] == 0 && st->castleRights[B] == 0) // castle rights
 		fen << "-";
 	else
-		fen << (canCastleOO(st->castleRights[W]) ? "K":"") 
-			<< (canCastleOOO(st->castleRights[W]) ? "Q":"")
-			<< (canCastleOO(st->castleRights[B]) ? "k":"") 
-			<< (canCastleOOO(st->castleRights[B]) ? "q":"");  
+		fen << (can_castleOO(st->castleRights[W]) ? "K":"") 
+			<< (can_castleOOO(st->castleRights[W]) ? "Q":"")
+			<< (can_castleOO(st->castleRights[B]) ? "k":"") 
+			<< (can_castleOOO(st->castleRights[B]) ? "q":"");  
 
 	fen << " " << (st->epSquare == 0 ? "-" : sq2str(st->epSquare)); // enpassant
 	fen << " " << st->fiftyMove << " " << st->fullMove;
@@ -246,9 +246,9 @@ U64 Position::calc_key() const
 	U64 key = 0;
 	for (Color c : COLORS)  // castling hash
 	{
-		if (canCastleOO(st->castleRights[c]))
+		if (can_castleOO(st->castleRights[c]))
 			key ^= Zobrist::castleOO[c];
-		if (canCastleOOO(st->castleRights[c]))
+		if (can_castleOOO(st->castleRights[c]))
 			key ^= Zobrist::castleOOO[c];
 	}
 

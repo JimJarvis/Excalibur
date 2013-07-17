@@ -29,7 +29,7 @@ const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54,
 inline uint LSB(U64 bitmap)
 { return BITSCAN_INDEX[((bitmap & (~bitmap + 1)) * BITSCAN_MAGIC) >> 58]; }
 inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
-uint bitCount(U64 bitmap); // Count the bits in a bitmap
+uint bit_count(U64 bitmap); // Count the bits in a bitmap
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
 
 // display a bitmap as 8*8. For debugging
@@ -40,10 +40,10 @@ inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
 
 // castle right query
-inline bool canCastleOO(byte castleRight) { return (castleRight & 1) == 1; }
-inline bool canCastleOOO(byte castleRight) { return (castleRight & 2) == 2; }
-inline void deleteCastleOO(byte& castleRight) { castleRight &= 2; }
-inline void deleteCastleOOO(byte& castleRight) { castleRight &= 1; }
+inline bool can_castleOO(byte castleRight) { return (castleRight & 1) == 1; }
+inline bool can_castleOOO(byte castleRight) { return (castleRight & 2) == 2; }
+inline void delete_castleOO(byte& castleRight) { castleRight &= 2; }
+inline void delete_castleOOO(byte& castleRight) { castleRight &= 1; }
 
 
 // Special RKISS random number generator for hashkeys

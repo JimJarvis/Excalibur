@@ -134,7 +134,7 @@ TEST(Board, Between)
 			for (int bitCnt = 2; bitCnt <= 7; bitCnt++)
 			{
 				if (abs(x1 - x2)==bitCnt && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==bitCnt || abs(x1-x2)==bitCnt && abs(y1-y2)==bitCnt )
-					ASSERT_EQ(bitCnt-1, bitCount(Board::between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+					ASSERT_EQ(bitCnt-1, bit_count(Board::between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			}
 		}		
 	}
@@ -144,10 +144,10 @@ TEST(Board, Init)
 {
 	pos.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_EQ(pos.Occupied, 0xfffb00041000efff);	
-	ASSERT_TRUE(canCastleOO(pos.st->castleRights[W]));
-	ASSERT_TRUE(canCastleOOO(pos.st->castleRights[W]));
-	ASSERT_FALSE(canCastleOO(pos.st->castleRights[B]));
-	ASSERT_TRUE(canCastleOOO(pos.st->castleRights[B]));
+	ASSERT_TRUE(can_castleOO(pos.st->castleRights[W]));
+	ASSERT_TRUE(can_castleOOO(pos.st->castleRights[W]));
+	ASSERT_FALSE(can_castleOO(pos.st->castleRights[B]));
+	ASSERT_TRUE(can_castleOOO(pos.st->castleRights[B]));
 	ASSERT_EQ(pos.st->fiftyMove, 21);
 	ASSERT_EQ(pos.st->fullMove, 33);
 	ASSERT_EQ(pos.st->epSquare, 42);

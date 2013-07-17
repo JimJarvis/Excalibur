@@ -1,7 +1,7 @@
 #include "position.h"
 #define update moveBuffer[index++] = mv // add an entry to the buffer
 
-Move moveBuffer[4096];
+Move moveBuffer[8192];
 int moveBufEnds[64];
 
 /*
@@ -15,19 +15,19 @@ TempPiece = Pieces[pt][turn];  \
 while (TempPiece)   \
 {  \
 	from = popLSB(TempPiece);  \
-	mv.setFrom(from);  \
+	mv.set_from(from);  \
 	TempMove = attack_map<pt>(from) & Target;  \
 	while (TempMove)  \
 	{  \
 		to = popLSB(TempMove);  \
-		mv.setTo(to);  \
+		mv.set_to(to);  \
 		update;  \
 	}  \
 }  \
 mv.clear()
 
 /* Generate pseudo-legal moves */
-int Position::genHelper( int index, Bit Target, bool isNonEvasion )
+int Position::gen_helper( int index, Bit Target, bool isNonEvasion )
 {
 	Color op = flipColor[turn];
 	Bit Freesq = ~Occupied;
@@ -40,7 +40,7 @@ int Position::genHelper( int index, Bit Target, bool isNonEvasion )
 	while (TempPiece)
 	{
 		from = popLSB(TempPiece);
-		mv.setFrom(from);
+		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
@@ -49,14 +49,14 @@ int Position::genHelper( int index, Bit Target, bool isNonEvasion )
 		while (TempMove)
 		{
 			to = popLSB(TempMove);
-			mv.setTo(to);
+			mv.set_to(to);
 			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
 			{
-				mv.setPromo(QUEEN); update;
-				mv.setPromo(ROOK); update;
-				mv.setPromo(BISHOP); update;
-				mv.setPromo(KNIGHT); update;
-				mv.clearSpecial();
+				mv.set_promo(QUEEN); update;
+				mv.set_promo(ROOK); update;
+				mv.set_promo(BISHOP); update;
+				mv.set_promo(KNIGHT); update;
+				mv.clear_special();
 			}
 			else
 				update;
@@ -68,13 +68,13 @@ int Position::genHelper( int index, Bit Target, bool isNonEvasion )
 				// final check to avoid same color capture
 				if (Pawnmap[op] & setbit[Board::backward_sq(st->epSquare, turn)] & Target)
 				{
-					mv.setEP();
-					mv.setTo(st->epSquare);
+					mv.set_ep();
+					mv.set_to(st->epSquare);
 					update;
 				}
 			}
 		}
-		mv.clearSpecial();  // clear the EP and promo square.
+		mv.clear_special();  // clear the EP and promo square.
 	}
 	mv.clear();  
 
@@ -87,25 +87,25 @@ int Position::genHelper( int index, Bit Target, bool isNonEvasion )
 	{
 	/*************** Kings ****************/
 		from = kingSq[turn];
-		mv.setFrom(from);
+		mv.set_from(from);
 		TempMove = Board::king_attack(from) & Target;
 		while (TempMove)
 		{
 			to = popLSB(TempMove);
-			mv.setTo(to);
+			mv.set_to(to);
 			update;
 		}
 		// King side castling O-O
-		if (canCastleOO(st->castleRights[turn]))
+		if (can_castleOO(st->castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
-				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_EG], op))
+				if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_EG], op))
 					moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
 		}
-		if (canCastleOOO(st->castleRights[turn]))
+		if (can_castleOOO(st->castleRights[turn]))
 		{
 			if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
-				if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_CE], op))
+				if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_CE], op))
 					moveBuffer[index ++] = MOVE_OOO_KING[turn];  // pre-stored king's castling move
 		}
 	}
@@ -120,19 +120,19 @@ int Position::genHelper( int index, Bit Target, bool isNonEvasion )
 	while (TempPiece) \
 	{ \
 		from = popLSB(TempPiece); \
-		mv.setFrom(from); \
+		mv.set_from(from); \
 		TempMove = attack_map<pt>(from) & Target; \
 		while (TempMove) \
 		{ \
 			to = popLSB(TempMove); \
 			if (pinned && (pinned & setbit[from]) && (pt == KNIGHT || !Board::is_aligned(from, to, kSq)) ) 	continue; \
-			mv.setTo(to); \
+			mv.set_to(to); \
 			update; \
 		} \
 	} \
 	mv.clear()
 
-int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pinned )
+int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned )
 {
 	Color op = flipColor[turn];
 	uint kSq = kingSq[turn];
@@ -146,7 +146,7 @@ int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pin
 	while (TempPiece)
 	{
 		from = popLSB(TempPiece);
-		mv.setFrom(from);
+		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
@@ -156,14 +156,14 @@ int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pin
 		{
 			to = popLSB(TempMove);
 			if (pinned && (pinned & setbit[from]) && !Board::is_aligned(from, to, kSq) ) 	continue;
-			mv.setTo(to);
+			mv.set_to(to);
 			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
 			{
-				mv.setPromo(QUEEN); update;
-				mv.setPromo(ROOK); update;
-				mv.setPromo(BISHOP); update;
-				mv.setPromo(KNIGHT); update;
-				mv.clearSpecial();
+				mv.set_promo(QUEEN); update;
+				mv.set_promo(ROOK); update;
+				mv.set_promo(BISHOP); update;
+				mv.set_promo(KNIGHT); update;
+				mv.clear_special();
 			}
 			else
 				update;
@@ -183,14 +183,14 @@ int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pin
 					if ( !(Board::rook_attack(kSq, newOccup) & (Queenmap[op] | Rookmap[op]))
 						&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[op] | Bishopmap[op])) )
 					{
-						mv.setEP();
-						mv.setTo(st->epSquare);
+						mv.set_ep();
+						mv.set_to(st->epSquare);
 						update;
 					}
 				}
 			}
 		}
-		mv.clearSpecial();  // clear the EP and promo square.
+		mv.clear_special();  // clear the EP and promo square.
 	}
 	mv.clear();  
 
@@ -203,26 +203,26 @@ int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pin
 	{
 		/*************** Kings ****************/
 			from = kingSq[turn];
-			mv.setFrom(from);
+			mv.set_from(from);
 			TempMove = attack_map<KING>(from) & Target;
 			while (TempMove)
 			{
 				to = popLSB(TempMove);
-				if (isSqAttacked(to, op))	continue;
-				mv.setTo(to);
+				if (is_sq_attacked(to, op))	continue;
+				mv.set_to(to);
 				update;
 			}
 			// King side castling O-O
-			if (canCastleOO(st->castleRights[turn]))
+			if (can_castleOO(st->castleRights[turn]))
 			{
 				if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
-					if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_EG], op))
+					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_EG], op))
 						moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
 			}
-			if (canCastleOOO(st->castleRights[turn]))
+			if (can_castleOOO(st->castleRights[turn]))
 			{
 				if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
-					if (!isBitAttacked(CASTLE_MASK[turn][CASTLE_CE], op))
+					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_CE], op))
 						moveBuffer[index ++] = MOVE_OOO_KING[turn];  // pre-stored king's castling move
 			}
 
@@ -234,7 +234,7 @@ int Position::genLegalHelper( int index, Bit Target, bool isNonEvasion, Bit& pin
 /*
  *	Generate pseudo-legal check evasions. Include king's flee and blocking
  */
-int Position::genEvasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/ )
+int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/ )
 {
 	Bit Ck = st->CheckerMap;
 	Bit SliderAttack = 0;  
@@ -269,12 +269,12 @@ int Position::genEvasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/
 	// generate king flee
 	Ck = Board::king_attack(kSq) & ~Oneside[turn] & ~SliderAttack;
 	Move mv;
-	mv.setFrom(kSq);
+	mv.set_from(kSq);
 	while (Ck)  // routine add moves
 	{
 		int to = popLSB(Ck);
-		if (legal && isSqAttacked(to, flipColor[turn])) continue;
-		mv.setTo(to);
+		if (legal && is_sq_attacked(to, flipColor[turn])) continue;
+		mv.set_to(to);
 		update;
 	}
 
@@ -283,11 +283,11 @@ int Position::genEvasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/
 	
 	// Generate non-flee moves
 	Bit Target = Board::between(checkSq, kSq) | st->CheckerMap;
-	return legal ? genLegalHelper(index, Target, false, pinned) : genHelper(index, Target, false);
+	return legal ? gen_legal_helper(index, Target, false, pinned) : gen_helper(index, Target, false);
 }
 
 /* Get a bitmap of all pinned pieces */
-Bit Position::pinnedMap()
+Bit Position::pinned_map()
 {
 	Bit between, ans = 0;
 	Color op = flipColor[turn];
@@ -309,12 +309,12 @@ Bit Position::pinnedMap()
 /* Check if a pseudo-legal move is actually legal */
 bool Position::isLegal(Move& mv, Bit& pinned)
 {
-	uint from = mv.getFrom();
-	uint to = mv.getTo();
+	uint from = mv.get_from();
+	uint to = mv.get_to();
 	if (boardPiece[from] == KING)  // we already checked castling legality
-		return mv.isCastle() || !isSqAttacked(to, flipColor[turn]);
+		return mv.is_castle() || !is_sq_attacked(to, flipColor[turn]);
 	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
-	if (mv.isEP()) // we do it by testing if the king is attacked after the move s made
+	if (mv.is_ep()) // we do it by testing if the king is attacked after the move s made
 	{
 		uint kSq = kingSq[turn];
 		Color op = flipColor[turn];
@@ -344,7 +344,7 @@ int Position::genLegal(int index)
 		// (2) when the king makes a non-castling move,
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
 		Move& mv = moveBuffer[index];
-		if ( (pinned || mv.getFrom()==kSq || mv.isEP())
+		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
 			&& !isLegal(mv, pinned) )
 			mv = moveBuffer[--end];  // throw the last moves to the first, because the first is checked to be illegal
 		else
@@ -359,7 +359,7 @@ int Position::genLegal(int index)
  *	Move legality test to see if any '1' in Target is attacked by the specific color
  * for check detection and castling legality
  */
-bool Position::isBitAttacked(Bit Target, Color attacker) const
+bool Position::is_bit_attacked(Bit Target, Color attacker) const
 {
 	uint to;
 	Color defender_side = flipColor[attacker];
@@ -383,14 +383,13 @@ bool Position::isBitAttacked(Bit Target, Color attacker) const
 
 /*
  *	Make move and update the Position internal states by change the state pointer.
- * The CheckerInfo update is default to be true.
  * Otherwise you can manually generate the CheckerMap by attacks_to(kingSq, flipColor[turn])
  * Use a stack of StateInfo, to continuously makeMove:
  *
  * StateInfo states[MAX_STACK_SIZE], *si = states;
  * makeMove(mv, *si++);
  */
-void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
+void Position::make_move(Move& mv, StateInfo& nextSt)
 {
 	// First get the previous Zobrist key
 	U64 key = st->key;
@@ -400,8 +399,8 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 	nextSt.st_prev = st;
 	st = &nextSt;
 
-	uint from = mv.getFrom();
-	uint to = mv.getTo();
+	uint from = mv.get_from();
+	uint to = mv.get_to();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
 	PieceType piece = boardPiece[from];
@@ -436,16 +435,16 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 			st->epSquare = Board::forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
 			key ^=Zobrist::ep[FILES[st->epSquare]]; // update ep key
 		}
-		if (mv.isEP())  // en-passant capture
+		if (mv.is_ep())  // en-passant capture
 		{
 			capt = PAWN;
 			to = Board::backward_sq(st->st_prev->epSquare, turn);
 			ToMap = setbit[to];  // the captured pawn location
 			boardPiece[to] = NON; boardColor[to] = NON_COLOR;
 		}
-		else if (mv.isPromo())
+		else if (mv.is_promo())
 		{
-			PieceType promo = mv.getPromo();
+			PieceType promo = mv.get_promo();
 			Pawnmap[turn] ^= ToMap;  // the pawn's no longer there
 			boardPiece[to] = promo;
 			Pieces[promo][turn] ^= ToMap;
@@ -463,10 +462,10 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 	case KING:
 		kingSq[turn] = to; // update king square
 		// update castling hash keys
-		if (canCastleOO(st->castleRights[turn]))  key ^= Zobrist::castleOO[turn];
-		if (canCastleOOO(st->castleRights[turn]))  key ^= Zobrist::castleOOO[turn];
+		if (can_castleOO(st->castleRights[turn]))  key ^= Zobrist::castleOO[turn];
+		if (can_castleOOO(st->castleRights[turn]))  key ^= Zobrist::castleOOO[turn];
 		st->castleRights[turn] = 0;  // cannot castle any more
-		if (mv.isCastle())
+		if (mv.is_castle())
 		{
 			uint rfrom, rto;
 			if (FILES[to] == 6)  // King side castle
@@ -496,16 +495,16 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 
 	case ROOK:
 		if (from == SQ_OO_ROOK[turn][0])   // if the rook moves, cancel the castle rights
-		{	if (canCastleOO(st->castleRights[turn]))
+		{	if (can_castleOO(st->castleRights[turn]))
 			{
 				key ^= Zobrist::castleOO[turn];  // update castling hash key
-				deleteCastleOO(st->castleRights[turn]);
+				delete_castleOO(st->castleRights[turn]);
 			}	}
 		else if (from == SQ_OOO_ROOK[turn][0])
-		{	if (canCastleOOO(st->castleRights[turn]))
+		{	if (can_castleOOO(st->castleRights[turn]))
 			{
 				key ^= Zobrist::castleOOO[turn];
-				deleteCastleOOO(st->castleRights[turn]);
+				delete_castleOOO(st->castleRights[turn]);
 			}	}
 		break;
 	}
@@ -517,16 +516,16 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
 		{
 		 	if (to == SQ_OO_ROOK[opp][0])  
-			{	if (canCastleOO(st->castleRights[opp]))
+			{	if (can_castleOO(st->castleRights[opp]))
 				{
 					key ^= Zobrist::castleOO[opp];  // update castling hash key
-					deleteCastleOO(st->castleRights[opp]);
+					delete_castleOO(st->castleRights[opp]);
 				}  }
 			else if (to == SQ_OOO_ROOK[opp][0])  
-			{	if (canCastleOOO(st->castleRights[opp]))
+			{	if (can_castleOOO(st->castleRights[opp]))
 				{
 					key ^= Zobrist::castleOOO[opp];
-					deleteCastleOOO(st->castleRights[opp]);
+					delete_castleOOO(st->castleRights[opp]);
 				}  }
 		}
 		Oneside[opp] ^= ToMap;
@@ -549,20 +548,19 @@ void Position::makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo)
 	Occupied = Oneside[W] | Oneside[B];
 
 	// now we look from our opponents' perspective and update checker info
-	if (updateCheckerInfo)
-		st->CheckerMap = attackers_to(kingSq[opp], turn);
+	st->CheckerMap = attackers_to(kingSq[opp], turn);
 
 	turn = opp;
 }
 
 /* Unmake move and restore the Position internal states */
-void Position::unmakeMove(Move& mv)
+void Position::unmake_move(Move& mv)
 {
-	uint from = mv.getFrom();
-	uint to = mv.getTo();
+	uint from = mv.get_from();
+	uint to = mv.get_to();
 	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
 	Bit FromToMap = setbit[from] | ToMap;
-	bool isPromo = mv.isPromo();
+	bool isPromo = mv.is_promo();
 	PieceType piece = isPromo ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
 	Color opp = turn;
@@ -576,7 +574,7 @@ void Position::unmakeMove(Move& mv)
 	switch (piece)
 	{
 	case PAWN:
-		if (mv.isEP())  // en-passant capture
+		if (mv.is_ep())  // en-passant capture
 		{
 			// will restore the captured pawn later, with all other capturing cases
 			to = Board::backward_sq(st->st_prev->epSquare, turn);
@@ -584,7 +582,7 @@ void Position::unmakeMove(Move& mv)
 		}
 		else if (isPromo)
 		{
-			PieceType promo = mv.getPromo();
+			PieceType promo = mv.get_promo();
 			Pawnmap[turn] ^= ToMap;  // flip back
 			++ pieceCount[turn][PAWN];
 			-- pieceCount[turn][promo];
@@ -596,7 +594,7 @@ void Position::unmakeMove(Move& mv)
 
 	case KING:
 		kingSq[turn] = from; // restore the original king position
-		if (mv.isCastle())
+		if (mv.is_castle())
 		{
 			uint rfrom, rto;
 			if (FILES[to] == 6)  // king side castling
@@ -637,21 +635,21 @@ void Position::unmakeMove(Move& mv)
 
 
 /* Very similar to genLegal() */
-GameStatus Position::mateStatus()
+GameStatus Position::mate_status()
 {
 	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
-	// 3878 == 4096 - 218, 218 is the most move a legal position can ever make
-	Bit pinned = pinnedMap();
-	int start = 3878;
+	// 8192 - 218 = 7974, 218 is the most move a legal position can ever make
+	Bit pinned = pinned_map();
+	int start = 7974;
 	uint kSq = kingSq[turn];
-	int end =st->CheckerMap ? genEvasions(start) : genNonEvasions(start);
+	int end =st->CheckerMap ? gen_evasions(start) : gen_non_evasions(start);
 	while (start != end)
 	{
 		// only possible illegal moves: (1) when there're pins, 
 		// (2) when the king makes a non-castling move,
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
 		Move& mv = moveBuffer[start];
-		if ( (pinned || mv.getFrom()==kSq || mv.isEP())
+		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
 			&& !isLegal(mv, pinned) )  // illegal! 
 			start ++;
 		else

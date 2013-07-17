@@ -21,25 +21,25 @@ public:
 	friend ostream& operator<<(ostream& os, Move& m);
 
 	void clear() { mov = 0; }  // clear all except the color bit
-	void clearSpecial() { mov &= 0x0fff; }  // clear special bits: promotion, castle/EP flags: bits 12 and above
+	void clear_special() { mov &= 0x0fff; }  // clear special bits: promotion, castle/EP flags: bits 12 and above
 	operator ushort() const { return mov; } // conversion operator
 	operator string(); // convert to algebraic chess notation string
 
 	// bits 0 to 5
-	void setFrom(ushort from) 	{ mov &= 0xffc0; mov |= (from & 0x3f); }
-	ushort getFrom() {  return mov & 0x3f;  }
+	void set_from(ushort from) 	{ mov &= 0xffc0; mov |= (from & 0x3f); }
+	ushort get_from() {  return mov & 0x3f;  }
 	// bits 6 to 11
-	void setTo(ushort to) 	{ mov &= 0xf03f; mov |= (to & 0x3f)<< 6; }
-	ushort getTo() { return (mov >> 6) & 0x3f; }
+	void set_to(ushort to) 	{ mov &= 0xf03f; mov |= (to & 0x3f)<< 6; }
+	ushort get_to() { return (mov >> 6) & 0x3f; }
 	// bits 12 to 13, 2 bits 00 to 11 for promoted pieces, if any: N-00, B-01, R-10, Q-11
-	void setPromo(PieceType piece) { clearSpecial(); mov |= (0xc000 |  PROMO_MASK[piece]); }
-	PieceType getPromo() { return PIECE_FROM_PROMO[(mov >> 12) & 0x3]; }   // ALWAYS call isPromo before getPromo
-	bool isPromo() { return (mov & 0xc000) == 0xc000; }
+	void set_promo(PieceType piece) { clear_special(); mov |= (0xc000 |  PROMO_MASK[piece]); }
+	PieceType get_promo() { return PIECE_FROM_PROMO[(mov >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo
+	bool is_promo() { return (mov & 0xc000) == 0xc000; }
 	// bits 14-15: 01 for castling, 10 for EP, 11 for promotion
-	void setCastle() { mov |= 0x4000; }
-	bool isCastle() { return (mov & 0xc000) == 0x4000; }
-	void setEP() { mov |= 0x8000; }
-	bool isEP() { return (mov & 0xc000) == 0x8000; }
+	void set_castle() { mov |= 0x4000; }
+	bool is_castle() { return (mov & 0xc000) == 0x4000; }
+	void set_ep() { mov |= 0x8000; }
+	bool is_ep() { return (mov & 0xc000) == 0x8000; }
 };
 
 inline ostream& operator<<(ostream& os, Move& m)

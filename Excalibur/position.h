@@ -65,27 +65,29 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	int genEvasions(int index, bool legal = false, Bit pinned = 0);  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
-	int genNonEvasions(int index, bool legal = false, Bit pinned = 0) /* default: pseudo non-evasions */
-		{ return legal ? genLegalHelper(index, ~Oneside[turn], true, pinned) : genHelper(index, ~Oneside[turn], true); }
+	int gen_evasions(int index, bool legal = false, Bit pinned = 0);  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
+	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) /* default: pseudo non-evasions */
+		{ return legal ? gen_legal_helper(index, ~Oneside[turn], true, pinned) : gen_helper(index, ~Oneside[turn], true); }
 
-	int genLegal(int index)  { return st->CheckerMap ? 
-		genEvasions(index, true, pinnedMap()) : 	genNonEvasions(index, true, pinnedMap()); }  // generate only legal moves
-	int genPseudoLegal(int index)  { return st->CheckerMap ?
-		genEvasions(index) : genNonEvasions(index); }// generate pseudo legal moves
+	int gen_legal(int index)  { return st->CheckerMap ? 
+		gen_evasions(index, true, pinned_map()) : 	gen_non_evasions(index, true, pinned_map()); }  // generate only legal moves
+	int gen_pseudo_legal(int index)  { return st->CheckerMap ?
+		gen_evasions(index) : gen_non_evasions(index); }// generate pseudo legal moves
 
 	bool isLegal(Move& mv, Bit& pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
-	Bit pinnedMap(); // a bitmap of all pinned pieces
+	// 8192 - 218 = 7974 : 218 being the most legal moves ever known
+	int count_legal() { return gen_legal(7974) - 7974; }
+	Bit pinned_map(); // a bitmap of all pinned pieces
 	
-	void makeMove(Move& mv, StateInfo& nextSt, bool updateCheckerInfo = true);   // make the move. The new state will be recorded in nextState output parameter
-	void unmakeMove(Move& mv);  // undo the move and get back to the previous ply
+	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
+	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
 
-	bool isBitAttacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
-	bool isSqAttacked(uint sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
-	bool isOwnKingAttacked() const { return isSqAttacked(kingSq[turn], flipColor[turn]); } // legality check
-	bool isOppKingAttacked() const { return isSqAttacked(kingSq[flipColor[turn]], turn); }
+	bool is_bit_attacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
+	bool is_sq_attacked(uint sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
+	bool is_own_king_attacked() const { return is_sq_attacked(kingSq[turn], flipColor[turn]); } // legality check
+	bool is_opp_king_attacked() const { return is_sq_attacked(kingSq[flipColor[turn]], turn); }
 	Bit attackers_to(uint sq, Color attacker) const;  // inlined
-	GameStatus mateStatus(); // use the genLegal implementation to see if there's any legal move left
+	GameStatus mate_status(); // use the genLegal implementation to see if there's any legal move left
 
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
@@ -118,8 +120,8 @@ public:
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
-	int genHelper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
-	int genLegalHelper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
+	int gen_helper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
+	int gen_legal_helper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
 
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };
@@ -153,7 +155,7 @@ inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }
 
 // Check if a single square is attacked. For check detection
-inline bool Position::isSqAttacked(uint sq, Color attacker) const
+inline bool Position::is_sq_attacked(uint sq, Color attacker) const
 {
 	if (Knightmap[attacker] & Board::knight_attack(sq)) return true;
 	if (Kingmap[attacker] & Board::king_attack(sq)) return true;
@@ -173,7 +175,7 @@ inline Bit Position::attackers_to(uint sq, Color attacker) const
 		| ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq));
 }
 
-extern Move moveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
+extern Move moveBuffer[8192]; // all generated moves of the current search tree are stored in this array.
 extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 // perft verifier, with an epd data file. 

@@ -30,18 +30,18 @@ TEST(Move, Checks)
 	bool verbose = false;
 	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
 	pos.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
-	int end = pos.genNonEvasions(0);
+	int end = pos.gen_non_evasions(0);
 	int check = 0, quiet = 0; // count checking moves
 	StateInfo si; 
 	for (int i = 0; i < end; i++)
 	{
 		Move m = moveBuffer[i];
-		pos.makeMove(m, si);
-		if (pos.isOwnKingAttacked())  // display checking moves
+		pos.make_move(m, si);
+		if (pos.is_own_king_attacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
 		else // display non-threatening moves to the opposite king
 			{ if (verbose) cout << "non: " <<  m << endl;  quiet ++; }
-		pos.unmakeMove(m);
+		pos.unmake_move(m);
 	}
 	ASSERT_EQ(16, check);
 	ASSERT_EQ(43, quiet);
@@ -53,47 +53,47 @@ TEST(Move, Judgement)
 
 	srand(time(NULL));
 	uint from = rand() % 64;
-	m.setFrom(from);
+	m.set_from(from);
 	uint to = rand() % 64;
-	m.setTo(to);
+	m.set_to(to);
 	PieceType proms[4] = {QUEEN, BISHOP, KNIGHT, ROOK}; // promoted
 	for (PieceType prom : proms)
 	{
-		m.setPromo(prom);
-		ASSERT_EQ(m.getPromo(), prom);
-		ASSERT_TRUE(m.isPromo());
-		ASSERT_FALSE(m.isEP());
-		ASSERT_FALSE(m.isCastle());
-		m.clearSpecial();
-		ASSERT_EQ(m.getFrom(), from);
-		ASSERT_EQ(m.getTo(), to);
+		m.set_promo(prom);
+		ASSERT_EQ(m.get_promo(), prom);
+		ASSERT_TRUE(m.is_promo());
+		ASSERT_FALSE(m.is_ep());
+		ASSERT_FALSE(m.is_castle());
+		m.clear_special();
+		ASSERT_EQ(m.get_from(), from);
+		ASSERT_EQ(m.get_to(), to);
 	}
 	m.clear();
 
-	m.setFrom(str2sq("c2"));
-	m.setTo(str2sq("c4"));
-	m.setCastle();
-	ASSERT_FALSE(m.isPromo());
-	ASSERT_TRUE(m.isCastle());
-	ASSERT_FALSE(m.isEP());
-	ASSERT_EQ(m.getFrom(), 10);
-	ASSERT_EQ(m.getTo(), 26);
+	m.set_from(str2sq("c2"));
+	m.set_to(str2sq("c4"));
+	m.set_castle();
+	ASSERT_FALSE(m.is_promo());
+	ASSERT_TRUE(m.is_castle());
+	ASSERT_FALSE(m.is_ep());
+	ASSERT_EQ(m.get_from(), 10);
+	ASSERT_EQ(m.get_to(), 26);
 	m.clear();
 
-	m.setEP();
-	ASSERT_FALSE(m.isPromo());
-	ASSERT_FALSE(m.isCastle());
-	ASSERT_TRUE(m.isEP());
+	m.set_ep();
+	ASSERT_FALSE(m.is_promo());
+	ASSERT_FALSE(m.is_castle());
+	ASSERT_TRUE(m.is_ep());
 }
 
 TEST(Move, Mates)
 {
 	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
-	ASSERT_EQ(pos.mateStatus(), CHECKMATE);
+	ASSERT_EQ(pos.mate_status(), CHECKMATE);
 	pos.parseFEN("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
-	ASSERT_EQ(pos.mateStatus(), STALEMATE);
+	ASSERT_EQ(pos.mate_status(), STALEMATE);
 	pos.parseFEN("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
-	ASSERT_EQ(pos.mateStatus(), CHECKMATE);
+	ASSERT_EQ(pos.mate_status(), CHECKMATE);
 }
 
 // test board internal state consistency after make/unmake
@@ -104,16 +104,16 @@ TEST(Move, MakeUnmake)
 	{
 		pos = Position(fenList[i]);
 		pos_orig = pos;
-		int end = pos.genNonEvasions(0);
+		int end = pos.gen_non_evasions(0);
 
 		StateInfo si;
 		for (int i = 0; i < end; i++) // testing all possible moves
 		{
 			Move m = moveBuffer[i];
 
-			pos.makeMove(m, si);
+			pos.make_move(m, si);
 
-			pos.unmakeMove(m);
+			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
 			ASSERT_EQ(pos_orig, pos) << string(m);
@@ -142,13 +142,13 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 	currentBuf = moveBufEnds[ply];
 
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = pos.genLegal(currentBuf);
+	nextBuf = moveBufEnds[ply + 1] = pos.gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
 		moveTrace[ply] = m = moveBuffer[i];
-		pos.makeMove(m, si);
+		pos.make_move(m, si);
 		
 		ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg; 
 		ASSERT_EQ(pos.calc_material_key(), pos.st->materialKey) << errmsg; 
@@ -159,7 +159,7 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 
 		test_key_invariant(pos, depth - 1, ply + 1);
 
-		pos.unmakeMove(m);
+		pos.unmake_move(m);
 	}
 }
 
