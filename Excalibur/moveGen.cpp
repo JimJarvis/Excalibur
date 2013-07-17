@@ -27,7 +27,7 @@ while (TempPiece)   \
 mv.clear()
 
 /* Generate pseudo-legal moves */
-int Position::gen_helper( int index, Bit Target, bool isNonEvasion )
+int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 {
 	Color op = flipColor[turn];
 	Bit Freesq = ~Occupied;
@@ -132,7 +132,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion )
 	} \
 	mv.clear()
 
-int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned )
+int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned) const
 {
 	Color op = flipColor[turn];
 	uint kSq = kingSq[turn];
@@ -234,7 +234,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 /*
  *	Generate pseudo-legal check evasions. Include king's flee and blocking
  */
-int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/ )
+int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*/ ) const
 {
 	Bit Ck = st->CheckerMap;
 	Bit SliderAttack = 0;  
@@ -250,17 +250,17 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 		switch (boardPiece[checkSq])  // who's checking me?
 		{
 		// pseudo attack maps that don't concern about occupancy
-		case ROOK: SliderAttack |= Board::ray_rook(checkSq); break;
-		case BISHOP: SliderAttack |= Board::ray_bishop(checkSq); break;
+		case ROOK: SliderAttack |= Board::rook_ray(checkSq); break;
+		case BISHOP: SliderAttack |= Board::bishop_ray(checkSq); break;
 		case QUEEN:
 			// If queen and king are far or not on a diagonal line we can safely
 			// remove all the squares attacked in the other direction because the king can't get there anyway.
-			if (Board::between(kSq, checkSq) || !(Board::ray_bishop(checkSq) & Kingmap[turn]))
-				SliderAttack |= Board::ray_queen(checkSq);
+			if (Board::between(kSq, checkSq) || !(Board::bishop_ray(checkSq) & Kingmap[turn]))
+				SliderAttack |= Board::queen_ray(checkSq);
 			// Otherwise we need to use real rook attacks to check if king is safe
 			// to move in the other direction. e.g. king C2, queen B1, friendly bishop in C1, and we can safely move to D1.
 			else
-				SliderAttack |= Board::ray_bishop(checkSq) | attack_map<ROOK>(checkSq);
+				SliderAttack |= Board::bishop_ray(checkSq) | attack_map<ROOK>(checkSq);
 		default:
 			break;
 		}
@@ -287,15 +287,15 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 }
 
 /* Get a bitmap of all pinned pieces */
-Bit Position::pinned_map()
+Bit Position::pinned_map() const
 {
 	Bit between, ans = 0;
 	Color op = flipColor[turn];
 	Bit pinners = Oneside[op];
 	uint kSq = kingSq[turn];
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= ((Rookmap[op] | Queenmap[op]) & Board::ray_rook(kSq))
-		| ((Bishopmap[op] | Queenmap[op]) & Board::ray_bishop(kSq));
+	pinners &= ((Rookmap[op] | Queenmap[op]) & Board::rook_ray(kSq))
+		| ((Bishopmap[op] | Queenmap[op]) & Board::bishop_ray(kSq));
 	while (pinners)
 	{
 		between = Board::between(kSq, popLSB(pinners)) & Occupied;
@@ -307,7 +307,7 @@ Bit Position::pinned_map()
 }
 
 /* Check if a pseudo-legal move is actually legal */
-bool Position::isLegal(Move& mv, Bit& pinned)
+bool Position::is_legal(Move& mv, Bit& pinned) const
 {
 	uint from = mv.get_from();
 	uint to = mv.get_to();
@@ -333,7 +333,7 @@ bool Position::isLegal(Move& mv, Bit& pinned)
 /* Generate strictly legal moves */
 // Old implementation that generates pseudo-legal move first and filter out one by one
 /*
-int Position::genLegal(int index)
+int Position::genLegal(int index) const
 {
 	Bit pinned = pinnedMap();
 	uint kSq = kingSq[turn];
@@ -345,7 +345,7 @@ int Position::genLegal(int index)
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
 		Move& mv = moveBuffer[index];
 		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
-			&& !isLegal(mv, pinned) )
+			&& !is_legal(mv, pinned) )
 			mv = moveBuffer[--end];  // throw the last moves to the first, because the first is checked to be illegal
 		else
 			index ++;
@@ -455,7 +455,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			st->materialKey ^= Zobrist::psq[turn][promo][pieceCount[turn][promo]++]
 					^ Zobrist::psq[turn][PAWN][--pieceCount[turn][PAWN]];
 			st->psqScore += pieceSquareTable[turn][promo][to] - pieceSquareTable[turn][PAWN][to];
-			st->npMaterial[turn] += pieceVALUE[MG][promo];
+			st->npMaterial[turn] += PIECE_VALUE[MG][promo];
 		}
 		break;
 
@@ -536,7 +536,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		if (capt == PAWN)
 			st->pawnKey ^= Zobrist::psq[opp][PAWN][to];
 		else
-			st->npMaterial[opp] -= pieceVALUE[MG][capt];
+			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
 		st->materialKey ^= Zobrist::psq[opp][capt][--pieceCount[opp][capt]];
 		st->psqScore -= pieceSquareTable[opp][capt][to];
 	}
@@ -635,7 +635,7 @@ void Position::unmake_move(Move& mv)
 
 
 /* Very similar to genLegal() */
-GameStatus Position::mate_status()
+GameStatus Position::mate_status() const
 {
 	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
 	// 8192 - 218 = 7974, 218 is the most move a legal position can ever make
@@ -650,7 +650,7 @@ GameStatus Position::mate_status()
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
 		Move& mv = moveBuffer[start];
 		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
-			&& !isLegal(mv, pinned) )  // illegal! 
+			&& !is_legal(mv, pinned) )  // illegal! 
 			start ++;
 		else
 			return GameStatus::NORMAL; // one legal move means no check/stalemate

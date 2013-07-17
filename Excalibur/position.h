@@ -48,6 +48,7 @@ public:
 
 	// Incrementally updated info, for fast access:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
+	uint pieceList[COLOR_N][PIECE_TYPE_N][16]; // records the square of all pieces
 	PieceType boardPiece[SQ_N];  // records all piece types
 	Color boardColor[SQ_N];  // records all color distribution
 
@@ -65,19 +66,19 @@ public:
 	/*
 	 *	movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states.
 	 */
-	int gen_evasions(int index, bool legal = false, Bit pinned = 0);  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
-	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) /* default: pseudo non-evasions */
+	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
+	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) const /* default: pseudo non-evasions */
 		{ return legal ? gen_legal_helper(index, ~Oneside[turn], true, pinned) : gen_helper(index, ~Oneside[turn], true); }
 
-	int gen_legal(int index)  { return st->CheckerMap ? 
+	int gen_legal(int index) const  { return st->CheckerMap ? 
 		gen_evasions(index, true, pinned_map()) : 	gen_non_evasions(index, true, pinned_map()); }  // generate only legal moves
 	int gen_pseudo_legal(int index)  { return st->CheckerMap ?
 		gen_evasions(index) : gen_non_evasions(index); }// generate pseudo legal moves
 
-	bool isLegal(Move& mv, Bit& pinned);  // judge if a pseudo-legal move is legal, given the pinned map.
+	bool is_legal(Move& mv, Bit& pinned) const;  // judge if a pseudo-legal move is legal, given the pinned map.
 	// 8192 - 218 = 7974 : 218 being the most legal moves ever known
-	int count_legal() { return gen_legal(7974) - 7974; }
-	Bit pinned_map(); // a bitmap of all pinned pieces
+	int count_legal() const { return gen_legal(7974) - 7974; }
+	Bit pinned_map() const; // a bitmap of all pinned pieces
 	
 	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
@@ -87,7 +88,8 @@ public:
 	bool is_own_king_attacked() const { return is_sq_attacked(kingSq[turn], flipColor[turn]); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(kingSq[flipColor[turn]], turn); }
 	Bit attackers_to(uint sq, Color attacker) const;  // inlined
-	GameStatus mate_status(); // use the genLegal implementation to see if there's any legal move left
+	Bit checkermap() const { return st->CheckerMap; }
+	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
 
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
@@ -120,8 +122,8 @@ public:
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
-	int gen_helper(int index, Bit Target, bool isNonEvasion);  // pseudo-moves
-	int gen_legal_helper(int index, Bit Target, bool isNonEvasion, Bit& pinned);  // a close of genHelper, but built in legality check
+	int gen_helper(int index, Bit Target, bool isNonEvasion) const;  // pseudo-moves
+	int gen_legal_helper(int index, Bit Target, bool isNonEvasion, Bit& pinned) const;  // a close of genHelper, but built in legality check
 
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };

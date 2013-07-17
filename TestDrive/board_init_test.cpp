@@ -109,9 +109,9 @@ TEST(Board, SliderRay)
 {
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
-		ASSERT_EQ(Board::rook_attack(sq, 0), Board::ray_rook(sq));
-		ASSERT_EQ(Board::bishop_attack(sq, 0), Board::ray_bishop(sq));
-		ASSERT_EQ(Board::queen_attack(sq, 0), Board::ray_queen(sq));
+		ASSERT_EQ(Board::rook_attack(sq, 0), Board::rook_ray(sq));
+		ASSERT_EQ(Board::bishop_attack(sq, 0), Board::bishop_ray(sq));
+		ASSERT_EQ(Board::queen_attack(sq, 0), Board::queen_ray(sq));
 	}
 }
 

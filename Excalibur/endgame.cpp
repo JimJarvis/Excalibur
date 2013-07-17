@@ -98,27 +98,23 @@ namespace Endgame
 /// King and plenty of material vs a lone king. It simply gives the
 /// attacking side a bonus for driving the defending king towards the edge
 /// of the board, and for keeping the distance between the two kings small.
-/*
 template<>
-Value EndEvaluator<KXK>::operator()(const Position& pos) const {
-
+Value EndEvaluator<KXK>::operator()(const Position& pos) const 
+{
 	// Stalemate detection with lone king
-	if (    pos.turn == weakerSide && !pos.checkers()
-		&& !MoveList<LEGAL>(pos).size()) {
+	if ( pos.turn == weakerSide && !pos.checkermap()
+		&& pos.count_legal() == 0)
 			return VALUE_DRAW;
-	}
 
-	Square winnerKSq = pos.king_square(strongerSide);
-	Square loserKSq = pos.king_square(weakerSide);
+	uint winnerKSq = pos.kingSq[strongerSide];
+	uint loserKSq = pos.kingSq[weakerSide];
 
 	Value result =   pos.non_pawn_material(strongerSide)
-		+ pos.piece_count(strongerSide, PAWN) * PawnValueEg
-		+ MateTable[loserKSq]
-	+ DistanceBonus[square_distance(winnerKSq, loserKSq)];
+		+ pos.pieceCount[strongerSide][PAWN] * PIECE_VALUE[EG][PAWN] + MateTable[loserKSq]
+	+ DistanceBonus[Board::square_distance(winnerKSq, loserKSq)];
 
-	if (   pos.piece_count(strongerSide, QUEEN)
-		|| pos.piece_count(strongerSide, ROOK)
-		|| pos.bishop_pair(strongerSide)) {
-			result += VALUE_KNOWN_WIN;
-	}
-	*/
+	//if (   pos.pieceCount[strongerSide][QUEEN]
+	//	|| pos.pieceCount[strongerSide][ROOK] || pos.bishop_pair(strongerSide)) 
+	//		result += VALUE_KNOWN_WIN;
+	return strongerSide == pos.turn ? result : -result;
+}

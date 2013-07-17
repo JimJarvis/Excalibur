@@ -123,10 +123,18 @@ const int SQUARES[FILE_N][FILE_N] = {
 };
 
 // Scale factors used in endgames
-const ScaleFactor SCALE_FACTOR_DRAW   = 0;
-const ScaleFactor SCALE_FACTOR_NORMAL = 64;
-const ScaleFactor SCALE_FACTOR_MAX    = 128;
-const ScaleFactor SCALE_FACTOR_NONE   = 255;
+const ScaleFactor SCALE_FACTOR_DRAW = 0,
+	SCALE_FACTOR_NORMAL = 64,
+	SCALE_FACTOR_MAX    = 128,
+	SCALE_FACTOR_NONE   = 255;
+
+// Values
+const Value VALUE_ZERO  = 0,
+	VALUE_DRAW    = 0,
+	VALUE_KNOWN_WIN = 15000,
+	VALUE_MATE      = 30000,
+	VALUE_INFINITE  = 30001,
+	VALUE_NONE      = 30002;
 
 #include <vector>
 // Hashtable implementation. For pawn and material table

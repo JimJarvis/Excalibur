@@ -116,10 +116,11 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 				// display speed info at depth 6. If nodes too few, the speedometer's meaningless
 				if (depth == 6)
 				{
+					cout << "Passed:" << std::setw(6) << roundTime << " ms.  ";
 					if (roundNodes > SPEEDOMETER)
-						cout << "PASSED: Speed = " << 1.0 * roundNodes / roundTime << " kn/s" << endl;
+						cout << "Speed = " << 1.0 * roundNodes / roundTime << " kn/s" << endl;
 					else
-						cout << "PASSED: Speed N/A, not enough nodes" << endl;
+						cout << "Speed N/A, too few nodes" << endl;
 				}
 			}
 			cout << endl;

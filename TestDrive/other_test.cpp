@@ -2,6 +2,7 @@
 
 #include "tests.h"
 
+#define bb(x,y) Board::square_distance(x,y)
 TEST(Misc, Other)
 {
 	

@@ -319,7 +319,7 @@ Value Position::calc_non_pawn_material(Color c) const
 	{
 		if (pt == PAWN) continue;
 		else
-			value += pieceCount[c][pt] * pieceVALUE[MG][pt];
+			value += pieceCount[c][pt] * PIECE_VALUE[MG][pt];
 	}
 	return value;
 }

@@ -4,14 +4,15 @@ namespace Board
 {
 
 // Because we extern the tables in board.h, we must explicitly declare them again:
-Bit knight_tbl[SQ_N], king_tbl[SQ_N];
-Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
-uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N]; 
-byte rook_key[SQ_N][4096]; Bit rook_tbl[4900]; 
-byte bishop_key[SQ_N][512]; Bit bishop_tbl[1428]; 
-Magics rook_magics[SQ_N]; Magics bishop_magics[SQ_N]; 
-Bit ray_rook_tbl[SQ_N], ray_bishop_tbl[SQ_N], ray_queen_tbl[SQ_N];
-Bit between_tbl[SQ_N][SQ_N];
+Bit knightTbl[SQ_N], kingTbl[SQ_N];
+Bit pawnAttackTbl[SQ_N][COLOR_N], pawnPushTbl[SQ_N][COLOR_N], pawnPush2Tbl[SQ_N][COLOR_N];
+uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N]; 
+byte rookKey[SQ_N][4096]; Bit rookTbl[4900]; 
+byte bishopKey[SQ_N][512]; Bit bishopTbl[1428]; 
+Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
+Bit rookRayTbl[SQ_N], bishopRayTbl[SQ_N], queenRayTbl[SQ_N];
+Bit betweenTbl[SQ_N][SQ_N];
+Bit squareDistanceTbl[SQ_N][SQ_N];
 
 
 // initialize *_attack[][] tables
@@ -30,15 +31,16 @@ void init_tables()
 		init_rook_magics(sq, x, y);
 		init_rook_key(sq, x, y);
 		init_rook_tbl(sq, x, y);  
-		init_ray_rook_tbl(sq);
+		init_rook_ray_tbl(sq);
 
 		init_bishop_magics(sq, x, y);
 		init_bishop_key(sq, x, y);
 		init_bishop_tbl(sq, x, y);
-		init_ray_bishop_tbl(sq);
+		init_bishop_ray_tbl(sq);
+		init_queen_ray_tbl(sq);
 
-		init_ray_queen_tbl(sq);
 		init_between_tbl(sq, x, y);
+		init_square_distance_tbl(sq);
 
 		// pawn has different colors
 		for (Color c : COLORS) // iterate through Color::W and B
@@ -54,11 +56,11 @@ void init_tables()
 /* Rook magic bitboard */
 void init_rook_magics(int sq, int x, int y)
 {
-	rook_magics[sq].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit[sq];  // ( rank | file) unset center bit
-	if (sq == 0) rook_magics[0].offset = 0;	else if (sq == 63) return;
+	rookMagics[sq].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit[sq];  // ( rank | file) unset center bit
+	if (sq == 0) rookMagics[0].offset = 0;	else if (sq == 63) return;
 	int west = x, east = 7-x, south = y, north = 7-y;
 	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
-	rook_magics[sq+1].offset = rook_magics[sq].offset + west * east * north * south;
+	rookMagics[sq+1].offset = rookMagics[sq].offset + west * east * north * south;
 }
 
 // Using a unique recoverable coding scheme
@@ -68,7 +70,7 @@ void init_rook_key(int sq, int x, int y)
 	// generate all 2^bits permutations of the rook cross bitmap
 	int n = 0;  // n will eventually store the bitCount of a mask
 	int lsbarray[12];  // store the lsb locations for a particular mask
-	mask = rook_magics[sq].mask;
+	mask = rookMagics[sq].mask;
 	while (mask)
 		lsbarray[n++] = popLSB(mask);
 
@@ -100,7 +102,7 @@ void init_rook_key(int sq, int x, int y)
 		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
 		key = (east - 1) + (north - 1) *em + (west - 1) *nm*em + (south - 1) *wm*nm*em;
 
-		rook_key[sq][ rhash(sq, ans) ] = key; // store the key to the key_table
+		rookKey[sq][ rhash(sq, ans) ] = key; // store the key to the key_table
 	}
 }
 
@@ -115,7 +117,7 @@ void init_rook_tbl(int sq, int x, int y)
 	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
 	byte key;  Bit mask;
-	uint offset = rook_magics[sq].offset;  // constant for one sq.
+	uint offset = rookMagics[sq].offset;  // constant for one sq.
 		// loop through all 4 directions, starting from E and go counterclockwise
 	for (ei = 1; ei <= em; ei++)		{
 		for (ni = 1; ni <= nm; ni++)		{
@@ -129,7 +131,7 @@ void init_rook_tbl(int sq, int x, int y)
 					if (!njug)  { while (nii)  mask |= setbit[sq + (nii-- << 3)]; } // +8*nii
 					if (!sjug)  { while (sii)  mask |= setbit[sq - (sii-- << 3)]; } // -8*sii
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
-					rook_tbl[ offset + key ] = mask;
+					rookTbl[ offset + key ] = mask;
 				}
 			}
 		}
@@ -149,11 +151,11 @@ void init_bishop_magics(int sq, int x, int y)
 	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit[pse]; pse -= 7; se++; }   // se isn't at the east border
 	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit[psw]; psw -= 9; sw++; }   // sw isn't at the west border
 	mask &= unsetbit[sq];  // get rid of the central bit
-	bishop_magics[sq].mask = mask;
+	bishopMagics[sq].mask = mask;
 
-	if (sq == 0)  bishop_magics[0].offset = 0;	else if (sq == 63)   return;
+	if (sq == 0)  bishopMagics[0].offset = 0;	else if (sq == 63)   return;
 	if (ne == 0) ne = 1;  if (nw == 0) nw = 1;  if (se == 0) se = 1;  if (sw == 0) sw = 1;
-	bishop_magics[sq+1].offset = bishop_magics[sq].offset + nw * ne * sw * se;
+	bishopMagics[sq+1].offset = bishopMagics[sq].offset + nw * ne * sw * se;
 }
 
 void init_bishop_key(int sq, int x, int y)
@@ -162,7 +164,7 @@ void init_bishop_key(int sq, int x, int y)
 	// generate all 2^bits permutations of the rook cross bitmap
 	int n = 0;  // n will eventually store the bitCount of a mask
 	int lsbarray[9];  // store the lsb locations for a particular mask
-	mask = bishop_magics[sq].mask;
+	mask = bishopMagics[sq].mask;
 	while (mask)
 		lsbarray[n++] = popLSB(mask);
 
@@ -193,11 +195,11 @@ void init_bishop_key(int sq, int x, int y)
 		// second, we map the number to a 1-byte key
 		// General idea: code = (NE-1) + (NW-1)*NEm + (SW-1)*NWm*NEm + (SE-1)*SWm*NWm*NEm
 		key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
-		bishop_key[sq][ bhash(sq, ans) ] = key; // store the key to the key_table
+		bishopKey[sq][ bhash(sq, ans) ] = key; // store the key to the key_table
 	}
 }
 
-// use the bishop_key + offset to lookup this table (maximally compacted, size = 1428)
+// use the bishopKey + offset to lookup this table (maximally compacted, size = 1428)
 void init_bishop_tbl(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
@@ -208,7 +210,7 @@ void init_bishop_tbl(int sq, int x, int y)
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
 	byte key;  Bit mask;
-	uint offset = bishop_magics[sq].offset;  // constant for one sq.
+	uint offset = bishopMagics[sq].offset;  // constant for one sq.
 	// loop through all 4 directions, starting from E and go counterclockwise
 	for (ne = 1; ne <= nem; ne++)		{
 		for (nw = 1; nw <= nwm; nw++)		{
@@ -222,7 +224,7 @@ void init_bishop_tbl(int sq, int x, int y)
 					if (!sejug) { while(sei) mask |= setbit[sq - (sei--)*7]; }
 					if (!swjug) { while(swi) mask |= setbit[sq - (swi--)*9]; }
 					key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
-					bishop_tbl[ offset + key ] = mask;
+					bishopTbl[ offset + key ] = mask;
 				}
 			}
 		}
@@ -230,19 +232,19 @@ void init_bishop_tbl(int sq, int x, int y)
 }
 
 // just the rook's attackmap on an unoccupied board
-void init_ray_rook_tbl(int sq)
+void init_rook_ray_tbl(int sq)
 {
-	ray_rook_tbl[sq] = rook_attack(sq, 0);
+	rookRayTbl[sq] = rook_attack(sq, 0);
 }
 // just the bishop's attackmap on an unoccupied board
-void init_ray_bishop_tbl(int sq)
+void init_bishop_ray_tbl(int sq)
 {
-	ray_bishop_tbl[sq] = bishop_attack(sq, 0);
+	bishopRayTbl[sq] = bishop_attack(sq, 0);
 }
 // just the queen's attackmap on an unoccupied board
-void init_ray_queen_tbl(int sq)
+void init_queen_ray_tbl(int sq)
 {
-	ray_queen_tbl[sq] = ray_rook_tbl[sq] | ray_bishop_tbl[sq];
+	queenRayTbl[sq] = rookRayTbl[sq] | bishopRayTbl[sq];
 }
 
 // knight attack table
@@ -264,7 +266,7 @@ void init_knight_tbl(int sq, int x, int y)
 			}
 		}
 	}
-	knight_tbl[sq] = ans;
+	knightTbl[sq] = ans;
 }
 
 // King attack table
@@ -285,7 +287,7 @@ void init_king_tbl(int sq, int x, int y)
 			ans |= setbit[SQUARES[destx][desty]];
 		}
 	}
-	king_tbl[sq] = ans;
+	kingTbl[sq] = ans;
 }
 
 // Pawn attack table - 2 colors
@@ -293,7 +295,7 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 {
 	if (y==0 && c==B || y==7 && c==W) 
 	{
-		pawn_atk_tbl[sq][c] = 0;
+		pawnAttackTbl[sq][c] = 0;
 		return;
 	}
 	Bit ans = 0;
@@ -302,21 +304,21 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 		ans |= setbit[SQUARES[x-1][y+offset]]; // white color = 0, black = 1
 	if (x + 1 < 8)
 		ans |= setbit[SQUARES[x+1][y+offset]]; // white color = 0, black = 1
-	pawn_atk_tbl[sq][c] = ans;
+	pawnAttackTbl[sq][c] = ans;
 }
 void init_pawn_push_tbl( int sq, int x, int y, Color c )
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
-		pawn_push_tbl[sq][c] = 0;
+		pawnPushTbl[sq][c] = 0;
 	else
-		pawn_push_tbl[sq][c] = setbit[sq + (c==W ? 8 : -8)];
+		pawnPushTbl[sq][c] = setbit[sq + (c==W ? 8 : -8)];
 }
 void init_pawn_push2_tbl( int sq, int x, int y, Color c )
 {
 	if (y == (c==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
-		pawn_push2_tbl[sq][c] = setbit[sq + (c==W ? 16 : -16)];
+		pawnPush2Tbl[sq][c] = setbit[sq + (c==W ? 16 : -16)];
 	else
-		pawn_push2_tbl[sq][c] = 0;
+		pawnPush2Tbl[sq][c] = 0;
 }
 
 void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
@@ -324,14 +326,14 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 	int offset = c==W ? 8: -8;
 
 	if (y == (c==W ? 7: 0))
-		forward_sq_tbl[sq][c] = INVALID_SQ;
+		forwardSqTbl[sq][c] = INVALID_SQ;
 	else 
-		forward_sq_tbl[sq][c] = sq + offset;
+		forwardSqTbl[sq][c] = sq + offset;
 
 	if (y == (c==W ? 0: 7))
-		backward_sq_tbl[sq][c] = INVALID_SQ;
+		backwardSqTbl[sq][c] = INVALID_SQ;
 	else
-		backward_sq_tbl[sq][c] = sq - offset;
+		backwardSqTbl[sq][c] = sq - offset;
 }
 
 // iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
@@ -358,7 +360,18 @@ void init_between_tbl(int sq1, int x1, int y1)
 			for (sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
 				mask |= setbit[sqi];
 
-		between_tbl[sq1][sq2] = mask;
+		betweenTbl[sq1][sq2] = mask;
+	}
+}
+
+// iterate inside for sq2
+void init_square_distance_tbl(int sq1)
+{
+	for (int sq2 = 0; sq2 < SQ_N; sq2++)
+	{
+		int file_dist = abs(FILES[sq1] - FILES[sq2]);
+		int rank_dist = abs(RANKS[sq1] - RANKS[sq2]);
+		squareDistanceTbl[sq1][sq2] = max(file_dist, rank_dist);
 	}
 }
 
@@ -373,14 +386,13 @@ void rook_magicU64_generator()
 	cout << "const U64 ROOK_MAGIC[64] = {" << endl;
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
-		mask = rook_magics[sq].mask;
+		mask = rookMagics[sq].mask;
 		n = 0;  // n will finally be the bitCount(mask)
 		// get the lsb array of the mask
 		while (mask)
 			lsbarray[n++] = popLSB(mask);
 		// generate all 2^bits permutations of the rook cross bitmap
 		possibility = 1 << n; // 2^n
-		srand(time(NULL));  // reset random seed
 		for (perm = 0; perm < possibility; perm++) 
 		{
 			ans = 0;  // records one particular permutation, which is an occupancy state
@@ -421,14 +433,13 @@ void bishop_magicU64_generator()
 	cout << "const U64 BISHOP_MAGIC[64] = {" << endl;
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
-		mask = bishop_magics[sq].mask;
+		mask = bishopMagics[sq].mask;
 		n = 0;  // n will finally be the bitCount(mask)
 		// get the lsb array of the mask
 		while (mask)
 			lsbarray[n++] = popLSB(mask);
 		// generate all 2^bits permutations of the rook cross bitmap
 		possibility = 1 << n; // 2^n
-		srand(time(NULL));  // reset random seed
 		for (perm = 0; perm < possibility; perm++) 
 		{
 			ans = 0;  // records one particular permutation, which is an occupancy state

@@ -9,9 +9,9 @@ namespace Board
 	void init_tables();
 
 	// Precalculated attack tables for non-sliding pieces
-	extern Bit knight_tbl[SQ_N], king_tbl[SQ_N];
-	 // pawn has 3 kinds of moves: attack (atk), push, and double push (push2)
-	extern Bit pawn_atk_tbl[SQ_N][COLOR_N], pawn_push_tbl[SQ_N][COLOR_N], pawn_push2_tbl[SQ_N][COLOR_N];
+	extern Bit knightTbl[SQ_N], kingTbl[SQ_N];
+	 // pawn has 3 kinds of moves: attack, push, and double push (push2)
+	extern Bit pawnAttackTbl[SQ_N][COLOR_N], pawnPushTbl[SQ_N][COLOR_N], pawnPush2Tbl[SQ_N][COLOR_N];
 	const uint INVALID_SQ = 100;  // denote an invalid square in forward/backward tables
 	// for none-sliding pieces: private functions used only to initialize the tables
 	void init_knight_tbl(int sq, int x, int y);
@@ -20,26 +20,29 @@ namespace Board
 	void init_pawn_push_tbl(int sq, int x, int y, Color c);
 	void init_pawn_push2_tbl(int sq, int x, int y, Color c);
 
-	extern uint forward_sq_tbl[SQ_N][COLOR_N], backward_sq_tbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
-	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
-	extern Bit between_tbl[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
-	void init_between_tbl(int sq1, int x1, int y1);  // will iterate inside for sq2, x2, y2
-
 	// Precalculated attack tables for sliding pieces. 
-	extern byte rook_key[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
+	extern byte rookKey[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
 	void init_rook_key(int sq, int x, int y);
-	extern Bit rook_tbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
+	extern Bit rookTbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
 	void init_rook_tbl(int sq, int x, int y);
-	extern byte bishop_key[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
+	extern byte bishopKey[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
 	void init_bishop_key(int sq, int x, int y);
-	extern Bit bishop_tbl[1428]; // Bishop attack table. 1428: all unique possible masks
+	extern Bit bishopTbl[1428]; // Bishop attack table. 1428: all unique possible masks
 	void init_bishop_tbl(int sq, int x, int y);
-	extern Bit ray_rook_tbl[SQ_N];
-	void init_ray_rook_tbl(int sq);  // the rook attack map on an unoccupied board
-	extern Bit ray_bishop_tbl[SQ_N];
-	void init_ray_bishop_tbl(int sq);   // the bishop attack map on an unoccupied board
-	extern Bit ray_queen_tbl[SQ_N];
-	void init_ray_queen_tbl(int sq);   // the queen attack map on an unoccupied board
+	extern Bit rookRayTbl[SQ_N];
+	void init_rook_ray_tbl(int sq);  // the rook attack map on an unoccupied board
+	extern Bit bishopRayTbl[SQ_N];
+	void init_bishop_ray_tbl(int sq);   // the bishop attack map on an unoccupied board
+	extern Bit queenRayTbl[SQ_N];
+	void init_queen_ray_tbl(int sq);   // the queen attack map on an unoccupied board
+
+	// Other tables
+	extern uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
+	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
+	extern Bit betweenTbl[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
+	void init_between_tbl(int sq1, int x1, int y1);  // will iterate inside for sq2, x2, y2
+	extern Bit squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
+	void init_square_distance_tbl(int sq1);
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -47,8 +50,8 @@ namespace Board
 		Bit mask;  // &-mask
 		uint offset;  // attack_key + offset == real attack lookup table index
 	};
-	extern Magics rook_magics[SQ_N];  // for each square
-	extern Magics bishop_magics[SQ_N]; 
+	extern Magics rookMagics[SQ_N];  // for each square
+	extern Magics bishopMagics[SQ_N]; 
 	void init_rook_magics(int sq, int x, int y);
 	void init_bishop_magics(int sq, int x, int y);
 
@@ -80,27 +83,28 @@ namespace Board
 	#define rhash(sq, rook) ((rook) * ROOK_MAGIC[sq])>>52  // get the hash value of a rook &-result, shift 64-12
 	#define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
-	/* Functions that would actually be used to answer attack queries */
-	inline Bit rook_attack(int sq, Bit occup)
-		{ return rook_tbl[ rook_key[sq][rhash(sq, occup & rook_magics[sq].mask)] + rook_magics[sq].offset ]; }
-	inline Bit bishop_attack(int sq, Bit occup)
-		{ return bishop_tbl[ bishop_key[sq][bhash(sq, occup & bishop_magics[sq].mask)] + bishop_magics[sq].offset ]; }
-	inline Bit knight_attack(int sq) { return knight_tbl[sq]; }
-	inline Bit king_attack(int sq) { return king_tbl[sq]; }
-	inline Bit pawn_attack(int sq, Color c) { return pawn_atk_tbl[sq][c]; }
-	inline Bit pawn_push(int sq, Color c) { return pawn_push_tbl[sq][c]; }
-	inline Bit pawn_push2(int sq, Color c) { return pawn_push2_tbl[sq][c]; }
-	inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
 
-	inline uint forward_sq(int sq, Color c) { return forward_sq_tbl[sq][c]; }
-	inline uint backward_sq(int sq, Color c) { return backward_sq_tbl[sq][c]; }
-	inline Bit ray_rook(int sq) { return ray_rook_tbl[sq]; }
-	inline Bit ray_bishop(int sq) { return ray_bishop_tbl[sq]; }
-	inline Bit ray_queen(int sq) { return ray_queen_tbl[sq]; }
-	inline Bit between(int sq1, int sq2) { return between_tbl[sq1][sq2]; }
+	/* Functions that would actually be used to answer queries */
+	inline Bit rook_attack(int sq, Bit occup)
+		{ return rookTbl[ rookKey[sq][rhash(sq, occup & rookMagics[sq].mask)] + rookMagics[sq].offset ]; }
+	inline Bit bishop_attack(int sq, Bit occup)
+		{ return bishopTbl[ bishopKey[sq][bhash(sq, occup & bishopMagics[sq].mask)] + bishopMagics[sq].offset ]; }
+	inline Bit knight_attack(int sq) { return knightTbl[sq]; }
+	inline Bit king_attack(int sq) { return kingTbl[sq]; }
+	inline Bit pawn_attack(int sq, Color c) { return pawnAttackTbl[sq][c]; }
+	inline Bit pawn_push(int sq, Color c) { return pawnPushTbl[sq][c]; }
+	inline Bit pawn_push2(int sq, Color c) { return pawnPush2Tbl[sq][c]; }
+	inline Bit rook_ray(int sq) { return rookRayTbl[sq]; }
+	inline Bit bishop_ray(int sq) { return bishopRayTbl[sq]; }
+	inline Bit queen_ray(int sq) { return queenRayTbl[sq]; }inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
+
+	inline uint forward_sq(int sq, Color c) { return forwardSqTbl[sq][c]; }
+	inline uint backward_sq(int sq, Color c) { return backwardSqTbl[sq][c]; }
+	inline Bit between(int sq1, int sq2) { return betweenTbl[sq1][sq2]; }
 	inline bool is_aligned(int sq1, int sq2, int sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
 				& ( setbit[sq1] | setbit[sq2] | setbit[sq3] )   ) != 0;  }
+	inline Bit square_distance(int sq1, int sq2) { return squareDistanceTbl[sq1][sq2]; }
 }
 
 

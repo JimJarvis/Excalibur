@@ -39,7 +39,7 @@ class EndEvaluatorBase
 {
 public:
 	virtual ~EndEvaluatorBase() {}
-	virtual Color strongColor() const = 0;  // get the stronger side
+	virtual Color strong_color() const = 0;  // get the stronger side
 	virtual int operator()(const Position&) const = 0; // return either Value or ScaleFactor
 };
 
@@ -48,8 +48,8 @@ class EndEvaluator : public EndEvaluatorBase
 {
 public:
 	explicit EndEvaluator(Color c) : strongerSide(c), weakerSide(flipColor[c]) {}
-	Color strongColor() const { return strongerSide; }
-	int operator()(const Position&) const; // return either Value or ScaleFactor
+	Color strong_color() const { return strongerSide; }
+	int operator()(const Position&) const {return 0;}; // return either Value or ScaleFactor
 private:
 	Color strongerSide, weakerSide;
 };

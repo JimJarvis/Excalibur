@@ -37,7 +37,7 @@ namespace Zobrist {
 
 		for (PieceType pt : PIECE_TYPES)
 		{
-			Score v = make_score(pieceVALUE[MG][pt], pieceVALUE[EG][pt]);
+			Score v = make_score(PIECE_VALUE[MG][pt], PIECE_VALUE[EG][pt]);
 
 			for (int sq = 0; sq < SQ_N; sq++)
 			{
