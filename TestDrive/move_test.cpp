@@ -116,7 +116,7 @@ TEST(Move, MakeUnmake)
 			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-			ASSERT_EQ(pos_orig, pos) << string(m);
+			ASSERT_EQ(pos_orig, pos) << "FEN: " << fenList[i] << string(m);
 		} 
 	}
 }

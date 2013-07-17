@@ -16,6 +16,7 @@
 #include "stddef.h"
 #include <ctime>
 #include <map>
+#include <unordered_set>
 #include <memory>
 #include "typeconsts.h"
 using namespace std; 

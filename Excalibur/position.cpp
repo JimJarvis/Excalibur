@@ -87,6 +87,8 @@ void Position::parseFEN(string fenstr)
 		{
 			Pieces[pt][c] = 0;
 			pieceCount[c][pt] = 0;
+			for (int idx = 0; idx < 16; idx++)
+				pieceList[c][pt][idx] = SQ_INVALID;
 		}
 	}
 	for (int sq = 0; sq < SQ_N; sq++)
@@ -125,9 +127,12 @@ void Position::parseFEN(string fenstr)
 			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
 			case 'k': Kingmap[c] |= mask; pt = KING; break;
 			}
-			++ pieceCount[c][pt]; 
-			boardPiece[SQUARES[file][rank]] = pt;
-			boardColor[SQUARES[file][rank]] = c;
+			++pieceCount[c][pt];
+			uint sq = SQUARES[file][rank];
+			//plistIndex[sq] = pieceCount[c][pt] ++;
+			//pieceList[c][pt][plistIndex[sq]] = sq;
+			boardPiece[sq] = pt;
+			boardColor[sq] = c;
 			file ++;
 		}
 	}
@@ -312,7 +317,6 @@ Score Position::calc_psq_score() const
 
 Value Position::calc_non_pawn_material(Color c) const 
 {
-
 	Value value = 0;
 
 	for (PieceType pt : PIECE_TYPES)
@@ -338,6 +342,7 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
 	if (pos1.st->capt != pos2.st->capt)
 		{ cout << "false capt: " << PIECE_FULL_NAME[pos1.st->capt] << " != " << PIECE_FULL_NAME[pos2.st->capt] << endl;	return false;}
+
 	for (Color c : COLORS)
 	{
 		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
@@ -346,13 +351,32 @@ bool operator==(const Position& pos1, const Position& pos2)
 			{ cout << "false kingSq for Color" << c << ": " << pos1.kingSq[c] << " != " << pos2.kingSq[c] << endl; return false;	}
 
 		for (PieceType pt : PIECE_TYPES)
+		{
 			if (pos1.Pieces[pt][c] != pos2.Pieces[pt][c])
 				{ cout << "false" << PIECE_FULL_NAME[pt] << " Pawns for Color " << c << ": " << pos1.Pieces[pt][c] << " != " << pos2.Pieces[pt][c] << endl;	return false;}
-
-		for (PieceType piece : PIECE_TYPES)
-			if (pos1.pieceCount[c][piece] != pos2.pieceCount[c][piece]) 
-				{ cout << "false pieceCount for Color " << c << " " << PIECE_FULL_NAME[piece] << ": " << pos1.pieceCount[c][piece] << " != " << pos2.pieceCount[c][piece] << endl;	return false;}
+			if (pos1.pieceCount[c][pt] != pos2.pieceCount[c][pt]) 
+				{ cout << "false pieceCount for Color " << c << " " << PIECE_FULL_NAME[pt] << ": " << pos1.pieceCount[c][pt] << " != " << pos2.pieceCount[c][pt] << endl;	return false;}
+			//// test pieceList invariant
+			//std::unordered_set<int> plset1, plset2;
+			//for (uint pc = 0; pc < pos1.pieceCount[c][pt]; pc++)
+			//{
+			//	plset1.insert(pos1.pieceList[c][pt][pc]);
+			//	plset2.insert(pos2.pieceList[c][pt][pc]);
+			//}
+			//if (plset1 != plset2)
+			//	{ cout << "false pieceList" << endl;	
+			//cout << "First:" << endl;
+			//for (int aa : plset1)
+			//	cout << aa << endl;
+			//cout << "Second:" << endl;
+			//for (int aa : plset2)
+			//	cout << aa << endl;
+			//return false; }
+			//if (!(pos1.pieceList[c][pt] == pos2.pieceList[c][pt]))
+			//{  cout << "false pieceList" << endl; return false;  }
+		}
 	}
+
 	if (pos1.Occupied != pos2.Occupied) 
 		{ cout << "false Occupied: " << pos1.Occupied << " != " << pos2.Occupied << endl;	return false;}
 	for (int sq = 0; sq < SQ_N; sq++)
@@ -362,8 +386,7 @@ bool operator==(const Position& pos1, const Position& pos2)
 		if (pos1.boardColor[sq] != pos2.boardColor[sq]) 
 			{ cout << "false boardColor for square " << sq2str(sq) << ": " << pos1.boardColor[sq] << " != " << pos2.boardColor[sq] << endl;	return false;}
 	}
-
-
+	
 	return true; // won't display anything if the test passes
 }
 

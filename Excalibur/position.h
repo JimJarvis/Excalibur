@@ -49,6 +49,7 @@ public:
 	// Incrementally updated info, for fast access:
 	uint pieceCount[COLOR_N][PIECE_TYPE_N];
 	uint pieceList[COLOR_N][PIECE_TYPE_N][16]; // records the square of all pieces
+	uint plistIndex[SQ_N];  // helps update pieceList[][][]
 	PieceType boardPiece[SQ_N];  // records all piece types
 	Color boardColor[SQ_N];  // records all color distribution
 

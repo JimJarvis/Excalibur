@@ -50,7 +50,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		{
 			to = popLSB(TempMove);
 			mv.set_to(to);
-			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
+			if (Board::forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -157,7 +157,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			to = popLSB(TempMove);
 			if (pinned && (pinned & setbit[from]) && !Board::is_aligned(from, to, kSq) ) 	continue;
 			mv.set_to(to);
-			if (Board::forward_sq(to, turn) == Board::INVALID_SQ) // If forward is invalid, then we reach the last rank
+			if (Board::forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -473,19 +473,22 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 				Rookmap[turn] ^= MASK_OO_ROOK[turn];
 				Oneside[turn] ^= MASK_OO_ROOK[turn];
 				rfrom = SQ_OO_ROOK[turn][0];
-				boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
 				rto = SQ_OO_ROOK[turn][1];
-				boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 			}
 			else
 			{
 				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
 				Oneside[turn] ^= MASK_OOO_ROOK[turn];
 				rfrom = SQ_OOO_ROOK[turn][0];
-				boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
 				rto = SQ_OOO_ROOK[turn][1];
-				boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 			}
+			boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
+			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
+
+			//// move the rook in pieceList
+			//plistIndex[rto] = plistIndex[rfrom];
+			//pieceList[turn][ROOK][plistIndex[rto]] = rto;
+
 			// update the hash key for the moving rook
 			key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
 			// update incremental score
@@ -531,6 +534,17 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		Oneside[opp] ^= ToMap;
 		st->fiftyMove = 0;  // deal with fifty move counter
 
+		//// Update piece list, move the last piece at index[capsq] position and
+		//// shrink the list.
+		//// WARNING: This is a not reversible operation. When we will reinsert the
+		//// captured piece in undo_move() we will put it at the end of the list and
+		//// not in its original place, it means index[] and pieceList[] are not
+		//// guaranteed to be invariant to a do_move() + undo_move() sequence.
+		//uint lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
+		//plistIndex[lastSq] = plistIndex[to];
+		//pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
+		//pieceList[opp][capt][pieceCount[opp][capt]] = SQ_INVALID;
+
 		// update hash keys and incremental scores
 		key ^= Zobrist::psq[opp][capt][to];
 		if (capt == PAWN)
@@ -542,6 +556,26 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	}
 	else if (piece != PAWN)
 		st->fiftyMove ++;
+
+
+	//// Update piece lists, index[from] is not updated and becomes stale. This
+	//// works as long as index[] is accessed just by known occupied squares.
+	//plistIndex[to] = plistIndex[from];
+	//pieceList[turn][piece][plistIndex[to]] = to;
+
+
+	//if (mv.is_promo())
+	//{
+	//	// Update piece lists, move the last pawn at index[to] position
+	//	// and shrink the list. Add a new promotion piece to the list.
+	//	uint lastSq = pieceList[turn][PAWN][pieceCount[turn][PAWN]];
+	//	plistIndex[lastSq] = plistIndex[to];
+	//	pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
+	//	pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_INVALID;
+	//	plistIndex[to] = pieceCount[turn][mv.get_promo()]-1;
+	//	pieceList[turn][mv.get_promo()][plistIndex[to]] = to;
+	//}
+
 
 	st->capt = capt;
 	st->key = key;
@@ -584,11 +618,20 @@ void Position::unmake_move(Move& mv)
 		{
 			PieceType promo = mv.get_promo();
 			Pawnmap[turn] ^= ToMap;  // flip back
-			++ pieceCount[turn][PAWN];
-			-- pieceCount[turn][promo];
+			++pieceCount[turn][PAWN];
+			--pieceCount[turn][promo];
 			boardPiece[from] = PAWN;
 			boardPiece[to] = NON;
 			Pieces[promo][turn] ^= ToMap;
+
+			//// Update piece lists, move the last promoted piece at index[to] position
+			//// and shrink the list. Add a new pawn to the list.
+			//uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
+			//plistIndex[lastSq] = plistIndex[to];
+			//pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
+			//pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
+			//plistIndex[to] = pieceCount[turn][PAWN]++;
+			//pieceList[turn][PAWN][plistIndex[to]] = to;
 		}
 		break;
 
@@ -602,30 +645,42 @@ void Position::unmake_move(Move& mv)
 				Rookmap[turn] ^= MASK_OO_ROOK[turn];
 				Oneside[turn] ^= MASK_OO_ROOK[turn];
 				rfrom = SQ_OO_ROOK[turn][0];
-				boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
 				rto = SQ_OO_ROOK[turn][1];
-				boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
 			}
 			else
 			{
 				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
 				Oneside[turn] ^= MASK_OOO_ROOK[turn];
 				rfrom = SQ_OOO_ROOK[turn][0];
-				boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
 				rto = SQ_OOO_ROOK[turn][1];
-				boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
 			}
+			boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
+			boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
+
+			//// un-move the rook in pieceList
+			//plistIndex[rfrom] = plistIndex[rto];
+			//pieceList[turn][ROOK][plistIndex[rfrom]] = rfrom;
 		}
 		break;
 	}
+
+	//// Update piece lists, index[from] is not updated and becomes stale. This
+	//// works as long as index[] is accessed just by known occupied squares.
+	//plistIndex[to] = plistIndex[from];
+	//pieceList[turn][piece][plistIndex[to]] = to;
+
 
 	// Deal with all kinds of captures, including en-passant
 	if (capt)
 	{
 		Pieces[capt][opp] ^= ToMap;
-		++ pieceCount[opp][capt];
 		Oneside[opp] ^= ToMap;
 		boardPiece[to] = capt; boardColor[to] = opp;  // restore the captured piece
+		++ pieceCount[opp][capt];
+
+		//// Update piece list, add a new captured piece in capt square
+		//plistIndex[to] = pieceCount[opp][capt]++;
+		//pieceList[opp][capt][plistIndex[to]] = to;
 	}
 
 	Occupied = Oneside[W] | Oneside[B];

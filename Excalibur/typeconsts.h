@@ -15,6 +15,8 @@ enum Score : int {};
 #define SQ_N 64
 #define FILE_N 8
 
+const uint SQ_INVALID = 100;  // denote an invalid square in forward/backward tables
+
 #define COLOR_N 2
 enum Color : byte
 {

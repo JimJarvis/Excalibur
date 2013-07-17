@@ -88,6 +88,7 @@ namespace Eval
 		// in the position object (material + piece square tables) and adding
 		// Tempo bonus. Score is computed from the point of view of white.
 		score = pos.psq_score() + (pos.turn == W ? Tempo : -Tempo);
+		return 0;
 	}
 
 	void init() {

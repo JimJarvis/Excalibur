@@ -326,12 +326,12 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 	int offset = c==W ? 8: -8;
 
 	if (y == (c==W ? 7: 0))
-		forwardSqTbl[sq][c] = INVALID_SQ;
+		forwardSqTbl[sq][c] = SQ_INVALID;
 	else 
 		forwardSqTbl[sq][c] = sq + offset;
 
 	if (y == (c==W ? 0: 7))
-		backwardSqTbl[sq][c] = INVALID_SQ;
+		backwardSqTbl[sq][c] = SQ_INVALID;
 	else
 		backwardSqTbl[sq][c] = sq - offset;
 }
