@@ -1,5 +1,10 @@
 #include "board.h"
 
+Bit setbit[SQ_N], unsetbit[SQ_N];
+Bit CASTLE_MASK[COLOR_N][4];
+Bit MASK_OO_ROOK[COLOR_N];
+Bit MASK_OOO_ROOK[COLOR_N];
+
 namespace Board
 {
 
@@ -12,18 +17,22 @@ byte bishopKey[SQ_N][512]; Bit bishopTbl[1428];
 Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
 Bit rookRayTbl[SQ_N], bishopRayTbl[SQ_N], queenRayTbl[SQ_N];
 Bit betweenTbl[SQ_N][SQ_N];
-Bit squareDistanceTbl[SQ_N][SQ_N];
+int squareDistanceTbl[SQ_N][SQ_N];
+Bit fileMask[FILE_N], rankMask[RANK_N];
 
 
 // initialize *_attack[][] tables
 void init_tables()
 {
-	// rank_attack
+	init_setbit();
+	init_castle_mask();
+	init_file_rank_mask();
+
 	for (int sq = 0; sq < SQ_N; ++sq)
 	{
 		// pre-calculate the coordinate (x,y), which can be easily got from pos
-		int x = FILES[sq]; // sq % 8
-		int y = RANKS[sq]; // sq/8
+		int x = FILES[sq];
+		int y = RANKS[sq]; 
 		// none-sliding pieces. Does not need any "current row" info
 		init_knight_tbl(sq, x, y);
 		init_king_tbl(sq, x, y);
@@ -50,6 +59,32 @@ void init_tables()
 			init_pawn_push2_tbl(sq, x, y, c);
 			init_forward_backward_sq_tbl(sq, x, y, c);
 		}
+	}
+}
+
+// setbit[sq] and unsetbit[sq] declared in typeconsts.h
+void init_setbit()
+{
+	for (int sq = 0; sq < SQ_N; sq++)
+	{
+		setbit[sq] = (1ULL << sq);
+		unsetbit[sq] =	~(1ULL << sq);
+	}
+}
+
+// initialize CASTLE_MASK
+void init_castle_mask()
+{
+	for (Color c : COLORS)
+	{
+		int delta = c==W ? 0 : 56;
+		CASTLE_MASK[c][CASTLE_FG] = setbit[5+delta] | setbit[6+delta];
+		CASTLE_MASK[c][CASTLE_EG] = setbit[4+delta] | setbit[5+delta] | setbit[6+delta];
+		CASTLE_MASK[c][CASTLE_BD] = setbit[1+delta] | setbit[2+delta] | setbit[3+delta];
+		CASTLE_MASK[c][CASTLE_CE] = setbit[2+delta] | setbit[3+delta] | setbit[4+delta];
+
+		MASK_OO_ROOK[c] =  setbit[7+delta] | setbit[5+delta];
+		MASK_OOO_ROOK[c] =  setbit[0+delta] | setbit[3+delta];
 	}
 }
 
@@ -374,6 +409,16 @@ void init_square_distance_tbl(int sq1)
 		squareDistanceTbl[sq1][sq2] = max(file_dist, rank_dist);
 	}
 }
+
+void init_file_rank_mask()
+{
+	for (int i = 0; i < FILE_N; i++)
+	{
+		fileMask[i] = (0x0101010101010101 << i);
+		rankMask[i] = (0xffULL << i*8);
+	}
+}
+
 
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()

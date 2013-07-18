@@ -29,7 +29,7 @@ mv.clear()
 /* Generate pseudo-legal moves */
 int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 {
-	Color op = flipColor[turn];
+	Color op = ~turn;
 	Bit Freesq = ~Occupied;
 	Bit TempMove;
 	const uint *tempPiece;
@@ -135,7 +135,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 
 int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned) const
 {
-	Color op = flipColor[turn];
+	Color opp = ~turn;
 	uint kSq = king_sq(turn);
 	Bit Freesq = ~Occupied;
 	Bit TempMove;
@@ -152,7 +152,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= attack_map<PAWN>(from) & Oneside[op];  // pawn capture
+		TempMove |= attack_map<PAWN>(from) & Oneside[opp];  // pawn capture
 		TempMove &= Target;
 		while (TempMove)
 		{
@@ -177,13 +177,13 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			{
 				// final check to avoid same color capture
 				Bit EPattack =  setbit[Board::backward_sq(ep, turn)];
-				if (Pawnmap[op] & EPattack & Target)  // we'll immediately check legality
+				if (Pawnmap[opp] & EPattack & Target)  // we'll immediately check legality
 				{
 					// Occupied ^ (From | ToEP | Capt)
 					Bit newOccup = Occupied ^ ( setbit[from] | setbit[ep] | EPattack );
 					// only slider "pins" are possible
-					if ( !(Board::rook_attack(kSq, newOccup) & (Queenmap[op] | Rookmap[op]))
-						&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[op] | Bishopmap[op])) )
+					if ( !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
+						&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp])) )
 					{
 						mv.set_ep();
 						mv.set_to(st->epSquare);
@@ -210,7 +210,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			while (TempMove)
 			{
 				to = popLSB(TempMove);
-				if (is_sq_attacked(to, op))	continue;
+				if (is_sq_attacked(to, opp))	continue;
 				mv.set_to(to);
 				update;
 			}
@@ -218,13 +218,13 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			if (can_castleOO(st->castleRights[turn]))
 			{
 				if (!(CASTLE_MASK[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_EG], op))
+					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_EG], opp))
 						moveBuffer[index ++] = MOVE_OO_KING[turn];  // pre-stored king's castling move
 			}
 			if (can_castleOOO(st->castleRights[turn]))
 			{
 				if (!(CASTLE_MASK[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_CE], op))
+					if (!is_bit_attacked(CASTLE_MASK[turn][CASTLE_CE], opp))
 						moveBuffer[index ++] = MOVE_OOO_KING[turn];  // pre-stored king's castling move
 			}
 
@@ -275,7 +275,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	while (Ck)  // routine add moves
 	{
 		int to = popLSB(Ck);
-		if (legal && is_sq_attacked(to, flipColor[turn])) continue;
+		if (legal && is_sq_attacked(to, ~turn)) continue;
 		mv.set_to(to);
 		update;
 	}
@@ -292,12 +292,12 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 Bit Position::pinned_map() const
 {
 	Bit between, ans = 0;
-	Color op = flipColor[turn];
-	Bit pinners = Oneside[op];
+	Color opp = ~turn;
+	Bit pinners = Oneside[opp];
 	uint kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= ((Rookmap[op] | Queenmap[op]) & Board::rook_ray(kSq))
-		| ((Bishopmap[op] | Queenmap[op]) & Board::bishop_ray(kSq));
+	pinners &= ((Rookmap[opp] | Queenmap[opp]) & Board::rook_ray(kSq))
+		| ((Bishopmap[opp] | Queenmap[opp]) & Board::bishop_ray(kSq));
 	while (pinners)
 	{
 		between = Board::between(kSq, popLSB(pinners)) & Occupied;
@@ -314,17 +314,17 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 	uint from = mv.get_from();
 	uint to = mv.get_to();
 	if (boardPiece[from] == KING)  // we already checked castling legality
-		return mv.is_castle() || !is_sq_attacked(to, flipColor[turn]);
+		return mv.is_castle() || !is_sq_attacked(to, ~turn);
 	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
 	if (mv.is_ep()) // we do it by testing if the king is attacked after the move s made
 	{
 		uint kSq = king_sq(turn);
-		Color op = flipColor[turn];
+		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
 		Bit newOccup = Occupied ^ ( setbit[from] | setbit[to] | setbit[Board::backward_sq(to, turn)] );
 		// only slider "pins" are possible
-		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[op] | Rookmap[op]))
-			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[op] | Bishopmap[op]));
+		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
+			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp]));
 	}
 	// A non-king move is legal iff :
 	return !pinned ||		// it isn't pinned at all
@@ -364,7 +364,7 @@ int Position::genLegal(int index) const
 bool Position::is_bit_attacked(Bit Target, Color attacker) const
 {
 	uint to;
-	Color defender_side = flipColor[attacker];
+	Color defender = ~attacker;
 	Bit pawn_map = Pawnmap[attacker];
 	Bit knight_map = Knightmap[attacker];
 	Bit king_map = Kingmap[attacker];
@@ -375,7 +375,7 @@ bool Position::is_bit_attacked(Bit Target, Color attacker) const
 		to = popLSB(Target);
 		if (knight_map & attack_map<KNIGHT>(to))  return true; 
 		if (king_map & attack_map<KING>(to))  return true; 
-		if (pawn_map & Board::pawn_attack(to, defender_side))  return true; 
+		if (pawn_map & Board::pawn_attack(to, defender))  return true; 
 		if (ortho_slider_map & attack_map<ROOK>(to))  return true; 
 		if (diag_slider_map & attack_map<BISHOP>(to))  return true;
 	}
@@ -385,7 +385,7 @@ bool Position::is_bit_attacked(Bit Target, Color attacker) const
 
 /*
  *	Make move and update the Position internal states by change the state pointer.
- * Otherwise you can manually generate the CheckerMap by attacks_to(kingSq, flipColor[turn])
+ * Otherwise you can manually generate the CheckerMap by attacks_to(kingSq, ~turn)
  * Use a stack of StateInfo, to continuously makeMove:
  *
  * StateInfo states[MAX_STACK_SIZE], *si = states;
@@ -412,7 +412,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	Bit FromToMap = setbit[from] | ToMap;
 	PieceType piece = boardPiece[from];
 	PieceType capt = mv.is_ep() ? PAWN : boardPiece[to];
-	Color opp = flipColor[turn];
+	Color opp = ~turn;
 	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	Pieces[piece][turn] ^= FromToMap;
@@ -602,7 +602,7 @@ void Position::unmake_move(Move& mv)
 	PieceType piece = mv.is_promo() ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
 	Color opp = turn;
-	turn = flipColor[turn];
+	turn = ~turn;
 
 	Pieces[piece][turn] ^= FromToMap;
 	Oneside[turn] ^= FromToMap;

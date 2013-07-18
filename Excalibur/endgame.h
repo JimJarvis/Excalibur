@@ -47,7 +47,7 @@ template<EndgameType E>
 class EndEvaluator : public EndEvaluatorBase
 {
 public:
-	explicit EndEvaluator(Color c) : strongerSide(c), weakerSide(flipColor[c]) {}
+	explicit EndEvaluator(Color c) : strongerSide(c), weakerSide(~c) {}
 	Color strong_color() const { return strongerSide; }
 	int operator()(const Position&) const {return 0;}; // return either Value or ScaleFactor
 private:

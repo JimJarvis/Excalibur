@@ -85,8 +85,8 @@ public:
 
 	bool is_bit_attacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
 	bool is_sq_attacked(uint sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
-	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), flipColor[turn]); } // legality check
-	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(flipColor[turn]), turn); }
+	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), ~turn); } // legality check
+	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(~turn), turn); }
 	Bit attackers_to(uint sq, Color attacker) const;  // inlined
 	Bit checkermap() const { return st->CheckerMap; }
 	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
@@ -159,7 +159,7 @@ inline bool Position::is_sq_attacked(uint sq, Color attacker) const
 {
 	if (Knightmap[attacker] & Board::knight_attack(sq)) return true;
 	if (Kingmap[attacker] & Board::king_attack(sq)) return true;
-	if (Pawnmap[attacker] & Board::pawn_attack(sq, flipColor[attacker])) return true;
+	if (Pawnmap[attacker] & Board::pawn_attack(sq, ~attacker)) return true;
 	if ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq)) return true; // orthogonal slider
 	if ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq)) return true; // diagonal slider
 	return false;
@@ -168,7 +168,7 @@ inline bool Position::is_sq_attacked(uint sq, Color attacker) const
 // Bitmap of attackers to a specific square
 inline Bit Position::attackers_to(uint sq, Color attacker) const
 {
-	return (Pawnmap[attacker] & Board::pawn_attack(sq, flipColor[attacker]))
+	return (Pawnmap[attacker] & Board::pawn_attack(sq, ~attacker))
 		| (Knightmap[attacker] & Board::knight_attack(sq))
 		| (Kingmap[attacker] & Board::king_attack(sq))
 		| ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq))

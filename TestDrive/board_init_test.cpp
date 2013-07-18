@@ -30,8 +30,6 @@ TEST(Misc, Setup)
 		getline(fin, fenstr);
 		fenList[i] = fenstr;
 	}
-
-	
 }
 
 TEST(Board, Sliders1)

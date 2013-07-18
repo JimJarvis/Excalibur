@@ -24,24 +24,6 @@ Bit dispbit(Bit bitmap, bool flag)
 	return bitmap;
 }
 
-// MIT HAKMEM algorithm, see http://graphics.stanford.edu/~seander/bithacks.html
-uint bit_count(U64 bitmap)
-{
-	const U64 m1 = 0x5555555555555555; // 1 zero, 1 one ...
-	const U64 m2 = 0x3333333333333333; // 2 zeros, 2 ones ...
-	const U64 m4 = 0x0f0f0f0f0f0f0f0f; // 4 zeros, 4 ones ...
-	const U64 m8 = 0x00ff00ff00ff00ff; // 8 zeros, 8 ones ...
-	const U64 m16 = 0x0000ffff0000ffff; // 16 zeros, 16 ones ...
-	const U64 m32 = 0x00000000ffffffff; // 32 zeros, 32 ones
-	bitmap = (bitmap & m1 ) + ((bitmap >> 1) & m1 ); //put count of each 2 bits into those 2 bits
-	bitmap = (bitmap & m2 ) + ((bitmap >> 2) & m2 ); //put count of each 4 bits into those 4 bits
-	bitmap = (bitmap & m4 ) + ((bitmap >> 4) & m4 ); //put count of each 8 bits into those 8 bits
-	bitmap = (bitmap & m8 ) + ((bitmap >> 8) & m8 ); //put count of each 16 bits into those 16 bits
-	bitmap = (bitmap & m16) + ((bitmap >> 16) & m16); //put count of each 32 bits into those 32 bits
-	bitmap = (bitmap & m32) + ((bitmap >> 32) & m32); //put count of each 64 bits into those 64 bits
-	return (unsigned int)bitmap;
-}
-
 /*  RKISS is the special pseudo random number generator (PRNG) used to compute hash keys.
  George Marsaglia invented the RNG-Kiss-family in the early 90's. This is a
  specific version that Heinz van Saanen derived from some public domain code

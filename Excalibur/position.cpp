@@ -180,7 +180,7 @@ void Position::parseFEN(string fenstr)
 		fen >> st->fullMove;
 	}
 	st->capt = NON;
-	st->CheckerMap = attackers_to(king_sq(turn),  flipColor[turn]);
+	st->CheckerMap = attackers_to(king_sq(turn),  ~turn);
 
 	st->key = calc_key();
 	st->materialKey = calc_material_key();

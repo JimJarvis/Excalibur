@@ -31,8 +31,33 @@ const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54,
 inline uint LSB(U64 bitmap)
 { return BITSCAN_INDEX[((bitmap & (~bitmap + 1)) * BITSCAN_MAGIC) >> 58]; }
 inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
-uint bit_count(U64 bitmap); // Count the bits in a bitmap
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
+
+enum BitCountType { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
+template <BitCountType>  // default count up to 15
+inline int bit_count(U64 bitmap); // Count the bits in a bitmap
+
+template <>
+// count all the way up to 64. Used less than count to 15
+inline int bit_count<CNT_FULL>(U64 b)
+{
+	b -=  (b >> 1) & 0x5555555555555555ULL;
+	b  = ((b >> 2) & 0x3333333333333333ULL) + (b & 0x3333333333333333ULL);
+	b  = ((b >> 4) + b) & 0x0F0F0F0F0F0F0F0FULL;
+	return (b * 0x0101010101010101ULL) >> 56;
+}
+
+template<>
+// Count up to 15 bits. Suitable for most bitboards
+inline int bit_count<CNT_MAX15>(U64 b)
+{
+	b -=  (b >> 1) & 0x5555555555555555ULL;
+	b  = ((b >> 2) & 0x3333333333333333ULL) + (b & 0x3333333333333333ULL);
+	return (b * 0x1111111111111111ULL) >> 60;
+}
+// default overload: up to 15
+inline int bit_count(U64 b) { return bit_count<CNT_MAX15>(b); }
+
 
 // display a bitmap as 8*8. For debugging
 Bit dispbit(Bit, bool = 1);
@@ -40,11 +65,13 @@ Bit dispbit(Bit, bool = 1);
 inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
+inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
+inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square
+
 inline bool opp_colors(int sq1, int sq2) {
 	int s = sq1 ^ sq2;
 	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
-inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
-inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square
+inline Color operator~(Color c) { return Color (c ^ 1); }
 
 // castle right query
 inline bool can_castleOO(byte castleRight) { return (castleRight & 1) == 1; }

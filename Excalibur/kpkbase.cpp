@@ -90,8 +90,8 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 	Bit atk = Board::king_attack(us == W ? wksq : bksq);
 
 	while (atk)
-		r |= (us == W ? db[index(flipColor[us], bksq, popLSB(atk), psq)]
-			: db[index(flipColor[us], popLSB(atk), wksq, psq)]  );
+		r |= (us == W ? db[index(~us, bksq, popLSB(atk), psq)]
+			: db[index(~us, popLSB(atk), wksq, psq)]  );
 
 	if (us == W && RANKS[psq] < 6) // no promotion
 	{

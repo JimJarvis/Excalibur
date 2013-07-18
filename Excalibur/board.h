@@ -8,6 +8,9 @@ namespace Board
 	// Initialize *_attack[][] table. Called once at program start. 
 	void init_tables();
 
+	void init_setbit();  // setbit[] and unsetbit[]  extern'ed in typeconsts.h
+	void init_castle_mask(); // initialize CASTLE_MASK
+
 	// Precalculated attack tables for non-sliding pieces
 	extern Bit knightTbl[SQ_N], kingTbl[SQ_N];
 	 // pawn has 3 kinds of moves: attack, push, and double push (push2)
@@ -40,8 +43,10 @@ namespace Board
 	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
 	extern Bit betweenTbl[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
 	void init_between_tbl(int sq1, int x1, int y1);  // will iterate inside for sq2, x2, y2
-	extern Bit squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
+	extern int squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
 	void init_square_distance_tbl(int sq1);
+	extern Bit fileMask[FILE_N], rankMask[RANK_N];
+	void init_file_rank_mask(); 
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -103,14 +108,39 @@ namespace Board
 	inline bool is_aligned(int sq1, int sq2, int sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
 				& ( setbit[sq1] | setbit[sq2] | setbit[sq3] )   ) != 0;  }
-	inline Bit square_distance(int sq1, int sq2) { return squareDistanceTbl[sq1][sq2]; }
+	inline int square_distance(int sq1, int sq2) { return squareDistanceTbl[sq1][sq2]; }
+	inline Bit file_mask(int file) { return fileMask[file]; }
+	inline Bit rank_mask(int rank) { return rankMask[rank]; }
+
+	// with respect to the reference frame of Color
+	inline uint relative_square(Color c, uint s) { return s ^ (c * 56); }
+	inline uint relative_rank(Color c, int r) { return r ^ (c * 7); }
+	inline uint relative_rankbysq(Color c, uint s) { return relative_rank(c, RANKS[s]); }
+
 }
 
-// Endgame KP vs K bitbase
+/* Castling constants */
+// King-side
+const int CASTLE_FG = 0;  // file f to g should be vacant
+const int CASTLE_EG = 1; // file e to g shouldn't be attacked
+// Queen-side
+const int CASTLE_BD = 2;  // file b to d should be vacant
+const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
+// the CASTLE_MASK is filled out in Board::init()
+extern Bit CASTLE_MASK[COLOR_N][4];
+
+// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
+const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+// Rook from-to
+extern Bit MASK_OO_ROOK[COLOR_N];
+extern Bit MASK_OOO_ROOK[COLOR_N];
+
+
+// Endgame KP vs K bitbase. kpkbase.cpp
 namespace KPKbase
 {
 	void init();
 	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
 }
-
 #endif // __board_h__

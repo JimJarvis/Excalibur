@@ -39,7 +39,7 @@ const int QuadraticCoefficientsOppositeColor[][PIECE_TYPE_N] = {
 /// piece type for both colors.
 int imbalance(Position& pos, Color us) {
 
-	const Color opp = flipColor[us];
+	const Color opp = ~us;
 
 	int pt1, pt2, pc, v;
 	int value = 0;
