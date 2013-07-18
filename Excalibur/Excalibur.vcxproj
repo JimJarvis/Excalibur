@@ -24,6 +24,7 @@
   <ItemGroup>
     <ClCompile Include="endgame.cpp" />
     <ClCompile Include="eval.cpp" />
+    <ClCompile Include="kpkbase.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="move.cpp" />
     <ClCompile Include="perft.cpp" />

@@ -11,7 +11,7 @@ int moveBufEnds[64];
  */
 // Define a macro to facilitate the update of each piece
 #define genPseudoMacro(pt)  \
-tempPiece = piece_list(turn, pt); \
+tempPiece = pieceList[turn][pt]; \
 for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
 { \
 	from = tempPiece[iter]; \
@@ -37,7 +37,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 	Move mv;
 
 	/*************** Pawns ***************/
-	tempPiece = piece_list(turn, PAWN);
+	tempPiece = pieceList[turn][PAWN];
 	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
 	{
 		from = tempPiece[iter];
@@ -117,7 +117,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 /* An almost exact clone of genHelper, but with built in legality check */
 // Define a handy macro to update various pieces
 #define genLegalMacro(pt) \
-	tempPiece = piece_list(turn, pt); \
+	tempPiece = pieceList[turn][pt]; \
 	for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
 	{ \
 		from = tempPiece[iter]; \
@@ -144,7 +144,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 	Move mv;
 
 	/*************** Pawns ***************/
-	tempPiece = piece_list(turn, PAWN);
+	tempPiece = pieceList[turn][PAWN];
 	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
 	{
 		from = tempPiece[iter];
@@ -609,56 +609,50 @@ void Position::unmake_move(Move& mv)
 	boardPiece[from] = piece; boardColor[from] = turn; // restore
 	boardPiece[to] = NON; boardColor[to] = NON_COLOR;
 
-	switch (piece)
+	// Promotion
+	if (mv.is_promo())
 	{
-	case PAWN:
-		if (mv.is_promo())
+		PieceType promo = mv.get_promo();
+		Pawnmap[turn] ^= ToMap;  // flip back
+		//++pieceCount[turn][PAWN];
+		//--pieceCount[turn][promo];
+		boardPiece[from] = PAWN;
+		boardPiece[to] = NON;
+		Pieces[promo][turn] ^= ToMap;
+
+		// Update piece lists, move the last promoted piece at index[to] position
+		// and shrink the list. Add a new pawn to the list.
+		uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
+		plistIndex[lastSq] = plistIndex[to];
+		pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
+		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
+		plistIndex[to] = pieceCount[turn][PAWN]++;
+		pieceList[turn][PAWN][plistIndex[to]] = to;
+	}
+	// Castling
+	else if (mv.is_castle())
+	{
+		uint rfrom, rto;
+		if (FILES[to] == 6)  // king side castling
 		{
-			PieceType promo = mv.get_promo();
-			Pawnmap[turn] ^= ToMap;  // flip back
-			//++pieceCount[turn][PAWN];
-			//--pieceCount[turn][promo];
-			boardPiece[from] = PAWN;
-			boardPiece[to] = NON;
-			Pieces[promo][turn] ^= ToMap;
-
-			// Update piece lists, move the last promoted piece at index[to] position
-			// and shrink the list. Add a new pawn to the list.
-			uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
-			plistIndex[lastSq] = plistIndex[to];
-			pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
-			pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
-			plistIndex[to] = pieceCount[turn][PAWN]++;
-			pieceList[turn][PAWN][plistIndex[to]] = to;
+			Rookmap[turn] ^= MASK_OO_ROOK[turn];
+			Oneside[turn] ^= MASK_OO_ROOK[turn];
+			rfrom = SQ_OO_ROOK[turn][0];
+			rto = SQ_OO_ROOK[turn][1];
 		}
-		break;
-
-	case KING:
-		if (mv.is_castle())
+		else
 		{
-			uint rfrom, rto;
-			if (FILES[to] == 6)  // king side castling
-			{
-				Rookmap[turn] ^= MASK_OO_ROOK[turn];
-				Oneside[turn] ^= MASK_OO_ROOK[turn];
-				rfrom = SQ_OO_ROOK[turn][0];
-				rto = SQ_OO_ROOK[turn][1];
-			}
-			else
-			{
-				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
-				Oneside[turn] ^= MASK_OOO_ROOK[turn];
-				rfrom = SQ_OOO_ROOK[turn][0];
-				rto = SQ_OOO_ROOK[turn][1];
-			}
-			boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
-			boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
-
-			// un-move the rook in pieceList
-			plistIndex[rfrom] = plistIndex[rto];
-			pieceList[turn][ROOK][plistIndex[rfrom]] = rfrom;
+			Rookmap[turn] ^= MASK_OOO_ROOK[turn];
+			Oneside[turn] ^= MASK_OOO_ROOK[turn];
+			rfrom = SQ_OOO_ROOK[turn][0];
+			rto = SQ_OOO_ROOK[turn][1];
 		}
-		break;
+		boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
+		boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
+
+		// un-move the rook in pieceList
+		plistIndex[rfrom] = plistIndex[rto];
+		pieceList[turn][ROOK][plistIndex[rfrom]] = rfrom;
 	}
 
 	// Update piece lists, index[from] is not updated and becomes stale. This

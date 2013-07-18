@@ -64,7 +64,6 @@ public:
 	string toFEN() const;
 	
 	uint king_sq(Color c) const { return pieceList[c][KING][0]; }
-	const uint *piece_list(Color c, PieceType pt) const { return pieceList[c][pt]; }
 
 	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
 	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.

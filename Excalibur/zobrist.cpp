@@ -42,7 +42,7 @@ namespace Zobrist {
 			for (int sq = 0; sq < SQ_N; sq++)
 			{
 				pieceSquareTable[W][pt][sq] =  v + PSQT[pt][sq];
-				pieceSquareTable[B][pt][sq ^ 56] = -(v + PSQT[pt][sq]); // vertical flip
+				pieceSquareTable[B][pt][flip_vert(sq)] = -(v + PSQT[pt][sq]); // vertical flip
 			}
 		}
 	}

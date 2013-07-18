@@ -7,6 +7,7 @@ int main(int argc, char **argv)
 	RKiss::init_seed();
 	Board::init_tables();
 	Zobrist::init();
+	KPKbase::init();
 	Endgame::init();
 
 	if (argc > 1)

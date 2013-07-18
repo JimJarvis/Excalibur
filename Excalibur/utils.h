@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <bitset>
+#include <vector>
 #include <cctype>
 #include <cstdlib>  // for rand
 #include <cstring>
@@ -19,7 +20,7 @@
 #include <unordered_set>
 #include <memory>
 #include "typeconsts.h"
-using namespace std; 
+using namespace std;
 
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
@@ -34,11 +35,16 @@ uint bit_count(U64 bitmap); // Count the bits in a bitmap
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
 
 // display a bitmap as 8*8. For debugging
-Bit dispBit(Bit, bool = 1);
+Bit dispbit(Bit, bool = 1);
 // convert a name to its square index. a1 is 0 and h8 is 63
 inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
+inline bool opp_colors(int sq1, int sq2) {
+	int s = sq1 ^ sq2;
+	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
+inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
+inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square
 
 // castle right query
 inline bool can_castleOO(byte castleRight) { return (castleRight & 1) == 1; }
@@ -89,6 +95,7 @@ inline Score apply_weight(Score v, Score w) {
 	inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
 	inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }
 DEF_OPERATOR(Score);  // operators enabled
+DEF_OPERATOR(Phase);  // operators enabled
 
 #endif // __utils_h__
 

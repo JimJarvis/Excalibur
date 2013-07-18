@@ -93,7 +93,11 @@ namespace Endgame
 }
 
 
-/* Various endgame evaluators */
+/* 
+* Various endgame evaluators 
+* First: evalFunc() series
+*/
+
 /// Mate with KX vs K. This function is used to evaluate positions with
 /// King and plenty of material vs a lone king. It simply gives the
 /// attacking side a bonus for driving the defending king towards the edge
@@ -110,11 +114,80 @@ Value EndEvaluator<KXK>::operator()(const Position& pos) const
 	uint loserKSq = pos.king_sq(weakerSide);
 
 	Value result =   pos.non_pawn_material(strongerSide)
-		+ pos.pieceCount[strongerSide][PAWN] * PIECE_VALUE[EG][PAWN] + MateTable[loserKSq]
-	+ DistanceBonus[Board::square_distance(winnerKSq, loserKSq)];
+		+ pos.pieceCount[strongerSide][PAWN] * PIECE_VALUE[EG][PAWN] 
+		+ MateTable[loserKSq]
+		+ DistanceBonus[Board::square_distance(winnerKSq, loserKSq)];
 
-	//if (   pos.pieceCount[strongerSide][QUEEN]
-	//	|| pos.pieceCount[strongerSide][ROOK] || pos.bishop_pair(strongerSide)) 
-	//		result += VALUE_KNOWN_WIN;
+	// the last condition checks if the stronger side has a bishop pair
+	if (   pos.pieceCount[strongerSide][QUEEN]
+	|| pos.pieceCount[strongerSide][ROOK] 
+	|| (pos.pieceCount[strongerSide][BISHOP] >= 2 
+		&& opp_colors(pos.pieceList[strongerSide][BISHOP][0], pos.pieceList[strongerSide][BISHOP][1])) ) 
+		result += VALUE_KNOWN_WIN;
+
+	return strongerSide == pos.turn ? result : -result;
+}
+
+/// Mate with KBN vs K. This is similar to KX vs K, but we have to drive the
+/// defending king towards a corner square of the right color.
+template<>
+Value EndEvaluator<KBNK>::operator()(const Position& pos) const 
+{
+	uint winnerKSq = pos.king_sq(strongerSide);
+	uint loserKSq = pos.king_sq(weakerSide);
+	uint bishopSq = pos.pieceList[strongerSide][BISHOP][0];
+
+	// kbnk_mate_table() tries to drive toward corners A1 or H8,
+	// if we have a bishop that cannot reach the above squares we
+	// mirror the kings so to drive enemy toward corners A8 or H1.
+	if (opp_colors(bishopSq, 0))  // square A1 == 0
+	{
+		// horizontal flip A1 to H1
+		flip_hori(winnerKSq);
+		flip_hori(loserKSq);
+	}
+
+	Value result =  VALUE_KNOWN_WIN
+		+ DistanceBonus[Board::square_distance(winnerKSq, loserKSq)]
+	+ KBNKMateTable[loserKSq];
+
+	return strongerSide == pos.turn ? result : -result;
+}
+
+/// KP vs K. This endgame is evaluated with the help of a bitbase.
+template<>
+Value EndEvaluator<KPK>::operator()(const Position& pos) const 
+{
+	uint wksq, bksq, wpsq;
+	Color us;
+
+	if (strongerSide == W)
+	{
+		wksq = pos.king_sq(W);
+		bksq = pos.king_sq(B);
+		wpsq = pos.pieceList[W][PAWN][0];
+		us = pos.turn;
+	}
+	else
+	{
+		wksq = flip_vert(pos.king_sq(B));
+		bksq = flip_vert(pos.king_sq(W));
+		wpsq = flip_vert(pos.pieceList[B][PAWN][0]);
+		us = flipColor[pos.turn];
+	}
+
+	if (FILES[wpsq] >= 4) // FILE_E
+	{
+		flip_hori(wksq);
+		flip_hori(bksq);
+		flip_hori(wpsq);
+	}
+
+	if (!KPKbase::probe(wksq, wpsq, bksq, us))
+		return VALUE_DRAW;
+
+	Value result = VALUE_KNOWN_WIN + 
+		PIECE_VALUE[EG][PAWN] + RANKS[wpsq];
+
 	return strongerSide == pos.turn ? result : -result;
 }

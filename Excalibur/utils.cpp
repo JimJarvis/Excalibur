@@ -3,7 +3,7 @@
 
 // display the bitmap. For testing purposes
 // set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
-Bit dispBit(Bit bitmap, bool flag)
+Bit dispbit(Bit bitmap, bool flag)
 {
 	if (!flag)
 		return bitmap;

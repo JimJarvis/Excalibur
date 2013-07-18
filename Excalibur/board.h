@@ -106,5 +106,11 @@ namespace Board
 	inline Bit square_distance(int sq1, int sq2) { return squareDistanceTbl[sq1][sq2]; }
 }
 
+// Endgame KP vs K bitbase
+namespace KPKbase
+{
+	void init();
+	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
+}
 
 #endif // __board_h__

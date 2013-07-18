@@ -25,6 +25,7 @@
     <ClCompile Include="..\Excalibur\board.cpp" />
     <ClCompile Include="..\Excalibur\endgame.cpp" />
     <ClCompile Include="..\Excalibur\eval.cpp" />
+    <ClCompile Include="..\Excalibur\kpkbase.cpp" />
     <ClCompile Include="..\Excalibur\move.cpp" />
     <ClCompile Include="..\Excalibur\movegen.cpp" />
     <ClCompile Include="..\Excalibur\perft.cpp" />

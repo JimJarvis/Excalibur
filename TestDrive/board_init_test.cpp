@@ -18,6 +18,7 @@ TEST(Misc, Setup)
 	RKiss::init_seed();
 	Board::init_tables();
 	Zobrist::init();
+	KPKbase::init();
 	Endgame::init();
 
 	// Read from FEN.epd
