@@ -15,7 +15,7 @@ string fenList[TEST_SIZE];  // 200 FEN literals
 TEST(Misc, Setup)
 {
 	// initialize
-	RKiss::init_seed();
+	Utils::init();
 	Board::init_tables();
 	Zobrist::init();
 	KPKbase::init();

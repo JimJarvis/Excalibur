@@ -1,28 +1,10 @@
 /* algorithms and utility functions, some for debugging only. */
 #include "utils.h"
 
-// display the bitmap. For testing purposes
-// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
-Bit dispbit(Bit bitmap, bool flag)
-{
-	if (!flag)
-		return bitmap;
-	bitset<64> bs(bitmap);
-	for (int i = 7; i >= 0; i--)
-	{
-		cout << i+1 << "  ";
-		for (int j = 0; j < 8; j++)
-		{
-			cout << bs[SQUARES[j][i]] << " ";  // j + 8*i
-		}
-		cout << endl;
-	}
-	cout << "   ----------------" << endl;
-	cout << "   a b c d e f g h" << endl;
-	cout << "BitMap: " << bitmap << endl;
-	cout << "************************" << endl;
-	return bitmap;
-}
+// extern'ed constant arrays in utils.h
+Bit setbit[SQ_N], unsetbit[SQ_N];
+int LSB_TABLE[64];
+int MSB_TABLE[256];
 
 /*  RKISS is the special pseudo random number generator (PRNG) used to compute hash keys.
  George Marsaglia invented the RNG-Kiss-family in the early 90's. This is a
@@ -67,39 +49,79 @@ namespace RKiss {
 	}
 };
 
-
-// LSB without inline (current definition is in utils.h)
-/**********
-inline uint LSB(U64 bitmap)
+namespace Utils
 {
-	// Here's the algorithm that generates the INDEX64[64] table:
-	//-----------------------------
-	void initializeFirstINDEX64()
+	// setbit[sq] and unsetbit[sq]
+	void init_setbit()
 	{
-		unsigned char bit = 1;
-		char i = 0;
-		do 
+		for (int sq = 0; sq < SQ_N; sq++)
 		{
-			INDEX64[(bit * BITSCAN_MAGIC) >>5] = i;
-			i++;
-			bit <<= 1;
-		} while (bit);
+			setbit[sq] = (1ULL << sq);
+			unsetbit[sq] =	~(1ULL << sq);
+		}
 	}
-	//------------------------------
-  const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-  const int INDEX64[64] = {
-	63, 0, 58, 1, 59, 47, 53, 2,
-	60, 39, 48, 27, 54, 33, 42, 3,
-	61, 51, 37, 40, 49, 18, 28, 20,
-	55, 30, 34, 11, 43, 14, 22, 4,
-	62, 57, 46, 52, 38, 26, 32, 41,
-	50, 36, 17, 19, 29, 10, 13, 21,
-	56, 45, 25, 31, 35, 16, 9, 12,
-	44, 24, 15, 8, 23, 7, 6, 5 };
-	// x&-x is equivalent to the more readable form x&(~x+1), which gives the LSB due to 2's complement encoding. 
-	return INDEX64[((bitmap & (-bitmap)) * BITSCAN_MAGIC) >> 58]; 
+
+	// init the LSB_TABLE used by posLSB()
+	/*{63, 0, 58, 1, 59, 47, 53, 2,
+		60, 39, 48, 27, 54, 33, 42, 3,
+		61, 51, 37, 40, 49, 18, 28, 20,
+		55, 30, 34, 11, 43, 14, 22, 4,
+		62, 57, 46, 52, 38, 26, 32, 41,
+		50, 36, 17, 19, 29, 10, 13, 21,
+		56, 45, 25, 31, 35, 16, 9, 12,
+		44, 24, 15, 8, 23, 7, 6, 5 }; */
+	void init_lsb_table()
+	{
+		U64 bitmap = 1ULL;
+		for (int i = 0; i < 64; i++)
+		{
+			// x&-x is equivalent to the more readable form x&(~x+1), which gives the LSB due to 2's complement encoding. 
+			LSB_TABLE[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58] = i;
+			bitmap <<= 1;
+		}
+	}
+
+	void init_msb_table()
+	{
+		for (int k = 0, i = 0; i < 8; i++)
+			while (k < (2 << i))
+				MSB_TABLE[k++] = i;
+	}
+
+	// initialize utility tools. Called at program startup.
+	void init()
+	{
+		RKiss::init_seed();
+		init_setbit();
+		init_lsb_table();
+		init_msb_table();
+	}
+}  // namespace Utils
+
+
+// display the bitmap. For testing purposes
+// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
+Bit dispbit(Bit bitmap, bool flag)
+{
+	if (!flag)
+		return bitmap;
+	bitset<64> bs(bitmap);
+	for (int i = 7; i >= 0; i--)
+	{
+		cout << i+1 << "  ";
+		for (int j = 0; j < 8; j++)
+		{
+			cout << bs[SQUARES[j][i]] << " ";  // j + 8*i
+		}
+		cout << endl;
+	}
+	cout << "   ----------------" << endl;
+	cout << "   a b c d e f g h" << endl;
+	cout << "BitMap: " << bitmap << endl;
+	cout << "************************" << endl;
+	return bitmap;
 }
-***********/
+
 
 /* A few borrowed useless algorithms
 // http://chessprogramming.wikispaces.com/Flipping+Mirroring+and+Rotating

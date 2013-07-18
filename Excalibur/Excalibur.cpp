@@ -4,7 +4,7 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-	RKiss::init_seed();
+	Utils::init();
 	Board::init_tables();
 	Zobrist::init();
 	KPKbase::init();

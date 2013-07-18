@@ -5,24 +5,64 @@
 
 #include "typeconsts.h"
 
+// initialize utility arrays/tools and RKiss random generator
+namespace Utils
+{ void init(); }
+
+// Special RKISS random number generator for hashkeys
+namespace RKiss
+{
+	void init_seed(int seed = 73);
+	U64 rand64();
+	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
+}
+
 // single-square masks.
 extern Bit setbit[SQ_N], unsetbit[SQ_N];
 
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
- * bitmap = 0 would be undefined for this func 
- * BITSCAN_MAGIC and INDEX64 are constants needed for LSB algorithm */
-const U64 BITSCAN_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-const int BITSCAN_INDEX[64] = { 63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5 };
-inline uint LSB(U64 bitmap)
-{ return BITSCAN_INDEX[((bitmap & (~bitmap + 1)) * BITSCAN_MAGIC) >> 58]; }
-inline uint popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap ^= setbit[lsb]; return lsb; }; // return LSB and set LSB to 0
+ * bitmap = 0 would be undefined for this func */
+const U64 LSB_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
+extern int LSB_TABLE[64]; // initialized in Utils::init()
+extern int MSB_TABLE[256]; // initialized in Utils::init() 
+
+// Huge performance gain when _MSC_VER is enabled
+// comment out the following line to disable
+#define ENABLE_MSC_VER 0
+#if defined(ENABLE_MSC_VER) && defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+inline int LSB(U64 bitmap) {
+	unsigned long index;
+	_BitScanForward64(&index, bitmap);
+	return index;
+}
+inline int MSB(U64 bitmap) {
+	unsigned long index;
+	_BitScanReverse64(&index, bitmap);
+	return index;
+}
+#else
+inline int LSB(U64 bitmap)
+{ return LSB_TABLE[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58]; }
+inline int MSB(U64 bitmap) {
+	uint b32;  int result = 0;
+	if (bitmap > 0xFFFFFFFF)
+	{ bitmap >>= 32; result = 32; }
+	b32 = uint(bitmap);
+	if (b32 > 0xFFFF)
+	{ b32 >>= 16; result += 16; }
+	if (b32 > 0xFF)
+	{ b32 >>= 8; result += 8; }
+	return result + MSB_TABLE[b32];
+}
+#endif
+ // return LSB and set LSB to 0
+inline int popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap &= bitmap-1; return lsb; }
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
 
 enum BitCountType { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
 template <BitCountType>  // default count up to 15
 inline int bit_count(U64 bitmap); // Count the bits in a bitmap
-
 // count all the way up to 64. Used less than count to 15
 template <>
 inline int bit_count<CNT_FULL>(U64 b)
@@ -53,19 +93,10 @@ inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; 
 inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
 inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square
 
-inline bool opp_colors(int sq1, int sq2) {
+inline bool opp_color_sq(int sq1, int sq2) {
 	int s = sq1 ^ sq2;
 	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
 inline Color operator~(Color c) { return Color (c ^ 1); }
-
-
-// Special RKISS random number generator for hashkeys
-namespace RKiss
-{
-	void init_seed(int seed = 73);
-	U64 rand64();
-	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
-}
 
 
 // Evaluation Scores

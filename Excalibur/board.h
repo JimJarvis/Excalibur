@@ -3,23 +3,6 @@
 
 #include "utils.h" 
 
-/* Castling constants */
-// King-side
-const int CASTLE_FG = 0;  // file f to g should be vacant
-const int CASTLE_EG = 1; // file e to g shouldn't be attacked
-// Queen-side
-const int CASTLE_BD = 2;  // file b to d should be vacant
-const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
-// the CASTLE_MASK is filled out in Board::init_tables()
-extern Bit CASTLE_MASK[COLOR_N][4];
-
-// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
-const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
-const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
-// Rook from-to
-extern Bit ROOK_OO_MASK[COLOR_N];
-extern Bit ROOK_OOO_MASK[COLOR_N];
-
 namespace Board
 {
 	// Initialize all tables or constants. Called once at program start. 
@@ -38,6 +21,22 @@ namespace Board
 	extern Bit rookRayTbl[SQ_N];
 	extern Bit bishopRayTbl[SQ_N];
 	extern Bit queenRayTbl[SQ_N];
+
+	/* Castling constants and masks */
+	// King-side
+	const int CASTLE_FG = 0;  // file f to g should be vacant
+	const int CASTLE_EG = 1; // file e to g shouldn't be attacked
+	// Queen-side
+	const int CASTLE_BD = 2;  // file b to d should be vacant
+	const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
+	// the CASTLE_MASK is filled out in Board::init_tables()
+	extern Bit CASTLE_MASK[COLOR_N][4];
+	// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
+	const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+	const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+	// Rook from-to
+	extern Bit ROOK_OO_MASK[COLOR_N];
+	extern Bit ROOK_OOO_MASK[COLOR_N];
 
 	// Other tables
 	extern uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
@@ -109,8 +108,8 @@ namespace Board
 
 	// with respect to the reference frame of Color
 	inline uint relative_square(Color c, uint s) { return s ^ (c * 56); }
-	inline uint relative_rank(Color c, int r) { return r ^ (c * 7); }
-	inline uint relative_rankbysq(Color c, uint s) { return relative_rank(c, RANKS[s]); }
+	inline int relative_rank(Color c, int r) { return r ^ (c * 7); }
+	inline int relative_rankbysq(Color c, uint s) { return relative_rank(c, RANKS[s]); }
 
 }  // namespace Board
 

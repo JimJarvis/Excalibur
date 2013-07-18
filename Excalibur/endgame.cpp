@@ -123,7 +123,7 @@ Value EndEvaluator<KXK>::operator()(const Position& pos) const
 	if (   pos.pieceCount[strongerSide][QUEEN]
 	|| pos.pieceCount[strongerSide][ROOK] 
 	|| (pos.pieceCount[strongerSide][BISHOP] >= 2 
-		&& opp_colors(pos.pieceList[strongerSide][BISHOP][0], pos.pieceList[strongerSide][BISHOP][1])) ) 
+		&& opp_color_sq(pos.pieceList[strongerSide][BISHOP][0], pos.pieceList[strongerSide][BISHOP][1])) ) 
 		result += VALUE_KNOWN_WIN;
 
 	return strongerSide == pos.turn ? result : -result;
@@ -141,7 +141,7 @@ Value EndEvaluator<KBNK>::operator()(const Position& pos) const
 	// kbnk_mate_table() tries to drive toward corners A1 or H8,
 	// if we have a bishop that cannot reach the above squares we
 	// mirror the kings so to drive enemy toward corners A8 or H1.
-	if (opp_colors(bishopSq, 0))  // square A1 == 0
+	if (opp_color_sq(bishopSq, 0))  // square A1 == 0
 	{
 		// horizontal flip A1 to H1
 		flip_hori(winnerKSq);
@@ -341,14 +341,15 @@ Value EndEvaluator<KmmKm>::operator()(const Position&) const { return VALUE_DRAW
 template<>
 Value EndEvaluator<KNNK>::operator()(const Position&) const { return VALUE_DRAW; }
 
+
 /* 
 * Second part: scalingFunc() series
 */
+
 /// K, bishop and one or more pawns vs K. It checks for draws with rook pawns and
 /// a bishop of the wrong color. If such a draw is detected, SCALE_FACTOR_DRAW
 /// is returned. If not, the return value is SCALE_FACTOR_NONE, i.e. no scaling
 /// will be used.
-/*
 template<>
 ScaleFactor EndEvaluator<KBPsK>::operator()(const Position& pos) const 
 {
@@ -357,56 +358,52 @@ ScaleFactor EndEvaluator<KBPsK>::operator()(const Position& pos) const
 
 	// All pawns are on a single rook file A or H?
 	if (    (pawnFile == 0 || pawnFile == 7)
-		&& !(pawns & ~file_bb(pawnFile)))
+		&& !(pawns & ~file_mask(pawnFile)))
 	{
 		uint bishopSq = pos.pieceList[strongerSide][BISHOP][0];
-		uint queeningSq = relative_square(strongerSide, pawnFile | RANK_8);
-		uint kingSq = pos.king_square(weakerSide);
+		uint queeningSq = relative_square(strongerSide, SQUARES[pawnFile][7]);
+		uint kingSq = pos.king_sq(weakerSide);
 
-		if (   opposite_colors(queeningSq, bishopSq)
-			&& abs(file_of(kingSq) - pawnFile) <= 1)
+		if (   opp_color_sq(queeningSq, bishopSq)
+			&& abs(FILES[kingSq] - pawnFile) <= 1)
 		{
 			// The bishop has the wrong color, and the defending king is on the
 			// file of the pawn(s) or the adjacent file. Find the rank of the
 			// frontmost pawn.
-			Rank rank;
-			if (strongerSide == WHITE)
-			{
-				for (rank = RANK_7; !(rank_bb(rank) & pawns); rank--) {}
-				assert(rank >= RANK_2 && rank <= RANK_7);
-			}
+			int rank;
+			if (strongerSide == W)
+				for (rank = 6; !(rank_mask(rank) & pawns); rank--) {}
 			else
 			{
-				for (rank = RANK_2; !(rank_bb(rank) & pawns); rank++) {}
-				rank = Rank(rank ^ 7);  // HACK to get the relative rank
-				assert(rank >= RANK_2 && rank <= RANK_7);
+				for (rank = 1; !(rank_mask(rank) & pawns); rank++) {}
+				rank = relative_rank(B, rank);
 			}
 			// If the defending king has distance 1 to the promotion square or
 			// is placed somewhere in front of the pawn, it's a draw.
 			if (   square_distance(kingSq, queeningSq) <= 1
-				|| relative_rank(strongerSide, kingSq) >= rank)
+				|| relative_rankbysq(strongerSide, kingSq) >= rank)
 				return SCALE_FACTOR_DRAW;
 		}
 	}
 
+	Bit weakPawns;
 	// All pawns on same B or G file? Then potential draw
-	if (    (pawnFile == FILE_B || pawnFile == FILE_G)
-		&& !(pos.pieces(PAWN) & ~file_bb(pawnFile))
+	if (    (pawnFile == 1 || pawnFile == 6)
+		&& !((pawns | (weakPawns=pos.Pawnmap[weakerSide]) ) & ~file_mask(pawnFile))
 		&& pos.non_pawn_material(weakerSide) == 0
-		&& pos.piece_count(weakerSide, PAWN) >= 1)
+		&& pos.pieceCount[weakerSide][PAWN] >= 1)
 	{
 		// Get weaker pawn closest to opponent's queening square
-		Bitboard wkPawns = pos.pieces(weakerSide, PAWN);
-		Square weakerPawnSq = strongerSide == WHITE ? msb(wkPawns) : lsb(wkPawns);
+		uint weakerPawnSq = strongerSide == W ? MSB(weakPawns) : LSB(weakPawns);
 
-		Square strongerKingSq = pos.king_square(strongerSide);
-		Square weakerKingSq = pos.king_square(weakerSide);
-		Square bishopSq = pos.piece_list(strongerSide, BISHOP)[0];
+		uint strongerKingSq = pos.king_sq(strongerSide);
+		uint weakerKingSq = pos.king_sq(weakerSide);
+		uint bishopSq = pos.pieceList[strongerSide][BISHOP][0];
 
 		// Draw if weaker pawn is on rank 7, bishop can't attack the pawn, and
 		// weaker king can stop opposing opponent's king from penetrating.
-		if (   relative_rank(strongerSide, weakerPawnSq) == RANK_7
-			&& opposite_colors(bishopSq, weakerPawnSq)
+		if (   relative_rankbysq(strongerSide, weakerPawnSq) == 6
+			&& opp_color_sq(bishopSq, weakerPawnSq)
 			&& square_distance(weakerPawnSq, weakerKingSq) <= square_distance(weakerPawnSq, strongerKingSq))
 			return SCALE_FACTOR_DRAW;
 	}
@@ -415,6 +412,7 @@ ScaleFactor EndEvaluator<KBPsK>::operator()(const Position& pos) const
 }
 
 
+/*
 /// K and queen vs K, rook and one or more pawns. It tests for fortress draws with
 /// a rook on the third rank defended by a pawn.
 template<>

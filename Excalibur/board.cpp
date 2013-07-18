@@ -1,36 +1,27 @@
 #include "board.h"
 
-Bit setbit[SQ_N], unsetbit[SQ_N];
-Bit CASTLE_MASK[COLOR_N][4];
-Bit ROOK_OO_MASK[COLOR_N];
-Bit ROOK_OOO_MASK[COLOR_N];
+
 
 namespace Board
 {
-
 // Because we extern the tables in board.h, we must explicitly declare them again:
 Bit knightTbl[SQ_N], kingTbl[SQ_N];
 Bit pawnAttackTbl[SQ_N][COLOR_N], pawnPushTbl[SQ_N][COLOR_N], pawnPush2Tbl[SQ_N][COLOR_N];
-uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N]; 
 byte rookKey[SQ_N][4096]; Bit rookTbl[4900]; 
 byte bishopKey[SQ_N][512]; Bit bishopTbl[1428]; 
 Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
 Bit rookRayTbl[SQ_N], bishopRayTbl[SQ_N], queenRayTbl[SQ_N];
+
+// Castling masks
+Bit CASTLE_MASK[COLOR_N][4];
+Bit ROOK_OO_MASK[COLOR_N];
+Bit ROOK_OOO_MASK[COLOR_N];
+
+uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N]; 
 Bit betweenTbl[SQ_N][SQ_N];
 int squareDistanceTbl[SQ_N][SQ_N];
 Bit fileMask[FILE_N], rankMask[RANK_N];
 
-
-
-// setbit[sq] and unsetbit[sq] declared in typeconsts.h
-void init_setbit()
-{
-	for (int sq = 0; sq < SQ_N; sq++)
-	{
-		setbit[sq] = (1ULL << sq);
-		unsetbit[sq] =	~(1ULL << sq);
-	}
-}
 
 // initialize CASTLE_MASK
 void init_castle_mask()
@@ -383,7 +374,6 @@ void init_square_distance_tbl(int sq1)
 /* Main init method: Initialize various tables and masks */
 void init_tables()
 {
-	init_setbit();
 	init_castle_mask();
 	init_file_rank_mask();
 
