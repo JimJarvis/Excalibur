@@ -3,24 +3,10 @@
 #ifndef __utils_h__
 #define __utils_h__
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <iomanip>
-#include <bitset>
-#include <vector>
-#include <cctype>
-#include <cstdlib>  // for rand
-#include <cstring>
-#include <algorithm>
-#include "stddef.h"
-#include <ctime>
-#include <map>
-#include <unordered_set>
-#include <memory>
 #include "typeconsts.h"
-using namespace std;
+
+// single-square masks.
+extern Bit setbit[SQ_N], unsetbit[SQ_N];
 
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
@@ -37,8 +23,8 @@ enum BitCountType { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the w
 template <BitCountType>  // default count up to 15
 inline int bit_count(U64 bitmap); // Count the bits in a bitmap
 
-template <>
 // count all the way up to 64. Used less than count to 15
+template <>
 inline int bit_count<CNT_FULL>(U64 b)
 {
 	b -=  (b >> 1) & 0x5555555555555555ULL;
@@ -46,9 +32,8 @@ inline int bit_count<CNT_FULL>(U64 b)
 	b  = ((b >> 4) + b) & 0x0F0F0F0F0F0F0F0FULL;
 	return (b * 0x0101010101010101ULL) >> 56;
 }
-
-template<>
 // Count up to 15 bits. Suitable for most bitboards
+template<>
 inline int bit_count<CNT_MAX15>(U64 b)
 {
 	b -=  (b >> 1) & 0x5555555555555555ULL;
@@ -72,12 +57,6 @@ inline bool opp_colors(int sq1, int sq2) {
 	int s = sq1 ^ sq2;
 	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
 inline Color operator~(Color c) { return Color (c ^ 1); }
-
-// castle right query
-inline bool can_castleOO(byte castleRight) { return (castleRight & 1) == 1; }
-inline bool can_castleOOO(byte castleRight) { return (castleRight & 2) == 2; }
-inline void delete_castleOO(byte& castleRight) { castleRight &= 2; }
-inline void delete_castleOOO(byte& castleRight) { castleRight &= 1; }
 
 
 // Special RKISS random number generator for hashkeys
@@ -125,12 +104,3 @@ DEF_OPERATOR(Score);  // operators enabled
 DEF_OPERATOR(Phase);  // operators enabled
 
 #endif // __utils_h__
-
-/* some borrowed algorithms
-inline Bit rankMask(uint pos)  {return  0xffULL << (pos & 56);}; // full rank mask. With 1's extended all the way to the border
-inline Bit fileMask(uint pos)  {return 0x0101010101010101 << (pos & 7);}
-inline Bit oMask(uint pos) { return rankMask(pos) ^ fileMask(pos); } // orthogonal mask
-Bit d1Mask(uint pos);  // diagonal (1/4*pi) parallel to a1-h8
-Bit d3Mask(uint pos);  // anti-diagonal (3/4*pi) parallel to a8-h1
-inline Bit dMask(uint pos) { return d1Mask(pos) ^ d3Mask(pos); } // diagonal mask
-*/

@@ -1,52 +1,49 @@
 #ifndef __board_h__
 #define __board_h__
 
-#include "utils.h" // contains important macros and typedefs
+#include "utils.h" 
+
+/* Castling constants */
+// King-side
+const int CASTLE_FG = 0;  // file f to g should be vacant
+const int CASTLE_EG = 1; // file e to g shouldn't be attacked
+// Queen-side
+const int CASTLE_BD = 2;  // file b to d should be vacant
+const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
+// the CASTLE_MASK is filled out in Board::init_tables()
+extern Bit CASTLE_MASK[COLOR_N][4];
+
+// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
+const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+// Rook from-to
+extern Bit ROOK_OO_MASK[COLOR_N];
+extern Bit ROOK_OOO_MASK[COLOR_N];
 
 namespace Board
 {
-	// Initialize *_attack[][] table. Called once at program start. 
+	// Initialize all tables or constants. Called once at program start. 
 	void init_tables();
-
-	void init_setbit();  // setbit[] and unsetbit[]  extern'ed in typeconsts.h
-	void init_castle_mask(); // initialize CASTLE_MASK
 
 	// Precalculated attack tables for non-sliding pieces
 	extern Bit knightTbl[SQ_N], kingTbl[SQ_N];
 	 // pawn has 3 kinds of moves: attack, push, and double push (push2)
 	extern Bit pawnAttackTbl[SQ_N][COLOR_N], pawnPushTbl[SQ_N][COLOR_N], pawnPush2Tbl[SQ_N][COLOR_N];
-	// for none-sliding pieces: private functions used only to initialize the tables
-	void init_knight_tbl(int sq, int x, int y);
-	void init_king_tbl(int sq, int x, int y);
-	void init_pawn_atk_tbl(int sq, int x, int y, Color c);
-	void init_pawn_push_tbl(int sq, int x, int y, Color c);
-	void init_pawn_push2_tbl(int sq, int x, int y, Color c);
 
 	// Precalculated attack tables for sliding pieces. 
 	extern byte rookKey[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
-	void init_rook_key(int sq, int x, int y);
 	extern Bit rookTbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
-	void init_rook_tbl(int sq, int x, int y);
 	extern byte bishopKey[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
-	void init_bishop_key(int sq, int x, int y);
 	extern Bit bishopTbl[1428]; // Bishop attack table. 1428: all unique possible masks
-	void init_bishop_tbl(int sq, int x, int y);
 	extern Bit rookRayTbl[SQ_N];
-	void init_rook_ray_tbl(int sq);  // the rook attack map on an unoccupied board
 	extern Bit bishopRayTbl[SQ_N];
-	void init_bishop_ray_tbl(int sq);   // the bishop attack map on an unoccupied board
 	extern Bit queenRayTbl[SQ_N];
-	void init_queen_ray_tbl(int sq);   // the queen attack map on an unoccupied board
 
 	// Other tables
 	extern uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N];  // return the square directly ahead/behind
-	void init_forward_backward_sq_tbl(int sq, int x, int y, Color c);
 	extern Bit betweenTbl[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
-	void init_between_tbl(int sq1, int x1, int y1);  // will iterate inside for sq2, x2, y2
 	extern int squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
-	void init_square_distance_tbl(int sq1);
 	extern Bit fileMask[FILE_N], rankMask[RANK_N];
-	void init_file_rank_mask(); 
 
 	// for the magics parameters. Will be precalculated
 	struct Magics
@@ -56,8 +53,6 @@ namespace Board
 	};
 	extern Magics rookMagics[SQ_N];  // for each square
 	extern Magics bishopMagics[SQ_N]; 
-	void init_rook_magics(int sq, int x, int y);
-	void init_bishop_magics(int sq, int x, int y);
 
 	// Generate the U64 magic multipliers. Won't actually be run. Pretabulated literals
 	void rook_magicU64_generator();  // will display the results to stdout
@@ -117,30 +112,14 @@ namespace Board
 	inline uint relative_rank(Color c, int r) { return r ^ (c * 7); }
 	inline uint relative_rankbysq(Color c, uint s) { return relative_rank(c, RANKS[s]); }
 
-}
-
-/* Castling constants */
-// King-side
-const int CASTLE_FG = 0;  // file f to g should be vacant
-const int CASTLE_EG = 1; // file e to g shouldn't be attacked
-// Queen-side
-const int CASTLE_BD = 2;  // file b to d should be vacant
-const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
-// the CASTLE_MASK is filled out in Board::init()
-extern Bit CASTLE_MASK[COLOR_N][4];
-
-// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
-const uint SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
-const uint SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
-// Rook from-to
-extern Bit MASK_OO_ROOK[COLOR_N];
-extern Bit MASK_OOO_ROOK[COLOR_N];
+}  // namespace Board
 
 
-// Endgame KP vs K bitbase. kpkbase.cpp
+/* Endgame KP vs K table base -- kpkbase.cpp */
 namespace KPKbase
 {
 	void init();
 	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
 }
+
 #endif // __board_h__

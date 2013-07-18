@@ -3,6 +3,24 @@
 #ifndef __typeconsts_h__
 #define __typeconsts_h__
 
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <bitset>
+#include <vector>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <ctime>
+#include <map>
+#include <unordered_set>
+#include <memory>
+#include "stddef.h"
+using namespace std;
+
 typedef unsigned long long Bit;  // Bitboard
 typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
@@ -48,9 +66,6 @@ const PieceType PIECE_TYPES[PIECE_TYPE_N - 1] = {PAWN, KNIGHT, BISHOP, ROOK, QUE
 static const char* PIECE_NOTATION[PIECE_TYPE_N] = {"", "", "N", "B", "R", "Q", "K"};
 static const char* PIECE_FEN[COLOR_N][PIECE_TYPE_N] = { {"", "P", "N", "B", "R", "Q", "K"}, {"", "p", "n", "b", "r", "q", "k"} };  // FEN name. White - capital letters.
 static const char* PIECE_FULL_NAME[PIECE_TYPE_N] = {"", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};
-
-// single-bit masks. Initialized in board.cpp
-extern Bit setbit[SQ_N], unsetbit[SQ_N];
 
 enum GameStatus : byte
 {

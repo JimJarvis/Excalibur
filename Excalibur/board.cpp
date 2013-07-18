@@ -2,8 +2,8 @@
 
 Bit setbit[SQ_N], unsetbit[SQ_N];
 Bit CASTLE_MASK[COLOR_N][4];
-Bit MASK_OO_ROOK[COLOR_N];
-Bit MASK_OOO_ROOK[COLOR_N];
+Bit ROOK_OO_MASK[COLOR_N];
+Bit ROOK_OOO_MASK[COLOR_N];
 
 namespace Board
 {
@@ -21,46 +21,6 @@ int squareDistanceTbl[SQ_N][SQ_N];
 Bit fileMask[FILE_N], rankMask[RANK_N];
 
 
-// initialize *_attack[][] tables
-void init_tables()
-{
-	init_setbit();
-	init_castle_mask();
-	init_file_rank_mask();
-
-	for (int sq = 0; sq < SQ_N; ++sq)
-	{
-		// pre-calculate the coordinate (x,y), which can be easily got from pos
-		int x = FILES[sq];
-		int y = RANKS[sq]; 
-		// none-sliding pieces. Does not need any "current row" info
-		init_knight_tbl(sq, x, y);
-		init_king_tbl(sq, x, y);
-
-		init_rook_magics(sq, x, y);
-		init_rook_key(sq, x, y);
-		init_rook_tbl(sq, x, y);  
-		init_rook_ray_tbl(sq);
-
-		init_bishop_magics(sq, x, y);
-		init_bishop_key(sq, x, y);
-		init_bishop_tbl(sq, x, y);
-		init_bishop_ray_tbl(sq);
-		init_queen_ray_tbl(sq);
-
-		init_between_tbl(sq, x, y);
-		init_square_distance_tbl(sq);
-
-		// pawn has different colors
-		for (Color c : COLORS) // iterate through Color::W and B
-		{
-			init_pawn_atk_tbl(sq, x, y, c);
-			init_pawn_push_tbl(sq, x, y, c);
-			init_pawn_push2_tbl(sq, x, y, c);
-			init_forward_backward_sq_tbl(sq, x, y, c);
-		}
-	}
-}
 
 // setbit[sq] and unsetbit[sq] declared in typeconsts.h
 void init_setbit()
@@ -83,8 +43,17 @@ void init_castle_mask()
 		CASTLE_MASK[c][CASTLE_BD] = setbit[1+delta] | setbit[2+delta] | setbit[3+delta];
 		CASTLE_MASK[c][CASTLE_CE] = setbit[2+delta] | setbit[3+delta] | setbit[4+delta];
 
-		MASK_OO_ROOK[c] =  setbit[7+delta] | setbit[5+delta];
-		MASK_OOO_ROOK[c] =  setbit[0+delta] | setbit[3+delta];
+		ROOK_OO_MASK[c] =  setbit[7+delta] | setbit[5+delta];
+		ROOK_OOO_MASK[c] =  setbit[0+delta] | setbit[3+delta];
+	}
+}
+
+void init_file_rank_mask()
+{
+	for (int i = 0; i < FILE_N; i++)
+	{
+		fileMask[i] = (0x0101010101010101 << i);
+		rankMask[i] = (0xffULL << i*8);
 	}
 }
 
@@ -104,7 +73,7 @@ void init_rook_key(int sq, int x, int y)
 	Bit mask, ans; uint perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
 	// generate all 2^bits permutations of the rook cross bitmap
 	int n = 0;  // n will eventually store the bitCount of a mask
-	int lsbarray[12];  // store the lsb locations for a particular mask
+	int lsbarray[12];  // store the LSB locations for a particular mask
 	mask = rookMagics[sq].mask;
 	while (mask)
 		lsbarray[n++] = popLSB(mask);
@@ -410,12 +379,45 @@ void init_square_distance_tbl(int sq1)
 	}
 }
 
-void init_file_rank_mask()
+
+/* Main init method: Initialize various tables and masks */
+void init_tables()
 {
-	for (int i = 0; i < FILE_N; i++)
+	init_setbit();
+	init_castle_mask();
+	init_file_rank_mask();
+
+	for (int sq = 0; sq < SQ_N; ++sq)
 	{
-		fileMask[i] = (0x0101010101010101 << i);
-		rankMask[i] = (0xffULL << i*8);
+		// pre-calculate the coordinate (x,y), which can be easily got from pos
+		int x = FILES[sq];
+		int y = RANKS[sq]; 
+		// none-sliding pieces. Does not need any "current row" info
+		init_knight_tbl(sq, x, y);
+		init_king_tbl(sq, x, y);
+		// pawn has different colors
+		for (Color c : COLORS) // iterate through Color::W and B
+		{
+			init_pawn_atk_tbl(sq, x, y, c);
+			init_pawn_push_tbl(sq, x, y, c);
+			init_pawn_push2_tbl(sq, x, y, c);
+			init_forward_backward_sq_tbl(sq, x, y, c);
+		}
+
+		init_rook_magics(sq, x, y);
+		init_rook_key(sq, x, y);
+		init_rook_tbl(sq, x, y);  
+		init_rook_ray_tbl(sq);
+
+		init_bishop_magics(sq, x, y);
+		init_bishop_key(sq, x, y);
+		init_bishop_tbl(sq, x, y);
+		init_bishop_ray_tbl(sq);
+		init_queen_ray_tbl(sq);
+
+		init_between_tbl(sq, x, y);
+		init_square_distance_tbl(sq);
+
 	}
 }
 

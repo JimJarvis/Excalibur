@@ -540,15 +540,15 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			uint rfrom, rto;
 			if (FILES[to] == 6)  // King side castle
 			{
-				Rookmap[turn] ^= MASK_OO_ROOK[turn];
-				Oneside[turn] ^= MASK_OO_ROOK[turn];
+				Rookmap[turn] ^= ROOK_OO_MASK[turn];
+				Oneside[turn] ^= ROOK_OO_MASK[turn];
 				rfrom = SQ_OO_ROOK[turn][0];
 				rto = SQ_OO_ROOK[turn][1];
 			}
 			else
 			{
-				Rookmap[turn] ^= MASK_OOO_ROOK[turn];
-				Oneside[turn] ^= MASK_OOO_ROOK[turn];
+				Rookmap[turn] ^= ROOK_OOO_MASK[turn];
+				Oneside[turn] ^= ROOK_OOO_MASK[turn];
 				rfrom = SQ_OOO_ROOK[turn][0];
 				rto = SQ_OOO_ROOK[turn][1];
 			}
@@ -635,15 +635,15 @@ void Position::unmake_move(Move& mv)
 		uint rfrom, rto;
 		if (FILES[to] == 6)  // king side castling
 		{
-			Rookmap[turn] ^= MASK_OO_ROOK[turn];
-			Oneside[turn] ^= MASK_OO_ROOK[turn];
+			Rookmap[turn] ^= ROOK_OO_MASK[turn];
+			Oneside[turn] ^= ROOK_OO_MASK[turn];
 			rfrom = SQ_OO_ROOK[turn][0];
 			rto = SQ_OO_ROOK[turn][1];
 		}
 		else
 		{
-			Rookmap[turn] ^= MASK_OOO_ROOK[turn];
-			Oneside[turn] ^= MASK_OOO_ROOK[turn];
+			Rookmap[turn] ^= ROOK_OOO_MASK[turn];
+			Oneside[turn] ^= ROOK_OOO_MASK[turn];
 			rfrom = SQ_OOO_ROOK[turn][0];
 			rto = SQ_OOO_ROOK[turn][1];
 		}
