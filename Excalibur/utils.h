@@ -90,10 +90,13 @@ Bit dispbit(Bit, bool = 1);
 inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
+
 // file/rank and square conversion
 inline int sq2file(uint sq) { return sq & 7; }
 inline int sq2rank(uint sq) { return sq >> 3; }
 inline uint fr2sq(int f, int r) { return (r << 3) | f; }
+inline int file_distance(uint sq1, uint sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
+inline int rank_distance(uint sq1, uint sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
 
 inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
 inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square

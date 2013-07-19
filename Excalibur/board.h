@@ -9,18 +9,20 @@ namespace Board
 	void init_tables();
 
 	// Precalculated attack tables for non-sliding pieces
-	extern Bit knightTbl[SQ_N], kingTbl[SQ_N];
+	extern Bit knightMask[SQ_N], kingMask[SQ_N];
 	 // pawn has 3 kinds of moves: attack, push, and double push (push2)
-	extern Bit pawnAttackTbl[COLOR_N][SQ_N], pawnPushTbl[COLOR_N][SQ_N], pawnPush2Tbl[COLOR_N][SQ_N];
+	extern Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
+	// passed pawn table = inFrontMask[c][sq] & (fileMask[file] | fileAdjacentMask[sq])
+	extern Bit passedPawnMask[COLOR_N][SQ_N];
 
 	// Precalculated attack tables for sliding pieces. 
 	extern byte rookKey[SQ_N][4096]; // Rook attack keys. any &mask-result is hashed to 2 ** 12
-	extern Bit rookTbl[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
+	extern Bit rookMask[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
 	extern byte bishopKey[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
-	extern Bit bishopTbl[1428]; // Bishop attack table. 1428: all unique possible masks
-	extern Bit rookRayTbl[SQ_N];
-	extern Bit bishopRayTbl[SQ_N];
-	extern Bit queenRayTbl[SQ_N];
+	extern Bit bishopMask[1428]; // Bishop attack table. 1428: all unique possible masks
+	extern Bit rookRayMask[SQ_N];
+	extern Bit bishopRayMask[SQ_N];
+	extern Bit queenRayMask[SQ_N];
 
 	/* Castling constants and masks */
 	// King-side
@@ -39,8 +41,9 @@ namespace Board
 	extern Bit ROOK_OOO_MASK[COLOR_N];
 
 	// Other tables
-	extern uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];  // return the square directly ahead/behind
-	extern Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or ortho, return 0
+	extern uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];  // return the one square directly ahead/behind
+	extern Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
+	extern Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
 	extern int squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
 	extern Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N]; // entire row or column
 	extern Bit inFrontMask[COLOR_N][RANK_N]; // Everything in front of a rank, with respect to a color
@@ -84,33 +87,42 @@ namespace Board
 
 
 	/* Functions that would actually be used to answer queries */
-	inline Bit rook_attack(int sq, Bit occup)
-		{ return rookTbl[ rookKey[sq][rhash(sq, occup & rookMagics[sq].mask)] + rookMagics[sq].offset ]; }
-	inline Bit bishop_attack(int sq, Bit occup)
-		{ return bishopTbl[ bishopKey[sq][bhash(sq, occup & bishopMagics[sq].mask)] + bishopMagics[sq].offset ]; }
-	inline Bit queen_attack(int sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
-	inline Bit knight_attack(int sq) { return knightTbl[sq]; }
-	inline Bit king_attack(int sq) { return kingTbl[sq]; }
-	inline Bit pawn_attack(Color c, uint sq) { return pawnAttackTbl[c][sq]; }
-	inline Bit pawn_push(Color c, uint sq) { return pawnPushTbl[c][sq]; }
-	inline Bit pawn_push2(Color c, uint sq) { return pawnPush2Tbl[c][sq]; }
-	inline Bit rook_ray(int sq) { return rookRayTbl[sq]; }
-	inline Bit bishop_ray(int sq) { return bishopRayTbl[sq]; }
-	inline Bit queen_ray(int sq) { return queenRayTbl[sq]; }
+	inline Bit rook_attack(uint sq, Bit occup)
+		{ return rookMask[ rookKey[sq][rhash(sq, occup & rookMagics[sq].mask)] + rookMagics[sq].offset ]; }
+	inline Bit bishop_attack(uint sq, Bit occup)
+		{ return bishopMask[ bishopKey[sq][bhash(sq, occup & bishopMagics[sq].mask)] + bishopMagics[sq].offset ]; }
+	inline Bit queen_attack(uint sq, Bit occup) { return rook_attack(sq, occup) | bishop_attack(sq, occup); }
+	inline Bit knight_attack(uint sq) { return knightMask[sq]; }
+	inline Bit king_attack(uint sq) { return kingMask[sq]; }
+	inline Bit pawn_attack(Color c, uint sq) { return pawnAttackMask[c][sq]; }
+	inline Bit pawn_push(Color c, uint sq) { return pawnPushMask[c][sq]; }
+	inline Bit pawn_push2(Color c, uint sq) { return pawnPush2Mask[c][sq]; }
+	inline Bit passed_pawn_mask(Color c, uint sq) { return passedPawnMask[c][sq]; }
+	inline Bit rook_ray(uint sq) { return rookRayMask[sq]; }
+	inline Bit bishop_ray(uint sq) { return bishopRayMask[sq]; }
+	inline Bit queen_ray(uint sq) { return queenRayMask[sq]; }
 
 	inline uint forward_sq(Color c, uint sq) { return forwardSqTbl[c][sq];  }
 	inline uint backward_sq(Color c, uint sq) { return backwardSqTbl[c][sq];  }
-	inline Bit between(int sq1, int sq2) { return betweenMask[sq1][sq2]; }
-	inline bool is_aligned(int sq1, int sq2, int sq3)  // are sq1, 2, 3 aligned?
+	inline Bit between(uint sq1, uint sq2) { return betweenMask[sq1][sq2]; }
+	inline bool is_aligned(uint sq1, uint sq2, uint sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
 				& ( setbit[sq1] | setbit[sq2] | setbit[sq3] )   ) != 0;  }
-	inline int square_distance(int sq1, int sq2) { return squareDistanceTbl[sq1][sq2]; }
+	inline int square_distance(uint sq1, uint sq2) { return squareDistanceTbl[sq1][sq2]; }
 	inline Bit file_mask(int file) { return fileMask[file]; }
 	inline Bit rank_mask(int rank) { return rankMask[rank]; }
+	inline Bit file_adjacent_mask(uint sq) { return fileAdjacentMask[sq2file(sq)]; }
+	inline Bit in_front_mask(Color c, uint sq) { return inFrontMask[c][sq2rank(sq)]; }
+	inline Bit forward_mask(Color c, uint sq) { return forwardMask[c][sq]; }
 
 	// with respect to the reference frame of Color
 	inline uint relative_square(Color c, uint s) { return s ^ (c * 56); }
-	inline int relative_rank(Color c, uint s) { return (s >> 3) ^ (c * 7); }
+	// relative rank of a square
+	template <int> inline int relative_rank(Color c, int sq_or_rank);
+	template<> inline int relative_rank<SQ_N>(Color c, int sq) { return (sq >> 3) ^ (c * 7); }
+	template<> inline int relative_rank<RANK_N>(Color c, int rank) { return rank ^ (c * 7); }
+		// default to relative rank of a square
+	inline int relative_rank(Color c, int sq) { return relative_rank<SQ_N>(c, sq); }
 
 }  // namespace Board
 

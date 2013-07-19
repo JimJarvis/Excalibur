@@ -16,12 +16,14 @@ using namespace std;
 // include headers in Excalibur
 #include "position.h"
 #include "evaluators.h"
+using namespace Board;
 
 const int TEST_SIZE = 200;
 extern string fenList[TEST_SIZE];
 extern Position pos;
 
 /* test-oriented functions */
-inline void blank(){ cout << "！！！！！！！！！！！！！！！！！！！！！" << endl; }
+inline void blank()
+{ cout << "！！！！！！！！！！！！！！！！！！！！！" << endl; }
 
 #endif // __alltest_h__

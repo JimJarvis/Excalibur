@@ -4,6 +4,16 @@
 
 TEST(Misc, Other)
 {
+	/*for (Color c: COLORS)
+	{
+		blank();
+		cout << "Color " << c << endl;
+		for (int i = 0; i < 64; i++)
+		{
+			cout << sq2str(i) << endl;
+			dispbit(forward_mask(c, i));
+		}
+	}*/
 }
 
 // Test lsb, msb and bit_count

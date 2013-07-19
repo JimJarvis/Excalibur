@@ -28,6 +28,14 @@ struct StateInfo
 // Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
 const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, key) / sizeof(U64) + 1;
 
+// A few useful pseudonyms
+#define Pawnmap Pieces[PAWN]
+#define Kingmap Pieces[KING]
+#define Knightmap Pieces[KNIGHT]
+#define Bishopmap Pieces[BISHOP]
+#define Rookmap Pieces[ROOK]
+#define Queenmap Pieces[QUEEN]
+
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
 {
@@ -102,6 +110,9 @@ public:
 	// Pawn push masks
 	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
 	Bit pawn_push2(int sq) const { return Board::pawn_push2(turn, sq); }
+	// a passed pawn?
+	bool is_pawn_passed(Color c, uint sq) const
+		{ return ! (Pawnmap[~c] & Board::passed_pawn_mask(c, sq)); }
 
 	/* Hash key computation */
 	// Calculate from scratch: used for initialization and debugging
@@ -142,14 +153,6 @@ inline Bit Position::attack_map<BISHOP>(uint sq) const { return Board::bishop_at
 template<>
 inline Bit Position::attack_map<QUEEN>(uint sq) const { return Board::rook_attack(sq, Occupied) | Board::bishop_attack(sq, Occupied); }
 
-
-// A few useful pseudonyms
-#define Pawnmap Pieces[PAWN]
-#define Kingmap Pieces[KING]
-#define Knightmap Pieces[KNIGHT]
-#define Bishopmap Pieces[BISHOP]
-#define Rookmap Pieces[ROOK]
-#define Queenmap Pieces[QUEEN]
 
 inline ostream& operator<<(ostream& os, Position pos)
 { pos.display(); return os; }

@@ -3,12 +3,13 @@
 namespace Board
 {
 // Because we extern the tables in board.h, we must explicitly declare them again:
-Bit knightTbl[SQ_N], kingTbl[SQ_N];
-Bit pawnAttackTbl[COLOR_N][SQ_N], pawnPushTbl[COLOR_N][SQ_N], pawnPush2Tbl[COLOR_N][SQ_N];
-byte rookKey[SQ_N][4096]; Bit rookTbl[4900]; 
-byte bishopKey[SQ_N][512]; Bit bishopTbl[1428]; 
+Bit knightMask[SQ_N], kingMask[SQ_N];
+Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
+Bit passedPawnMask[COLOR_N][SQ_N];
+byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
+byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
 Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
-Bit rookRayTbl[SQ_N], bishopRayTbl[SQ_N], queenRayTbl[SQ_N];
+Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 
 // Castling masks
 Bit CASTLE_MASK[COLOR_N][4];
@@ -16,6 +17,7 @@ Bit ROOK_OO_MASK[COLOR_N];
 Bit ROOK_OOO_MASK[COLOR_N];
 
 uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];
+Bit forwardMask[COLOR_N][SQ_N];
 Bit betweenMask[SQ_N][SQ_N];
 int squareDistanceTbl[SQ_N][SQ_N];
 Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
@@ -38,13 +40,33 @@ void init_castle_mask()
 	}
 }
 
+// initialize fileMask, rankMask, fileAdjacentMask, inFrontMask
 void init_file_rank_mask()
 {
-	for (int i = 0; i < FILE_N; i++)
+	int i;
+	for (i = 0; i < 8; i++)
 	{
 		fileMask[i] = (0x0101010101010101 << i);
 		rankMask[i] = (0xffULL << i*8);
 	}
+
+	for (i = 0; i < FILE_N; i++)
+	{
+		if (i == FILE_A) fileAdjacentMask[i] = fileMask[FILE_B];
+		else if (i == FILE_H) fileAdjacentMask[i] = fileMask[FILE_G];
+		else fileAdjacentMask[i] = fileMask[i-1] | fileMask[i+1];
+	}
+
+	// inFrontMask: all the squares on all the ranks ahead of a square
+	Bit mask;
+	for (Color c : COLORS)
+		for (i = 0; i < RANK_N; i++)
+		{
+			mask = 0;
+			for (int r = i + 1; r < RANK_N; r++)
+				mask |= rankMask[relative_rank<RANK_N>(c, r)];
+			inFrontMask[c][relative_rank<RANK_N>(c, i)] = mask;
+		}
 }
 
 /* Rook magic bitboard */
@@ -101,7 +123,7 @@ void init_rook_key(int sq, int x, int y)
 }
 
 // the table is maximally compact, contains all unique attack masks (4900 in total)
-void init_rook_tbl(int sq, int x, int y)
+void init_rook_mask(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
 	uint wm, em, nm, sm, wi, ei, ni, si, wii, eii, nii, sii; bool wjug, ejug, njug, sjug;
@@ -125,7 +147,7 @@ void init_rook_tbl(int sq, int x, int y)
 					if (!njug)  { while (nii)  mask |= setbit[sq + (nii-- << 3)]; } // +8*nii
 					if (!sjug)  { while (sii)  mask |= setbit[sq - (sii-- << 3)]; } // -8*sii
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
-					rookTbl[ offset + key ] = mask;
+					rookMask[ offset + key ] = mask;
 				}
 			}
 		}
@@ -194,7 +216,7 @@ void init_bishop_key(int sq, int x, int y)
 }
 
 // use the bishopKey + offset to lookup this table (maximally compacted, size = 1428)
-void init_bishop_tbl(int sq, int x, int y)
+void init_bishop_mask(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
 	uint ne, nw, se, sw, nei, nwi, sei, swi, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
@@ -218,31 +240,23 @@ void init_bishop_tbl(int sq, int x, int y)
 					if (!sejug) { while(sei) mask |= setbit[sq - (sei--)*7]; }
 					if (!swjug) { while(swi) mask |= setbit[sq - (swi--)*9]; }
 					key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
-					bishopTbl[ offset + key ] = mask;
+					bishopMask[ offset + key ] = mask;
 				}
 			}
 		}
 	}
 }
 
-// just the rook's attackmap on an unoccupied board
-void init_rook_ray_tbl(int sq)
+// rook, bishop and queen attackmap on an unoccupied board
+void init_ray_mask(int sq)
 {
-	rookRayTbl[sq] = rook_attack(sq, 0);
-}
-// just the bishop's attackmap on an unoccupied board
-void init_bishop_ray_tbl(int sq)
-{
-	bishopRayTbl[sq] = bishop_attack(sq, 0);
-}
-// just the queen's attackmap on an unoccupied board
-void init_queen_ray_tbl(int sq)
-{
-	queenRayTbl[sq] = rookRayTbl[sq] | bishopRayTbl[sq];
+	rookRayMask[sq] = rook_attack(sq, 0);
+	bishopRayMask[sq] = bishop_attack(sq, 0);
+	queenRayMask[sq] = rookRayMask[sq] | bishopRayMask[sq];
 }
 
 // knight attack table
-void init_knight_tbl(int sq, int x, int y)
+void init_knight_mask(int sq, int x, int y)
 {
 	Bit ans = 0;
 	int destx, desty; // destination x and y coord
@@ -260,11 +274,11 @@ void init_knight_tbl(int sq, int x, int y)
 			}
 		}
 	}
-	knightTbl[sq] = ans;
+	knightMask[sq] = ans;
 }
 
 // King attack table
-void init_king_tbl(int sq, int x, int y)
+void init_king_mask(int sq, int x, int y)
 {
 	Bit ans = 0;
 	int destx, desty; // destination x and y coord
@@ -281,15 +295,15 @@ void init_king_tbl(int sq, int x, int y)
 			ans |= setbit[fr2sq(destx, desty)];
 		}
 	}
-	kingTbl[sq] = ans;
+	kingMask[sq] = ans;
 }
 
 // Pawn attack table - 2 colors
-void init_pawn_atk_tbl( int sq, int x, int y, Color c )
+void init_pawn_atk_mask( int sq, int x, int y, Color c )
 {
 	if (y==0 && c==B || y==7 && c==W) 
 	{
-		pawnAttackTbl[c][sq] = 0;
+		pawnAttackMask[c][sq] = 0;
 		return;
 	}
 	Bit ans = 0;
@@ -298,21 +312,27 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 		ans |= setbit[fr2sq(x-1, y+offset)]; // white color = 0, black = 1
 	if (x + 1 < 8)
 		ans |= setbit[fr2sq(x+1, y+offset)]; // white color = 0, black = 1
-	pawnAttackTbl[c][sq] = ans;
+	pawnAttackMask[c][sq] = ans;
 }
-void init_pawn_push_tbl( int sq, int x, int y, Color c )
+void init_pawn_push_mask( int sq, int x, int y, Color c )
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
-		pawnPushTbl[c][sq]= 0;
+		pawnPushMask[c][sq]= 0;
 	else
-		pawnPushTbl[c][sq] = setbit[sq + (c==W ? 8 : -8)];
+		pawnPushMask[c][sq] = setbit[sq + (c==W ? 8 : -8)];
 }
-void init_pawn_push2_tbl( int sq, int x, int y, Color c )
+void init_pawn_push2_mask( int sq, int x, int y, Color c )
 {
 	if (y == (c==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
-		pawnPush2Tbl[c][sq] = setbit[sq + (c==W ? 16 : -16)];
+		pawnPush2Mask[c][sq] = setbit[sq + (c==W ? 16 : -16)];
 	else
-		pawnPush2Tbl[c][sq] = 0;
+		pawnPush2Mask[c][sq] = 0;
+}
+
+// passed pawn table = inFrontMask[c][sq] & (fileMask[file] | fileAdjacentMask[sq])
+void init_passed_pawn_mask(int sq, int file, int rank, Color c)
+{
+	passedPawnMask[c][sq] = inFrontMask[c][rank] & (fileMask[file] | fileAdjacentMask[file]);
 }
 
 void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
@@ -331,7 +351,7 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 }
 
 // iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
-void init_between_tbl(int sq1, int x1, int y1)
+void init_between_mask(int sq1, int x1, int y1)
 {
 	int sq2, x2, y2, delta, sqi; Bit mask;
 
@@ -358,6 +378,12 @@ void init_between_tbl(int sq1, int x1, int y1)
 	}
 }
 
+void init_forward_masks(int sq, int file, int rank, Color c)
+{
+	// forwardMask: all the squares ahead of a square on its file
+	forwardMask[c][sq] = inFrontMask[c][rank] & fileMask[file];
+}
+
 // iterate inside for sq2
 void init_square_distance_tbl(int sq1)
 {
@@ -382,31 +408,31 @@ void init_tables()
 		int x = sq2file(sq);
 		int y = sq2rank(sq); 
 		// none-sliding pieces. Does not need any "current row" info
-		init_knight_tbl(sq, x, y);
-		init_king_tbl(sq, x, y);
+		init_knight_mask(sq, x, y);
+		init_king_mask(sq, x, y);
 		// pawn has different colors
 		for (Color c : COLORS) // iterate through Color::W and B
 		{
-			init_pawn_atk_tbl(sq, x, y, c);
-			init_pawn_push_tbl(sq, x, y, c);
-			init_pawn_push2_tbl(sq, x, y, c);
+			init_pawn_atk_mask(sq, x, y, c);
+			init_pawn_push_mask(sq, x, y, c);
+			init_pawn_push2_mask(sq, x, y, c);
+			init_passed_pawn_mask(sq, x, y, c);
 			init_forward_backward_sq_tbl(sq, x, y, c);
+			init_forward_masks(sq, x, y, c);
 		}
 
 		init_rook_magics(sq, x, y);
 		init_rook_key(sq, x, y);
-		init_rook_tbl(sq, x, y);  
-		init_rook_ray_tbl(sq);
+		init_rook_mask(sq, x, y);  
 
 		init_bishop_magics(sq, x, y);
 		init_bishop_key(sq, x, y);
-		init_bishop_tbl(sq, x, y);
-		init_bishop_ray_tbl(sq);
-		init_queen_ray_tbl(sq);
+		init_bishop_mask(sq, x, y);
 
-		init_between_tbl(sq, x, y);
+		init_ray_mask(sq);
+
+		init_between_mask(sq, x, y);
 		init_square_distance_tbl(sq);
-
 	}
 }
 

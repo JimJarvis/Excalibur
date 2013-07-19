@@ -3,12 +3,12 @@
 #include "tests.h"
 
 Position pos;
-#define r(str) pos.attack_map<ROOK>(str2sq(str))
-#define kn(str) Board::knight_attack(str2sq(str))
-#define k(str) Board::king_attack(str2sq(str))
-#define patk(str, color) Board::pawn_attack(color, str2sq(str))
-#define ppush(str, color) Board::pawn_push(color, str2sq(str))
-#define ppush2(str, color) Board::pawn_push2(color, str2sq(str))
+#define rank(str) pos.attack_map<ROOK>(str2sq(str))
+#define kn(str) knight_attack(str2sq(str))
+#define k(str) king_attack(str2sq(str))
+#define patk(str, color) pawn_attack(color, str2sq(str))
+#define ppush(str, color) pawn_push(color, str2sq(str))
+#define ppush2(str, color) pawn_push2(color, str2sq(str))
 
 string fenList[TEST_SIZE];  // 200 FEN literals
 
@@ -108,9 +108,9 @@ TEST(Board, SliderRay)
 {
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
-		ASSERT_EQ(Board::rook_attack(sq, 0), Board::rook_ray(sq));
-		ASSERT_EQ(Board::bishop_attack(sq, 0), Board::bishop_ray(sq));
-		ASSERT_EQ(Board::queen_attack(sq, 0), Board::queen_ray(sq));
+		ASSERT_EQ(rook_attack(sq, 0), rook_ray(sq));
+		ASSERT_EQ(bishop_attack(sq, 0), bishop_ray(sq));
+		ASSERT_EQ(queen_attack(sq, 0), queen_ray(sq));
 	}
 }
 
@@ -125,15 +125,15 @@ TEST(Board, Between)
 			x1 = sq2file(sq1); x2 = sq2file(sq2);
 			y1 = sq2rank(sq1); y2 = sq2rank(sq2);
 			if (x1 != x2 && y1 != y2 && abs(x1-x2)!=abs(y1-y2))
-				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			if (x1 == x2 && y1 == y2)
-				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			if (abs(x1 - x2)==1 && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==1 || abs(x1-x2)==1 && abs(y1-y2)==1 )
-				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			for (int bitCnt = 2; bitCnt <= 7; bitCnt++)
 			{
 				if (abs(x1 - x2)==bitCnt && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==bitCnt || abs(x1-x2)==bitCnt && abs(y1-y2)==bitCnt )
-					ASSERT_EQ(bitCnt-1, bit_count(Board::between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+					ASSERT_EQ(bitCnt-1, bit_count(between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			}
 		}		
 	}
