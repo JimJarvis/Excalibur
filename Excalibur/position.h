@@ -100,8 +100,8 @@ public:
 	template<PieceType> Bit attack_map(uint sq) const;
 
 	// Pawn push masks
-	Bit pawn_push(int sq) const { return Board::pawn_push(sq, turn); }
-	Bit pawn_push2(int sq) const { return Board::pawn_push2(sq, turn); }
+	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
+	Bit pawn_push2(int sq) const { return Board::pawn_push2(turn, sq); }
 
 	/* Hash key computation */
 	// Calculate from scratch: used for initialization and debugging
@@ -129,7 +129,7 @@ private:
 // Explicit attack mask template instantiation. Attack from a specific square.
 // non-sliding pieces
 template<>
-inline Bit Position::attack_map<PAWN>(uint sq) const { return Board::pawn_attack(sq, turn); }
+inline Bit Position::attack_map<PAWN>(uint sq) const { return Board::pawn_attack(turn, sq); }
 template<>
 inline Bit Position::attack_map<KNIGHT>(uint sq) const { return Board::knight_attack(sq); }
 template<>
@@ -159,7 +159,7 @@ inline bool Position::is_sq_attacked(uint sq, Color attacker) const
 {
 	if (Knightmap[attacker] & Board::knight_attack(sq)) return true;
 	if (Kingmap[attacker] & Board::king_attack(sq)) return true;
-	if (Pawnmap[attacker] & Board::pawn_attack(sq, ~attacker)) return true;
+	if (Pawnmap[attacker] & Board::pawn_attack(~attacker, sq)) return true;
 	if ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq)) return true; // orthogonal slider
 	if ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq)) return true; // diagonal slider
 	return false;
@@ -168,7 +168,7 @@ inline bool Position::is_sq_attacked(uint sq, Color attacker) const
 // Bitmap of attackers to a specific square
 inline Bit Position::attackers_to(uint sq, Color attacker) const
 {
-	return (Pawnmap[attacker] & Board::pawn_attack(sq, ~attacker))
+	return (Pawnmap[attacker] & Board::pawn_attack(~attacker, sq))
 		| (Knightmap[attacker] & Board::knight_attack(sq))
 		| (Kingmap[attacker] & Board::king_attack(sq))
 		| ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq))

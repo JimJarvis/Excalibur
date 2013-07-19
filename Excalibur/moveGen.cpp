@@ -53,7 +53,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		{
 			to = pop_lsb(TempMove);
 			mv.set_to(to);
-			if (forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
+			if (forward_sq(turn, to) == SQ_INVALID) // If forward is invalid, then we reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -69,7 +69,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 			if (attack_map<PAWN>(from) & setbit[st->epSquare])
 			{
 				// final check to avoid same color capture
-				if (Pawnmap[op] & setbit[backward_sq(st->epSquare, turn)] & Target)
+				if (Pawnmap[op] & setbit[backward_sq(turn, st->epSquare)] & Target)
 				{
 					mv.set_ep();
 					mv.set_to(st->epSquare);
@@ -161,7 +161,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			to = pop_lsb(TempMove);
 			if (pinned && (pinned & setbit[from]) && !is_aligned(from, to, kSq) ) 	continue;
 			mv.set_to(to);
-			if (forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
+			if (forward_sq(turn, to) == SQ_INVALID) // If forward is invalid, then we reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -178,7 +178,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			if (attack_map<PAWN>(from) & setbit[ep])
 			{
 				// final check to avoid same color capture
-				Bit EPattack =  setbit[backward_sq(ep, turn)];
+				Bit EPattack =  setbit[backward_sq(turn, ep)];
 				if (Pawnmap[opp] & EPattack & Target)  // we'll immediately check legality
 				{
 					// Occupied ^ (From | ToEP | Capt)
@@ -323,7 +323,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 		uint kSq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit[from] | setbit[to] | setbit[backward_sq(to, turn)] );
+		Bit newOccup = Occupied ^ ( setbit[from] | setbit[to] | setbit[backward_sq(turn, to)] );
 		// only slider "pins" are possible
 		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
 			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp]));
@@ -377,7 +377,7 @@ bool Position::is_bit_attacked(Bit Target, Color attacker) const
 		to = pop_lsb(Target);
 		if (knight_map & attack_map<KNIGHT>(to))  return true; 
 		if (king_map & attack_map<KING>(to))  return true; 
-		if (pawn_map & Board::pawn_attack(to, defender))  return true; 
+		if (pawn_map & Board::pawn_attack(defender, to))  return true; 
 		if (ortho_slider_map & attack_map<ROOK>(to))  return true; 
 		if (diag_slider_map & attack_map<BISHOP>(to))  return true;
 	}
@@ -456,7 +456,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		uint captSq;  // consider EP capture
 		if (mv.is_ep()) 
 		{
-			captSq = backward_sq(st->st_prev->epSquare, turn);
+			captSq = backward_sq(turn, st->st_prev->epSquare);
 			boardPiece[captSq] = NON; boardColor[captSq] = NON_COLOR;
 			ToMap = setbit[captSq];
 		}
@@ -503,7 +503,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 		if (ToMap == pawn_push2(from)) // if pawn double push
 		{
-			st->epSquare = forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
+			st->epSquare = forward_sq(turn, from);  // new ep square, directly ahead the 'from' square
 			key ^=Zobrist::ep[sq2file(st->epSquare)]; // update ep key
 		}
 		if (mv.is_promo())
@@ -669,7 +669,7 @@ void Position::unmake_move(Move& mv)
 		if (mv.is_ep())  // en-passant capture
 		{
 			// will restore the captured pawn later, with all other capturing cases
-			to = backward_sq(st->st_prev->epSquare, turn);
+			to = backward_sq(turn, st->st_prev->epSquare);
 			ToMap = setbit[to];  // the captured pawn location
 		}
 

@@ -6,9 +6,9 @@ Position pos;
 #define r(str) pos.attack_map<ROOK>(str2sq(str))
 #define kn(str) Board::knight_attack(str2sq(str))
 #define k(str) Board::king_attack(str2sq(str))
-#define patk(str, color) Board::pawn_attack(str2sq(str), color)
-#define ppush(str, color) Board::pawn_push(str2sq(str), color)
-#define ppush2(str, color) Board::pawn_push2(str2sq(str), color)
+#define patk(str, color) Board::pawn_attack(color, str2sq(str))
+#define ppush(str, color) Board::pawn_push(color, str2sq(str))
+#define ppush2(str, color) Board::pawn_push2(color, str2sq(str))
 
 string fenList[TEST_SIZE];  // 200 FEN literals
 

@@ -1,12 +1,10 @@
 #include "board.h"
 
-
-
 namespace Board
 {
 // Because we extern the tables in board.h, we must explicitly declare them again:
 Bit knightTbl[SQ_N], kingTbl[SQ_N];
-Bit pawnAttackTbl[SQ_N][COLOR_N], pawnPushTbl[SQ_N][COLOR_N], pawnPush2Tbl[SQ_N][COLOR_N];
+Bit pawnAttackTbl[COLOR_N][SQ_N], pawnPushTbl[COLOR_N][SQ_N], pawnPush2Tbl[COLOR_N][SQ_N];
 byte rookKey[SQ_N][4096]; Bit rookTbl[4900]; 
 byte bishopKey[SQ_N][512]; Bit bishopTbl[1428]; 
 Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
@@ -17,10 +15,11 @@ Bit CASTLE_MASK[COLOR_N][4];
 Bit ROOK_OO_MASK[COLOR_N];
 Bit ROOK_OOO_MASK[COLOR_N];
 
-uint forwardSqTbl[SQ_N][COLOR_N], backwardSqTbl[SQ_N][COLOR_N]; 
-Bit betweenTbl[SQ_N][SQ_N];
+uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];
+Bit betweenMask[SQ_N][SQ_N];
 int squareDistanceTbl[SQ_N][SQ_N];
-Bit fileMask[FILE_N], rankMask[RANK_N];
+Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
+Bit inFrontMask[COLOR_N][RANK_N];
 
 
 // initialize CASTLE_MASK
@@ -290,7 +289,7 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 {
 	if (y==0 && c==B || y==7 && c==W) 
 	{
-		pawnAttackTbl[sq][c] = 0;
+		pawnAttackTbl[c][sq] = 0;
 		return;
 	}
 	Bit ans = 0;
@@ -299,21 +298,21 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 		ans |= setbit[fr2sq(x-1, y+offset)]; // white color = 0, black = 1
 	if (x + 1 < 8)
 		ans |= setbit[fr2sq(x+1, y+offset)]; // white color = 0, black = 1
-	pawnAttackTbl[sq][c] = ans;
+	pawnAttackTbl[c][sq] = ans;
 }
 void init_pawn_push_tbl( int sq, int x, int y, Color c )
 {
 	if (y == 0 || y == 7) // pawns can never be on these squares
-		pawnPushTbl[sq][c] = 0;
+		pawnPushTbl[c][sq]= 0;
 	else
-		pawnPushTbl[sq][c] = setbit[sq + (c==W ? 8 : -8)];
+		pawnPushTbl[c][sq] = setbit[sq + (c==W ? 8 : -8)];
 }
 void init_pawn_push2_tbl( int sq, int x, int y, Color c )
 {
 	if (y == (c==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
-		pawnPush2Tbl[sq][c] = setbit[sq + (c==W ? 16 : -16)];
+		pawnPush2Tbl[c][sq] = setbit[sq + (c==W ? 16 : -16)];
 	else
-		pawnPush2Tbl[sq][c] = 0;
+		pawnPush2Tbl[c][sq] = 0;
 }
 
 void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
@@ -321,14 +320,14 @@ void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
 	int offset = c==W ? 8: -8;
 
 	if (y == (c==W ? 7: 0))
-		forwardSqTbl[sq][c] = SQ_INVALID;
+		forwardSqTbl[c][sq] = SQ_INVALID;
 	else 
-		forwardSqTbl[sq][c] = sq + offset;
+		forwardSqTbl[c][sq] = sq + offset;
 
 	if (y == (c==W ? 0: 7))
-		backwardSqTbl[sq][c] = SQ_INVALID;
+		backwardSqTbl[c][sq] = SQ_INVALID;
 	else
-		backwardSqTbl[sq][c] = sq - offset;
+		backwardSqTbl[c][sq] = sq - offset;
 }
 
 // iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
@@ -355,7 +354,7 @@ void init_between_tbl(int sq1, int x1, int y1)
 			for (sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
 				mask |= setbit[sqi];
 
-		betweenTbl[sq1][sq2] = mask;
+		betweenMask[sq1][sq2] = mask;
 	}
 }
 

@@ -41,7 +41,7 @@ private:
 };
 
 
-#define PawnAtk Board::pawn_attack(psq, W)
+#define PawnAtk Board::pawn_attack(W, psq)
 #define KingAtk(color) Board::king_attack(color##ksq)
 int KPKPosition::classify_leaf(uint idx) // from white's perspective
 {
