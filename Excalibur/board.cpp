@@ -67,7 +67,7 @@ void init_rook_key(int sq, int x, int y)
 	int lsbarray[12];  // store the LSB locations for a particular mask
 	mask = rookMagics[sq].mask;
 	while (mask)
-		lsbarray[n++] = popLSB(mask);
+		lsbarray[n++] = pop_lsb(mask);
 
 	uint possibility = 1 << n; // 2^n
 	// Xm stands for the maximum possible range along that direction. Counterclockwise with S most significant
@@ -161,7 +161,7 @@ void init_bishop_key(int sq, int x, int y)
 	int lsbarray[9];  // store the lsb locations for a particular mask
 	mask = bishopMagics[sq].mask;
 	while (mask)
-		lsbarray[n++] = popLSB(mask);
+		lsbarray[n++] = pop_lsb(mask);
 
 	uint possibility = 1 << n; // 2^n
 	// Xm stands for the maximum possible range along that diag direction. Counterclockwise with SE most significant
@@ -257,7 +257,7 @@ void init_knight_tbl(int sq, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= setbit[SQUARES[destx][desty]];
+				ans |= setbit[fr2sq(destx, desty)];
 			}
 		}
 	}
@@ -279,7 +279,7 @@ void init_king_tbl(int sq, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= setbit[SQUARES[destx][desty]];
+			ans |= setbit[fr2sq(destx, desty)];
 		}
 	}
 	kingTbl[sq] = ans;
@@ -296,9 +296,9 @@ void init_pawn_atk_tbl( int sq, int x, int y, Color c )
 	Bit ans = 0;
 	int offset =  c==W ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= setbit[SQUARES[x-1][y+offset]]; // white color = 0, black = 1
+		ans |= setbit[fr2sq(x-1, y+offset)]; // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= setbit[SQUARES[x+1][y+offset]]; // white color = 0, black = 1
+		ans |= setbit[fr2sq(x+1, y+offset)]; // white color = 0, black = 1
 	pawnAttackTbl[sq][c] = ans;
 }
 void init_pawn_push_tbl( int sq, int x, int y, Color c )
@@ -340,8 +340,8 @@ void init_between_tbl(int sq1, int x1, int y1)
 	{
 		mask = 0;
 		delta = 0;
-		x2 = FILES[sq2];
-		y2 = RANKS[sq2];
+		x2 = sq2file(sq2);
+		y2 = sq2rank(sq2);
 		if (x1 == x2)  // same file
 			delta = 8;
 		else if (y1 == y2)  // same file
@@ -364,8 +364,8 @@ void init_square_distance_tbl(int sq1)
 {
 	for (int sq2 = 0; sq2 < SQ_N; sq2++)
 	{
-		int file_dist = abs(FILES[sq1] - FILES[sq2]);
-		int rank_dist = abs(RANKS[sq1] - RANKS[sq2]);
+		int file_dist = abs(sq2file(sq1) - sq2file(sq2));
+		int rank_dist = abs(sq2rank(sq1) - sq2rank(sq2));
 		squareDistanceTbl[sq1][sq2] = max(file_dist, rank_dist);
 	}
 }
@@ -380,8 +380,8 @@ void init_tables()
 	for (int sq = 0; sq < SQ_N; ++sq)
 	{
 		// pre-calculate the coordinate (x,y), which can be easily got from pos
-		int x = FILES[sq];
-		int y = RANKS[sq]; 
+		int x = sq2file(sq);
+		int y = sq2rank(sq); 
 		// none-sliding pieces. Does not need any "current row" info
 		init_knight_tbl(sq, x, y);
 		init_king_tbl(sq, x, y);
@@ -427,7 +427,7 @@ void rook_magicU64_generator()
 		n = 0;  // n will finally be the bitCount(mask)
 		// get the lsb array of the mask
 		while (mask)
-			lsbarray[n++] = popLSB(mask);
+			lsbarray[n++] = pop_lsb(mask);
 		// generate all 2^bits permutations of the rook cross bitmap
 		possibility = 1 << n; // 2^n
 		for (perm = 0; perm < possibility; perm++) 
@@ -474,7 +474,7 @@ void bishop_magicU64_generator()
 		n = 0;  // n will finally be the bitCount(mask)
 		// get the lsb array of the mask
 		while (mask)
-			lsbarray[n++] = popLSB(mask);
+			lsbarray[n++] = pop_lsb(mask);
 		// generate all 2^bits permutations of the rook cross bitmap
 		possibility = 1 << n; // 2^n
 		for (perm = 0; perm < possibility; perm++) 

@@ -109,7 +109,7 @@ namespace Board
 	// with respect to the reference frame of Color
 	inline uint relative_square(Color c, uint s) { return s ^ (c * 56); }
 	inline int relative_rank(Color c, int r) { return r ^ (c * 7); }
-	inline int relative_rankbysq(Color c, uint s) { return relative_rank(c, RANKS[s]); }
+	inline int relative_rankbysq(Color c, uint s) { return (s >> 3) ^ (c * 7); }
 
 }  // namespace Board
 

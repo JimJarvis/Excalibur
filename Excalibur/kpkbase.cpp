@@ -16,7 +16,7 @@ uint KPKBitbase[INDEX_MAX / 32];
 // bit 13-14: white pawn file (from FILE_A to FILE_D)
 // bit 15-17: white pawn 6 - rank (from 6 - RANK_7 to 6 - RANK_2)
 uint index(Color us, uint bksq, uint wksq, uint psq) {
-	return wksq + (bksq << 6) + (us << 12) + (FILES[psq] << 13) + ((6 - RANKS[psq]) << 15);
+	return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((6 - sq2rank(psq)) << 15);
 }
 
 namespace Result {
@@ -49,7 +49,7 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 	wksq = idx & 0x3F;
 	bksq = (idx >> 6) & 0x3F;
 	us   = Color((idx >> 12) & 0x01);
-	psq  = SQUARES[(idx >> 13) & 3][6 - (idx >> 15)];
+	psq  = fr2sq((idx >> 13) & 3,  6 - (idx >> 15));
 
 	// Check if two pieces are on the same square or if a king can be captured
 	if (   wksq == psq || wksq == bksq || bksq == psq
@@ -60,7 +60,7 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 	if (us == W)
 	{
 		// Immediate win if pawn can be promoted without getting captured
-		if (   RANKS[psq] == 6
+		if (   sq2rank(psq) == 6
 			&& wksq != psq + 8
 			&& (  Board::square_distance(bksq, psq + 8) > 1
 			|| (KingAtk(w) & setbit[psq + 8]) )  )
@@ -90,15 +90,15 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 	Bit atk = Board::king_attack(us == W ? wksq : bksq);
 
 	while (atk)
-		r |= (us == W ? db[index(~us, bksq, popLSB(atk), psq)]
-			: db[index(~us, popLSB(atk), wksq, psq)]  );
+		r |= (us == W ? db[index(~us, bksq, pop_lsb(atk), psq)]
+			: db[index(~us, pop_lsb(atk), wksq, psq)]  );
 
-	if (us == W && RANKS[psq] < 6) // no promotion
+	if (us == W && sq2rank(psq) < 6) // no promotion
 	{
 		uint s = psq + 8;
 		r |= db[index(B, bksq, wksq, s)]; // Single push
 
-		if (RANKS[s] == 2 && s != wksq && s != bksq)
+		if (sq2rank(s) == 2 && s != wksq && s != bksq)
 			r |= db[index(B, bksq, wksq, s + 8)]; // Double push
 	}
 

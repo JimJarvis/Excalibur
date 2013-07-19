@@ -21,7 +21,7 @@ for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
 	TempMove = attack_map<pt>(from) & Target;  \
 	while (TempMove)  \
 	{  \
-		to = popLSB(TempMove);  \
+		to = pop_lsb(TempMove);  \
 		mv.set_to(to);  \
 		update;  \
 	}  \
@@ -51,7 +51,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		TempMove &= Target;
 		while (TempMove)
 		{
-			to = popLSB(TempMove);
+			to = pop_lsb(TempMove);
 			mv.set_to(to);
 			if (forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
 			{
@@ -94,7 +94,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		TempMove = king_attack(from) & Target;
 		while (TempMove)
 		{
-			to = popLSB(TempMove);
+			to = pop_lsb(TempMove);
 			mv.set_to(to);
 			update;
 		}
@@ -127,7 +127,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		TempMove = attack_map<pt>(from) & Target; \
 		while (TempMove) \
 		{ \
-			to = popLSB(TempMove); \
+			to = pop_lsb(TempMove); \
 			if (pinned && (pinned & setbit[from]) && (pt == KNIGHT || !is_aligned(from, to, kSq)) ) 	continue; \
 			mv.set_to(to); \
 			update; \
@@ -158,7 +158,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		TempMove &= Target;
 		while (TempMove)
 		{
-			to = popLSB(TempMove);
+			to = pop_lsb(TempMove);
 			if (pinned && (pinned & setbit[from]) && !is_aligned(from, to, kSq) ) 	continue;
 			mv.set_to(to);
 			if (forward_sq(to, turn) == SQ_INVALID) // If forward is invalid, then we reach the last rank
@@ -211,7 +211,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			TempMove = attack_map<KING>(from) & Target;
 			while (TempMove)
 			{
-				to = popLSB(TempMove);
+				to = pop_lsb(TempMove);
 				if (is_sq_attacked(to, opp))	continue;
 				mv.set_to(to);
 				update;
@@ -250,7 +250,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	do
 	{
 		ckCount ++;
-		checkSq = popLSB(Ck);
+		checkSq = pop_lsb(Ck);
 		switch (boardPiece[checkSq])  // who's checking me?
 		{
 		// pseudo attack maps that don't concern about occupancy
@@ -276,7 +276,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	mv.set_from(kSq);
 	while (Ck)  // routine add moves
 	{
-		int to = popLSB(Ck);
+		int to = pop_lsb(Ck);
 		if (legal && is_sq_attacked(to, ~turn)) continue;
 		mv.set_to(to);
 		update;
@@ -302,7 +302,7 @@ Bit Position::pinned_map() const
 		| ((Bishopmap[opp] | Queenmap[opp]) & bishop_ray(kSq));
 	while (pinners)
 	{
-		middle = between(kSq, popLSB(pinners)) & Occupied;
+		middle = between(kSq, pop_lsb(pinners)) & Occupied;
 		// one and only one in between, which must be a friendly piece
 		if (middle && !more_than_one_bit(middle) && (middle & Oneside[turn]))
 			ans |= middle;
@@ -374,7 +374,7 @@ bool Position::is_bit_attacked(Bit Target, Color attacker) const
 	Bit diag_slider_map = Bishopmap[attacker] | Queenmap[attacker];
 	while (Target)
 	{
-		to = popLSB(Target);
+		to = pop_lsb(Target);
 		if (knight_map & attack_map<KNIGHT>(to))  return true; 
 		if (king_map & attack_map<KING>(to))  return true; 
 		if (pawn_map & Board::pawn_attack(to, defender))  return true; 
@@ -428,7 +428,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	st->psqScore += pieceSquareTable[turn][piece][to] - pieceSquareTable[turn][piece][from];
 	if (st->epSquare != 0)  // reset epSquare and its hash key
 	{
-		key ^=Zobrist::ep[FILES[st->epSquare]];
+		key ^=Zobrist::ep[sq2file(st->epSquare)];
 		st->epSquare = 0;
 	}
 
@@ -504,7 +504,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		if (ToMap == pawn_push2(from)) // if pawn double push
 		{
 			st->epSquare = forward_sq(from, turn);  // new ep square, directly ahead the 'from' square
-			key ^=Zobrist::ep[FILES[st->epSquare]]; // update ep key
+			key ^=Zobrist::ep[sq2file(st->epSquare)]; // update ep key
 		}
 		if (mv.is_promo())
 		{
@@ -540,7 +540,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		if (mv.is_castle())
 		{
 			uint rfrom, rto;
-			if (FILES[to] == 6)  // King side castle
+			if (sq2file(to) == 6)  // King side castle
 			{
 				Rookmap[turn] ^= ROOK_OO_MASK[turn];
 				Oneside[turn] ^= ROOK_OO_MASK[turn];
@@ -635,7 +635,7 @@ void Position::unmake_move(Move& mv)
 	else if (mv.is_castle())
 	{
 		uint rfrom, rto;
-		if (FILES[to] == 6)  // king side castling
+		if (sq2file(to) == 6)  // king side castling
 		{
 			Rookmap[turn] ^= ROOK_OO_MASK[turn];
 			Oneside[turn] ^= ROOK_OO_MASK[turn];

@@ -122,8 +122,8 @@ TEST(Board, Between)
 	{
 		for (sq2 = 0; sq2 < SQ_N; sq2++)
 		{
-			x1 = FILES[sq1]; x2 = FILES[sq2];
-			y1 = RANKS[sq1]; y2 = RANKS[sq2];
+			x1 = sq2file(sq1); x2 = sq2file(sq2);
+			y1 = sq2rank(sq1); y2 = sq2rank(sq2);
 			if (x1 != x2 && y1 != y2 && abs(x1-x2)!=abs(y1-y2))
 				ASSERT_EQ(0, Board::between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			if (x1 == x2 && y1 == y2)

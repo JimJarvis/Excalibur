@@ -4,7 +4,7 @@ Move::operator string()  // verbose algebraic notation: no disambiguation
 {
 	ostringstream ostr; 
 	if (is_castle())
-		ostr << (FILES[get_to()]==6 ? "O-O" : "O-O-O");
+		ostr << (sq2file(get_to())==6 ? "O-O" : "O-O-O");
 	else if (is_ep())
 		ostr << sq2str(get_from()) << "-" << sq2str(get_to()) << "[EP]";
 	else

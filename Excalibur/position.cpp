@@ -114,7 +114,7 @@ void Position::parseFEN(string fenstr)
 			file += ch - '0';
 		else
 		{
-			mask = setbit[SQUARES[file][rank]];  // r*8 + f
+			mask = setbit[fr2sq(file, rank)];  // r*8 + f
 			Color c = isupper(ch) ? W: B; 
 			ch = tolower(ch);
 			PieceType pt;
@@ -127,7 +127,7 @@ void Position::parseFEN(string fenstr)
 			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
 			case 'k': Kingmap[c] |= mask; pt = KING; break;
 			}
-			uint sq = SQUARES[file][rank];
+			uint sq = fr2sq(file, rank);
 			plistIndex[sq] = pieceCount[c][pt] ++;
 			pieceList[c][pt][plistIndex[sq]] = sq;
 			boardPiece[sq] = pt;
@@ -203,7 +203,7 @@ string Position::toFEN() const
 		space = 0;
 		for (int j = 0; j < 8; j++)
 		{
-			int sq = SQUARES[j][i];
+			int sq = fr2sq(j, i);
 			if (boardPiece[sq] == NON)
 			{
 				space ++;
@@ -260,7 +260,7 @@ U64 Position::calc_key() const
 			key ^= Zobrist::psq[boardColor[sq]][pt][sq];
 
 	if ( st->epSquare != 0)
-		key ^= Zobrist::ep[FILES[st->epSquare]];
+		key ^= Zobrist::ep[sq2file(st->epSquare)];
 
 	if (turn == B)
 		key ^= Zobrist::turn;
@@ -289,7 +289,7 @@ U64 Position::calc_pawn_key() const {
 
 	while (pawns)
 	{
-		int sq = popLSB(pawns);
+		int sq = pop_lsb(pawns);
 		key ^= Zobrist::psq[boardColor[sq]][PAWN][sq];
 	}
 
@@ -384,7 +384,7 @@ void Position::display()
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			int sq = SQUARES[j][i];
+			int sq = fr2sq(j, i);
 			string str;
 			if (boardPiece[sq] == NON)
 				str = ".";

@@ -111,7 +111,7 @@ Bit dispbit(Bit bitmap, bool flag)
 		cout << i+1 << "  ";
 		for (int j = 0; j < 8; j++)
 		{
-			cout << bs[SQUARES[j][i]] << " ";  // j + 8*i
+			cout << bs[fr2sq(j, i)] << " ";  // j + 8*i
 		}
 		cout << endl;
 	}

@@ -31,20 +31,20 @@ extern int MSB_TABLE[256]; // initialized in Utils::init()
 // comment out the following line to disable
 #define ENABLE_MSC_VER 0
 #if defined(ENABLE_MSC_VER) && defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-inline int LSB(U64 bitmap) {
+inline int lsb(U64 bitmap) {
 	unsigned long index;
 	_BitScanForward64(&index, bitmap);
 	return index;
 }
-inline int MSB(U64 bitmap) {
+inline int msb(U64 bitmap) {
 	unsigned long index;
 	_BitScanReverse64(&index, bitmap);
 	return index;
 }
 #else
-inline int LSB(U64 bitmap)
+inline int lsb(U64 bitmap)
 { return LSB_TABLE[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58]; }
-inline int MSB(U64 bitmap) {
+inline int msb(U64 bitmap) {
 	uint b32;  int result = 0;
 	if (bitmap > 0xFFFFFFFF)
 	{ bitmap >>= 32; result = 32; }
@@ -57,7 +57,7 @@ inline int MSB(U64 bitmap) {
 }
 #endif
  // return LSB and set LSB to 0
-inline int popLSB(U64& bitmap) { uint lsb = LSB(bitmap); bitmap &= bitmap-1; return lsb; }
+inline int pop_lsb(U64& bitmap) { int l= lsb(bitmap); bitmap &= bitmap-1; return l; }
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
 
 enum BitCountType { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
@@ -90,6 +90,11 @@ Bit dispbit(Bit, bool = 1);
 inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(uint sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
+// file/rank and square conversion
+inline int sq2file(uint sq) { return sq & 7; }
+inline int sq2rank(uint sq) { return sq >> 3; }
+inline uint fr2sq(int f, int r) { return (r << 3) | f; }
+
 inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
 inline void flip_hori(uint& sq) { sq ^= 7; } // horizontally flip a square
 
