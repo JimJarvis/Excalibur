@@ -1,8 +1,6 @@
 /* algorithms and utility functions, some for debugging only. */
 #include "utils.h"
 
-// extern'ed constant arrays in utils.h
-Bit setbit[SQ_N], unsetbit[SQ_N];
 int LSB_TABLE[64];
 int MSB_TABLE[256];
 
@@ -51,16 +49,6 @@ namespace RKiss {
 
 namespace Utils
 {
-	// setbit[sq] and unsetbit[sq]
-	void init_setbit()
-	{
-		for (int sq = 0; sq < SQ_N; sq++)
-		{
-			setbit[sq] = (1ULL << sq);
-			unsetbit[sq] =	~(1ULL << sq);
-		}
-	}
-
 	// init the LSB_TABLE used by posLSB()
 	/*{63, 0, 58, 1, 59, 47, 53, 2,
 		60, 39, 48, 27, 54, 33, 42, 3,
@@ -92,7 +80,6 @@ namespace Utils
 	void init()
 	{
 		RKiss::init_seed();
-		init_setbit();
 		init_lsb_table();
 		init_msb_table();
 	}

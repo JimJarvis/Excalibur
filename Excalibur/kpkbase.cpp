@@ -53,8 +53,8 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 
 	// Check if two pieces are on the same square or if a king can be captured
 	if (   wksq == psq || wksq == bksq || bksq == psq
-		|| (KingAtk(w) & setbit[bksq])
-		|| (us == W && (PawnAtk & setbit[bksq]))  )
+		|| (KingAtk(w) & setbit(bksq))
+		|| (us == W && (PawnAtk & setbit(bksq)))  )
 		return res = INVALID;
 
 	if (us == W)
@@ -63,12 +63,12 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 		if (   sq2rank(psq) == 6
 			&& wksq != psq + 8
 			&& (  Board::square_distance(bksq, psq + 8) > 1
-			|| (KingAtk(w) & setbit[psq + 8]) )  )
+			|| (KingAtk(w) & setbit(psq + 8)) )  )
 			return res = WIN;
 	}
 	// Immediate draw if is stalemate or king captures undefended pawn
 	else if (  !(KingAtk(b) & ~(KingAtk(w) | PawnAtk))
-		|| (KingAtk(b) & setbit[psq] & ~KingAtk(w) ))
+		|| (KingAtk(b) & setbit(psq) & ~KingAtk(w) ))
 		return res = DRAW;
 
 	return res = UNKNOWN;

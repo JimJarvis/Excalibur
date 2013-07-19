@@ -53,7 +53,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		{
 			to = pop_lsb(TempMove);
 			mv.set_to(to);
-			if (forward_sq(turn, to) == SQ_INVALID) // If forward is invalid, then we reach the last rank
+			if (relative_rank(turn, to) == RANK_8) // We reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -66,10 +66,10 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		}
 		if (st->epSquare) // en-passant
 		{
-			if (attack_map<PAWN>(from) & setbit[st->epSquare])
+			if (attack_map<PAWN>(from) & setbit(st->epSquare))
 			{
 				// final check to avoid same color capture
-				if (Pawnmap[op] & setbit[backward_sq(turn, st->epSquare)] & Target)
+				if (Pawnmap[op] & setbit(backward_sq(turn, st->epSquare)) & Target)
 				{
 					mv.set_ep();
 					mv.set_to(st->epSquare);
@@ -128,7 +128,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		while (TempMove) \
 		{ \
 			to = pop_lsb(TempMove); \
-			if (pinned && (pinned & setbit[from]) && (pt == KNIGHT || !is_aligned(from, to, kSq)) ) 	continue; \
+			if (pinned && (pinned & setbit(from)) && (pt == KNIGHT || !is_aligned(from, to, kSq)) ) 	continue; \
 			mv.set_to(to); \
 			update; \
 		} \
@@ -159,9 +159,9 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		while (TempMove)
 		{
 			to = pop_lsb(TempMove);
-			if (pinned && (pinned & setbit[from]) && !is_aligned(from, to, kSq) ) 	continue;
+			if (pinned && (pinned & setbit(from)) && !is_aligned(from, to, kSq) ) 	continue;
 			mv.set_to(to);
-			if (forward_sq(turn, to) == SQ_INVALID) // If forward is invalid, then we reach the last rank
+			if (relative_rank(turn, to) == RANK_8) // We reach the last rank
 			{
 				mv.set_promo(QUEEN); update;
 				mv.set_promo(ROOK); update;
@@ -175,14 +175,14 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		uint ep = st->epSquare;
 		if (ep) // en-passant
 		{
-			if (attack_map<PAWN>(from) & setbit[ep])
+			if (attack_map<PAWN>(from) & setbit(ep))
 			{
 				// final check to avoid same color capture
-				Bit EPattack =  setbit[backward_sq(turn, ep)];
+				Bit EPattack =  setbit(backward_sq(turn, ep));
 				if (Pawnmap[opp] & EPattack & Target)  // we'll immediately check legality
 				{
 					// Occupied ^ (From | ToEP | Capt)
-					Bit newOccup = Occupied ^ ( setbit[from] | setbit[ep] | EPattack );
+					Bit newOccup = Occupied ^ ( setbit(from) | setbit(ep) | EPattack );
 					// only slider "pins" are possible
 					if ( !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
 						&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp])) )
@@ -323,14 +323,14 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 		uint kSq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit[from] | setbit[to] | setbit[backward_sq(turn, to)] );
+		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | setbit(backward_sq(turn, to)) );
 		// only slider "pins" are possible
 		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
 			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp]));
 	}
 	// A non-king move is legal iff :
 	return !pinned ||		// it isn't pinned at all
-		!(pinned & setbit[from]) ||    // pinned but doesn't move
+		!(pinned & setbit(from)) ||    // pinned but doesn't move
 		( is_aligned(from, to, king_sq(turn)) );  // the kSq, from and to squares are aligned: move along the pin direction.
 }
 
@@ -410,8 +410,8 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 	uint from = mv.get_from();
 	uint to = mv.get_to();
-	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
-	Bit FromToMap = setbit[from] | ToMap;
+	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
+	Bit FromToMap = setbit(from) | ToMap;
 	PieceType piece = boardPiece[from];
 	PieceType capt = mv.is_ep() ? PAWN : boardPiece[to];
 	Color opp = ~turn;
@@ -458,7 +458,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		{
 			captSq = backward_sq(turn, st->st_prev->epSquare);
 			boardPiece[captSq] = NON; boardColor[captSq] = NON_COLOR;
-			ToMap = setbit[captSq];
+			ToMap = setbit(captSq);
 		}
 			else captSq = to;
 
@@ -474,7 +474,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		uint lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
 		plistIndex[lastSq] = plistIndex[captSq];
 		pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
-		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_INVALID;
+		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_NONE;
 
 		// update hash keys and incremental scores
 		key ^= Zobrist::psq[opp][capt][captSq];
@@ -518,7 +518,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			uint lastSq = pieceList[turn][PAWN][-- pieceCount[turn][PAWN]];
 			plistIndex[lastSq] = plistIndex[to];
 			pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
-			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_INVALID;
+			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_NONE;
 			plistIndex[to] = pieceCount[turn][promo];
 			pieceList[turn][promo][plistIndex[to]] = to;
 
@@ -599,8 +599,8 @@ void Position::unmake_move(Move& mv)
 {
 	uint from = mv.get_from();
 	uint to = mv.get_to();
-	Bit ToMap = setbit[to];  // to update the captured piece's bitboard
-	Bit FromToMap = setbit[from] | ToMap;
+	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
+	Bit FromToMap = setbit(from) | ToMap;
 	PieceType piece = mv.is_promo() ? PAWN : boardPiece[to];
 	PieceType capt = st->capt;
 	Color opp = turn;
@@ -627,7 +627,7 @@ void Position::unmake_move(Move& mv)
 		uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
 		plistIndex[lastSq] = plistIndex[to];
 		pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
-		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_INVALID;
+		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_NONE;
 		plistIndex[to] = pieceCount[turn][PAWN]++;
 		pieceList[turn][PAWN][plistIndex[to]] = to;
 	}
@@ -670,7 +670,7 @@ void Position::unmake_move(Move& mv)
 		{
 			// will restore the captured pawn later, with all other capturing cases
 			to = backward_sq(turn, st->st_prev->epSquare);
-			ToMap = setbit[to];  // the captured pawn location
+			ToMap = setbit(to);  // the captured pawn location
 		}
 
 		Pieces[capt][opp] ^= ToMap;

@@ -41,7 +41,6 @@ namespace Board
 	extern Bit ROOK_OOO_MASK[COLOR_N];
 
 	// Other tables
-	extern uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];  // return the one square directly ahead/behind
 	extern Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
 	extern Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
 	extern int squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
@@ -102,12 +101,12 @@ namespace Board
 	inline Bit bishop_ray(uint sq) { return bishopRayMask[sq]; }
 	inline Bit queen_ray(uint sq) { return queenRayMask[sq]; }
 
-	inline uint forward_sq(Color c, uint sq) { return forwardSqTbl[c][sq];  }
-	inline uint backward_sq(Color c, uint sq) { return backwardSqTbl[c][sq];  }
+	inline uint forward_sq(Color c, uint sq) { return sq + (c == W ? 8: -8);  }
+	inline uint backward_sq(Color c, uint sq) { return sq + (c == W ? -8 : 8);  }
 	inline Bit between(uint sq1, uint sq2) { return betweenMask[sq1][sq2]; }
 	inline bool is_aligned(uint sq1, uint sq2, uint sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
-				& ( setbit[sq1] | setbit[sq2] | setbit[sq3] )   ) != 0;  }
+				& ( setbit(sq1) | setbit(sq2) | setbit(sq3) )   ) != 0;  }
 	inline int square_distance(uint sq1, uint sq2) { return squareDistanceTbl[sq1][sq2]; }
 	inline Bit file_mask(int file) { return fileMask[file]; }
 	inline Bit rank_mask(int rank) { return rankMask[rank]; }

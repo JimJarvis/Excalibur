@@ -16,7 +16,6 @@ Bit CASTLE_MASK[COLOR_N][4];
 Bit ROOK_OO_MASK[COLOR_N];
 Bit ROOK_OOO_MASK[COLOR_N];
 
-uint forwardSqTbl[COLOR_N][SQ_N], backwardSqTbl[COLOR_N][SQ_N];
 Bit forwardMask[COLOR_N][SQ_N];
 Bit betweenMask[SQ_N][SQ_N];
 int squareDistanceTbl[SQ_N][SQ_N];
@@ -30,13 +29,13 @@ void init_castle_mask()
 	for (Color c : COLORS)
 	{
 		int delta = c==W ? 0 : 56;
-		CASTLE_MASK[c][CASTLE_FG] = setbit[5+delta] | setbit[6+delta];
-		CASTLE_MASK[c][CASTLE_EG] = setbit[4+delta] | setbit[5+delta] | setbit[6+delta];
-		CASTLE_MASK[c][CASTLE_BD] = setbit[1+delta] | setbit[2+delta] | setbit[3+delta];
-		CASTLE_MASK[c][CASTLE_CE] = setbit[2+delta] | setbit[3+delta] | setbit[4+delta];
+		CASTLE_MASK[c][CASTLE_FG] = setbit(5+delta) | setbit(6+delta);
+		CASTLE_MASK[c][CASTLE_EG] = setbit(4+delta) | setbit(5+delta) | setbit(6+delta);
+		CASTLE_MASK[c][CASTLE_BD] = setbit(1+delta) | setbit(2+delta) | setbit(3+delta);
+		CASTLE_MASK[c][CASTLE_CE] = setbit(2+delta) | setbit(3+delta) | setbit(4+delta);
 
-		ROOK_OO_MASK[c] =  setbit[7+delta] | setbit[5+delta];
-		ROOK_OOO_MASK[c] =  setbit[0+delta] | setbit[3+delta];
+		ROOK_OO_MASK[c] =  setbit(7+delta) | setbit(5+delta);
+		ROOK_OOO_MASK[c] =  setbit(0+delta) | setbit(3+delta);
 	}
 }
 
@@ -72,7 +71,7 @@ void init_file_rank_mask()
 /* Rook magic bitboard */
 void init_rook_magics(int sq, int x, int y)
 {
-	rookMagics[sq].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit[sq];  // ( rank | file) unset center bit
+	rookMagics[sq].mask = ( (126ULL << (y << 3)) | (0x0001010101010100ULL << x) ) & unsetbit(sq);  // ( rank | file) unset center bit
 	if (sq == 0) rookMagics[0].offset = 0;	else if (sq == 63) return;
 	int west = x, east = 7-x, south = y, north = 7-y;
 	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
@@ -104,15 +103,15 @@ void init_rook_key(int sq, int x, int y)
 		for (int i = 0; i < n; i++)
 		{
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit[lsbarray[i]];
+				ans |= setbit(lsbarray[i]);
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (N, W, E, S) from the nearest blocker in all 4 directions
 		north = njug;  south = sjug; east = ejug; west = wjug;  // if we are on the border, change 0 to 1
-		if (!wjug) { x0 = x; 	while ((x0--)!=0 && (ans & setbit[sq-west])==0 )  west++; }
-		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit[sq+east])==0 )   east++; }
-		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit[sq+(north<<3)])==0)  north++;}
-		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit[sq-(south<<3)])==0 )  south++;}
+		if (!wjug) { x0 = x; 	while ((x0--)!=0 && (ans & setbit(sq-west))==0 )  west++; }
+		if (!ejug)  { x0 = x;		while ((x0++)!=7 && (ans & setbit(sq+east))==0 )   east++; }
+		if (!njug)  { y0 = y;		while ((y0++)!=7 && (ans & setbit(sq+(north<<3)))==0)  north++;}
+		if (!sjug)  { y0 = y;		while ((y0--)!=0 && (ans & setbit(sq-(south<<3)))==0 )  south++;}
 
 		// second, we map the number to a 1-byte key
 		// General idea: code = (E-1) + (N-1)*Em + (W-1)*Nm*Em + (S-1)*Wm*Nm*Em
@@ -142,10 +141,10 @@ void init_rook_mask(int sq, int x, int y)
 					// make the standard mask
 					mask = 0;
 					eii = ei; wii = wi; nii = ni; sii = si;
-					if (!ejug)  { while (eii)  mask |= setbit[sq + eii--]; } 
-					if (!wjug)  { while (wii)  mask |= setbit[sq - wii--]; } 
-					if (!njug)  { while (nii)  mask |= setbit[sq + (nii-- << 3)]; } // +8*nii
-					if (!sjug)  { while (sii)  mask |= setbit[sq - (sii-- << 3)]; } // -8*sii
+					if (!ejug)  { while (eii)  mask |= setbit(sq + eii--); } 
+					if (!wjug)  { while (wii)  mask |= setbit(sq - wii--); } 
+					if (!njug)  { while (nii)  mask |= setbit(sq + (nii-- << 3)); } // +8*nii
+					if (!sjug)  { while (sii)  mask |= setbit(sq - (sii-- << 3)); } // -8*sii
 					key = (ei - 1) + (ni - 1) *em + (wi - 1) *nm*em + (si - 1) *wm*nm*em; // hash coding
 					rookMask[ offset + key ] = mask;
 				}
@@ -162,11 +161,11 @@ void init_bishop_magics(int sq, int x, int y)
 	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
 	pne = pnw = pse = psw = sq; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
 	Bit mask = 0;
-	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit[pne]; pne += 9;  ne++; }   // ne isn't at the east border
-	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit[pnw]; pnw += 7; nw++; }   // nw isn't at the west border
-	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit[pse]; pse -= 7; se++; }   // se isn't at the east border
-	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit[psw]; psw -= 9; sw++; }   // sw isn't at the west border
-	mask &= unsetbit[sq];  // get rid of the central bit
+	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
+	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += 7; nw++; }   // nw isn't at the west border
+	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse -= 7; se++; }   // se isn't at the east border
+	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw -= 9; sw++; }   // sw isn't at the west border
+	mask &= unsetbit(sq);  // get rid of the central bit
 	bishopMagics[sq].mask = mask;
 
 	if (sq == 0)  bishopMagics[0].offset = 0;	else if (sq == 63)   return;
@@ -198,15 +197,15 @@ void init_bishop_key(int sq, int x, int y)
 		for (int i = 0; i < n; i++)
 		{
 			if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-				ans |= setbit[lsbarray[i]];
+				ans |= setbit(lsbarray[i]);
 		}
 		// now we need to calculate the key out of the occupancy state
 		// first, we get the 4 distances (NE, NW, SE, SW) from the nearest blocker in all 4 directions
 		ne = nejug;  se = sejug; nw = nwjug; sw = swjug;  // if we are on the border, change 0 to 1
-		if (!nejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0++)!=7 && (ans & setbit[sq + ne*9])==0 )  ne++; }
-		if (!nwjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0++)!=7 && (ans & setbit[sq + nw*7])==0 )  nw++; }
-		if (!sejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0--)!=0 && (ans & setbit[sq - se*7])==0 )  se++; }
-		if (!swjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0--)!=0 && (ans & setbit[sq - sw*9])==0 )  sw++; }
+		if (!nejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0++)!=7 && (ans & setbit(sq + ne*9))==0 )  ne++; }
+		if (!nwjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0++)!=7 && (ans & setbit(sq + nw*7))==0 )  nw++; }
+		if (!sejug) { x0 = x; y0 = y;	while ((x0++)!=7 && (y0--)!=0 && (ans & setbit(sq - se*7))==0 )  se++; }
+		if (!swjug) { x0 = x; y0 = y;	while ((x0--)!=0 && (y0--)!=0 && (ans & setbit(sq - sw*9))==0 )  sw++; }
 
 		// second, we map the number to a 1-byte key
 		// General idea: code = (NE-1) + (NW-1)*NEm + (SW-1)*NWm*NEm + (SE-1)*SWm*NWm*NEm
@@ -235,10 +234,10 @@ void init_bishop_mask(int sq, int x, int y)
 					// make the standard mask
 					mask = 0;
 					nei = ne; nwi = nw; swi = sw; sei = se;
-					if (!nejug) { while(nei) mask |= setbit[sq + (nei--)*9]; }
-					if (!nwjug) { while(nwi) mask |= setbit[sq + (nwi--)*7]; }
-					if (!sejug) { while(sei) mask |= setbit[sq - (sei--)*7]; }
-					if (!swjug) { while(swi) mask |= setbit[sq - (swi--)*9]; }
+					if (!nejug) { while(nei) mask |= setbit(sq + (nei--)*9); }
+					if (!nwjug) { while(nwi) mask |= setbit(sq + (nwi--)*7); }
+					if (!sejug) { while(sei) mask |= setbit(sq - (sei--)*7); }
+					if (!swjug) { while(swi) mask |= setbit(sq - (swi--)*9); }
 					key = (ne - 1) + (nw - 1)*nem + (sw - 1)*nwm*nem + (se - 1)*swm*nwm*nem;
 					bishopMask[ offset + key ] = mask;
 				}
@@ -270,7 +269,7 @@ void init_knight_mask(int sq, int x, int y)
 				desty = y + j*(3-k);
 				if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 					continue;
-				ans |= setbit[fr2sq(destx, desty)];
+				ans |= setbit(fr2sq(destx, desty));
 			}
 		}
 	}
@@ -292,7 +291,7 @@ void init_king_mask(int sq, int x, int y)
 			desty = y + j;
 			if (destx < 0 || destx > 7 || desty < 0 || desty > 7)
 				continue;
-			ans |= setbit[fr2sq(destx, desty)];
+			ans |= setbit(fr2sq(destx, desty));
 		}
 	}
 	kingMask[sq] = ans;
@@ -309,9 +308,9 @@ void init_pawn_atk_mask( int sq, int x, int y, Color c )
 	Bit ans = 0;
 	int offset =  c==W ? 1 : -1;
 	if (x - 1 >= 0)
-		ans |= setbit[fr2sq(x-1, y+offset)]; // white color = 0, black = 1
+		ans |= setbit(fr2sq(x-1, y+offset)); // white color = 0, black = 1
 	if (x + 1 < 8)
-		ans |= setbit[fr2sq(x+1, y+offset)]; // white color = 0, black = 1
+		ans |= setbit(fr2sq(x+1, y+offset)); // white color = 0, black = 1
 	pawnAttackMask[c][sq] = ans;
 }
 void init_pawn_push_mask( int sq, int x, int y, Color c )
@@ -319,12 +318,12 @@ void init_pawn_push_mask( int sq, int x, int y, Color c )
 	if (y == 0 || y == 7) // pawns can never be on these squares
 		pawnPushMask[c][sq]= 0;
 	else
-		pawnPushMask[c][sq] = setbit[sq + (c==W ? 8 : -8)];
+		pawnPushMask[c][sq] = setbit(sq + (c==W ? 8 : -8));
 }
 void init_pawn_push2_mask( int sq, int x, int y, Color c )
 {
 	if (y == (c==W ? 1 : 6)) // can only happen on the 2nd or 7th rank
-		pawnPush2Mask[c][sq] = setbit[sq + (c==W ? 16 : -16)];
+		pawnPush2Mask[c][sq] = setbit(sq + (c==W ? 16 : -16));
 	else
 		pawnPush2Mask[c][sq] = 0;
 }
@@ -333,21 +332,6 @@ void init_pawn_push2_mask( int sq, int x, int y, Color c )
 void init_passed_pawn_mask(int sq, int file, int rank, Color c)
 {
 	passedPawnMask[c][sq] = inFrontMask[c][rank] & (fileMask[file] | fileAdjacentMask[file]);
-}
-
-void init_forward_backward_sq_tbl( int sq, int x, int y, Color c )
-{
-	int offset = c==W ? 8: -8;
-
-	if (y == (c==W ? 7: 0))
-		forwardSqTbl[c][sq] = SQ_INVALID;
-	else 
-		forwardSqTbl[c][sq] = sq + offset;
-
-	if (y == (c==W ? 0: 7))
-		backwardSqTbl[c][sq] = SQ_INVALID;
-	else
-		backwardSqTbl[c][sq] = sq - offset;
 }
 
 // iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
@@ -372,7 +356,7 @@ void init_between_mask(int sq1, int x1, int y1)
 		
 		if (delta != 0)
 			for (sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
-				mask |= setbit[sqi];
+				mask |= setbit(sqi);
 
 		betweenMask[sq1][sq2] = mask;
 	}
@@ -417,7 +401,6 @@ void init_tables()
 			init_pawn_push_mask(sq, x, y, c);
 			init_pawn_push2_mask(sq, x, y, c);
 			init_passed_pawn_mask(sq, x, y, c);
-			init_forward_backward_sq_tbl(sq, x, y, c);
 			init_forward_masks(sq, x, y, c);
 		}
 
@@ -461,7 +444,7 @@ void rook_magicU64_generator()
 			for (i = 0; i < n; i++)
 			{
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit[lsbarray[i]];
+					ans |= setbit(lsbarray[i]);
 			}
 			allstates[perm] = ans;
 		}
@@ -508,7 +491,7 @@ void bishop_magicU64_generator()
 			for (i = 0; i < n; i++)
 			{
 				if ((perm & (1 << i)) != 0) // if that bit in the perm_key is set
-					ans |= setbit[lsbarray[i]];
+					ans |= setbit(lsbarray[i]);
 			}
 			allstates[perm] = ans;
 		}

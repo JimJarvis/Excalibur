@@ -88,7 +88,7 @@ void Position::parseFEN(string fenstr)
 			Pieces[pt][c] = 0;
 			pieceCount[c][pt] = 0;
 			for (int idx = 0; idx < 16; idx++)
-				pieceList[c][pt][idx] = SQ_INVALID;
+				pieceList[c][pt][idx] = SQ_NONE;
 		}
 	}
 	for (int sq = 0; sq < SQ_N; sq++)
@@ -114,7 +114,7 @@ void Position::parseFEN(string fenstr)
 			file += ch - '0';
 		else
 		{
-			mask = setbit[fr2sq(file, rank)];  // r*8 + f
+			mask = setbit(fr2sq(file, rank));  // r*8 + f
 			Color c = isupper(ch) ? W: B; 
 			ch = tolower(ch);
 			PieceType pt;
