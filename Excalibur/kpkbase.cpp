@@ -1,4 +1,4 @@
-#include "board.h"
+#include "endgame.h"
 
 // The possible pawns squares are 24, the first 4 files and ranks from 2 to 7
 const uint INDEX_MAX = 2*24*64*64; // side * psq * wksq * bksq = 196608

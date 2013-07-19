@@ -110,10 +110,8 @@ inline bool opp_color_sq(int sq1, int sq2) {
 inline Color operator~(Color c) { return Color (c ^ 1); }
 
 
-// Evaluation Scores
-/* Score keeps a midgame and endgame value
-* LSB 16 bits are used to store the endgame value, while upper 16 bits for midgame
-*/
+/* Evaluation scores */
+// first LSB 16 bits are used to store endgame value, while upper bits are used for midgame value.
 inline Score make_score(int mg, int eg) { return Score((mg << 16) + eg); }
 /* Extracting the signed lower and upper 16 bits it not so trivial because
 * according to the standard a simple cast to short is implementation defined

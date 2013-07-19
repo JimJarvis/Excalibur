@@ -275,7 +275,7 @@ U64 Position::calc_material_key() const
 
 	for (Color c : COLORS)
 		for (PieceType pt : PIECE_TYPES)
-			for (uint count = 0; count < pieceCount[c][pt]; count++)
+			for (int count = 0; count < pieceCount[c][pt]; count++)
 				key ^= Zobrist::psq[c][pt][count];
 
 	return key;
@@ -353,7 +353,7 @@ bool operator==(const Position& pos1, const Position& pos2)
 				{ cout << "false pieceCount for Color " << c << " " << PIECE_FULL_NAME[pt] << ": " << pos1.pieceCount[c][pt] << " != " << pos2.pieceCount[c][pt] << endl;	return false;}
 			// test pieceList invariant
 			std::unordered_set<int> plset1, plset2;
-			for (uint pc = 0; pc < pos1.pieceCount[c][pt]; pc++)
+			for (int pc = 0; pc < pos1.pieceCount[c][pt]; pc++)
 			{
 				plset1.insert(pos1.pieceList[c][pt][pc]);
 				plset2.insert(pos2.pieceList[c][pt][pc]);

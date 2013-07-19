@@ -2,25 +2,25 @@
 
 namespace Board
 {
-// Because we extern the tables in board.h, we must explicitly declare them again:
-Bit knightMask[SQ_N], kingMask[SQ_N];
-Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
-Bit passedPawnMask[COLOR_N][SQ_N];
-byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
-byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
-Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
-Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
+	// Because we extern the tables in board.h, we must explicitly declare them again:
+	Bit knightMask[SQ_N], kingMask[SQ_N];
+	Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
+	Bit passedPawnMask[COLOR_N][SQ_N];
+	byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
+	byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
+	Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
+	Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 
-// Castling masks
-Bit CASTLE_MASK[COLOR_N][4];
-Bit ROOK_OO_MASK[COLOR_N];
-Bit ROOK_OOO_MASK[COLOR_N];
+	// Castling masks
+	Bit CASTLE_MASK[COLOR_N][4];
+	Bit ROOK_OO_MASK[COLOR_N];
+	Bit ROOK_OOO_MASK[COLOR_N];
 
-Bit forwardMask[COLOR_N][SQ_N];
-Bit betweenMask[SQ_N][SQ_N];
-int squareDistanceTbl[SQ_N][SQ_N];
-Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
-Bit inFrontMask[COLOR_N][RANK_N];
+	Bit forwardMask[COLOR_N][SQ_N];
+	Bit betweenMask[SQ_N][SQ_N];
+	int squareDistanceTbl[SQ_N][SQ_N];
+	Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
+	Bit inFrontMask[COLOR_N][RANK_N];
 
 
 // initialize CASTLE_MASK

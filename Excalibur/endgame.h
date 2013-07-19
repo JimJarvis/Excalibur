@@ -3,6 +3,14 @@
 
 #include "position.h"
 
+/* Endgame KP vs K table base -- kpkbase.cpp */
+namespace KPKbase
+{
+	// initialized with Endgame::init()
+	void init();
+	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
+}
+
 // EndgameType lists all supported endgames
 // There're 2 types of EndEvaluator: evalFunc() and scalingFunc()
 enum EndgameType {
@@ -62,11 +70,6 @@ namespace Endgame
 	extern Map scalingFuncMap; 
 
 	void init();
-	// add entries to the maps
-	template<EndgameType E>
-	void add_eval_func(const string& code);
-	template<EndgameType E>
-	void add_scaling_func(const string& code);
 
 	// map[key].get() gets the original pointer from the unique_ptr<>
 	inline EndEvaluatorBase* probe_eval_func(U64 key, EndEvaluatorBase** eeb)

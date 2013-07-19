@@ -18,11 +18,14 @@ namespace Material
 	struct Entry 
 	{
 		Score material_value() const { return make_score(value, value); }
+		// does pos have a tabulated endgame evalFunc()? 
+		bool has_endgame_evalfunc() const { return evalFunc != nullptr; }
+		Value evaluate(const Position& p) const { return (*evalFunc)(p); }
 		ScaleFactor scale_factor(const Position& pos, Color c) const;
 
 		U64 key;
 		short value;
-		byte factor[COLOR_N];
+		byte scalor[COLOR_N]; // used when no scalingFunc() is available
 		int spaceWeight;
 		Phase gamePhase;
 		EndEvaluatorBase* evalFunc;
@@ -41,10 +44,10 @@ namespace Material
 	/// the position. For instance, in KBP vs K endgames, a scaling function
 	/// which checks for draws with rook pawns and wrong-colored bishops.
 
-	inline ScaleFactor Entry::scale_factor(const Position& pos, Color c) const {
-
+	inline ScaleFactor Entry::scale_factor(const Position& pos, Color c) const
+	{
 		return !scalingFunc[c] || (*scalingFunc[c])(pos) == SCALE_FACTOR_NONE
-			? ScaleFactor(factor[c]) : (*scalingFunc[c])(pos);
+			? scalor[c] : (*scalingFunc[c])(pos);
 	}
 }
 

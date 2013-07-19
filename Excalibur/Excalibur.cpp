@@ -7,7 +7,6 @@ int main(int argc, char **argv)
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init();
-	KPKbase::init();
 	Endgame::init();
 
 	if (argc > 1)

@@ -4,12 +4,7 @@
 #include "utils.h"
 
 extern Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
-static const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] = {
-	// MG (middle game): 0, pawn, knight, bishop, rook ,queen, king
-	{ 0, 198, 817, 836, 1270, 2521, 0 },
-	// EG (end game)
-	{ 0, 258, 846, 857, 1278, 2558, 0 }
-};
+
 
 #define S(mg, eg) make_score(mg, eg)
 

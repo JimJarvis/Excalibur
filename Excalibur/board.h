@@ -125,12 +125,4 @@ namespace Board
 
 }  // namespace Board
 
-
-/* Endgame KP vs K table base -- kpkbase.cpp */
-namespace KPKbase
-{
-	void init();
-	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
-}
-
 #endif // __board_h__

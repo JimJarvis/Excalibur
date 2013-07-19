@@ -28,6 +28,10 @@ typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef int Value;
 typedef int ScaleFactor;
+
+/// Score enum keeps a midgame and an endgame value in a single integer, first
+/// LSB 16 bits are used to store endgame value, while upper bits are used for
+/// midgame value.
 enum Score : int {};
 
 #define SQ_N 64
@@ -77,7 +81,8 @@ enum GameStatus : byte
 };
 
 #define PHASE_N 2
-enum Phase {
+enum Phase
+{
 	PHASE_ENDGAME = 0,
 	PHASE_MIDGAME = 128,
 	MG = 0, EG = 1
@@ -108,6 +113,23 @@ const Value VALUE_ZERO  = 0,
 	VALUE_MATE      = 30000,
 	VALUE_INFINITE  = 30001,
 	VALUE_NONE      = 30002;
+
+const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] = {
+	// MG (middle game): 0, pawn, knight, bishop, rook ,queen, king
+	{ 0, 198, 817, 836, 1270, 2521, 0 },
+	// EG (end game)
+	{ 0, 258, 846, 857, 1278, 2558, 0 }
+};
+const Value MG_PAWN = PIECE_VALUE[MG][PAWN];
+const Value MG_KNIGHT = PIECE_VALUE[MG][KNIGHT];
+const Value MG_BISHOP = PIECE_VALUE[MG][BISHOP];
+const Value MG_ROOK = PIECE_VALUE[MG][ROOK];
+const Value MG_QUEEN = PIECE_VALUE[MG][QUEEN];
+const Value EG_PAWN = PIECE_VALUE[EG][PAWN];
+const Value EG_KNIGHT = PIECE_VALUE[EG][KNIGHT];
+const Value EG_BISHOP = PIECE_VALUE[EG][BISHOP];
+const Value EG_ROOK = PIECE_VALUE[EG][ROOK];
+const Value EG_QUEEN = PIECE_VALUE[EG][QUEEN];
 
 #include <vector>
 // Hashtable implementation. For pawn and material table
