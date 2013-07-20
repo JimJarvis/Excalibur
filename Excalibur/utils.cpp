@@ -18,10 +18,10 @@ int MSB_TABLE[256];
  - Return doubles with a full 53 bit mantissa
  - Thread safe
  */
-namespace RKiss {
-
+namespace RKiss 
+{
 	// Keep variables always together
-	struct RkissHelper { U64 a, b, c, d; } s;
+	struct RKissHelper { U64 a, b, c, d; } s;
 
 	inline U64 rotate(U64 x, U64 k) {
 		return (x << k) | (x >> (64 - k));

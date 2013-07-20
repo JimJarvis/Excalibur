@@ -145,7 +145,7 @@ Entry* probe(const Position& pos)
 	if (is_endgame<KXK>(B, pos))
 	{ ent->evalFunc = &EvalFuncKXK[B]; return ent; }
 
-	if (!(pos.Pawnmap[W] | pos.Pawnmap[B]) && !(pos.Rookmap[W] | pos.Rookmap[B]) && !(pos.Queenmap[W] | pos.Queenmap[B]))
+	if (!pos.piece_union(PAWN) && !pos.piece_union(ROOK) && !pos.piece_union(QUEEN))
 	{
 		// Minor piece endgame with at least one minor piece per side and
 		// no pawns. Note that the case KmmK is already handled by KXK.

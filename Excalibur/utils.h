@@ -17,10 +17,7 @@ namespace RKiss
 	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
 }
 
-// Originally defined as look-up tables
-//extern Bit setbit[SQ_N], unsetbit[SQ_N];
 #define setbit(n) (1ULL << (n))
-#define unsetbit(n) ~(1ULL << (n))
 
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
@@ -103,7 +100,7 @@ inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2
 inline Square flip_vert(Square sq) { return sq ^ 56; }  // vertical flip a square
 inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
 
-inline bool opp_color_sq(int sq1, int sq2) {
+inline bool opp_color_sq(Square sq1, Square sq2) {
 	int s = sq1 ^ sq2;
 	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
 inline Color operator~(Color c) { return Color (c ^ 1); }

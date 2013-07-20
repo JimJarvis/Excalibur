@@ -1,4 +1,5 @@
 #include "endgame.h"
+using namespace Board;
 
 // The possible pawns squares are 24, the first 4 files and ranks from 2 to 7
 const uint INDEX_MAX = 2*24*64*64; // side * psq * wksq * bksq = 196608
@@ -41,8 +42,8 @@ private:
 };
 
 
-#define PawnAtk Board::pawn_attack(W, psq)
-#define KingAtk(color) Board::king_attack(color##ksq)
+#define PawnAtk pawn_attack(W, psq)
+#define KingAtk(color) king_attack(color##ksq)
 int KPKPosition::classify_leaf(uint idx) // from white's perspective
 {
 
@@ -62,7 +63,7 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 		// Immediate win if pawn can be promoted without getting captured
 		if (   sq2rank(psq) == 6
 			&& wksq != psq + 8
-			&& (  Board::square_distance(bksq, psq + 8) > 1
+			&& (  square_distance(bksq, psq + 8) > 1
 			|| (KingAtk(w) & setbit(psq + 8)) )  )
 			return res = WIN;
 	}
@@ -87,7 +88,7 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 	// classified UNKNOWN.
 
 	int r = INVALID;
-	Bit atk = Board::king_attack(us == W ? wksq : bksq);
+	Bit atk = king_attack(us == W ? wksq : bksq);
 
 	while (atk)
 		r |= (us == W ? db[index(~us, bksq, pop_lsb(atk), psq)]

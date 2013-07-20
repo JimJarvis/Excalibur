@@ -31,7 +31,7 @@ mv.clear()
 /* Generate pseudo-legal moves */
 int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 {
-	Color op = ~turn;
+	Color opp = ~turn;
 	Bit Freesq = ~Occupied;
 	Bit TempMove;
 	const Square *tempPiece;
@@ -47,7 +47,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= attack_map<PAWN>(from) & Oneside[op];  // pawn capture
+		TempMove |= attack_map<PAWN>(from) & piece_union(opp);  // pawn capture
 		TempMove &= Target;
 		while (TempMove)
 		{
@@ -69,7 +69,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 			if (attack_map<PAWN>(from) & setbit(st->epSquare))
 			{
 				// final check to avoid same color capture
-				if (Pawnmap[op] & setbit(backward_sq(turn, st->epSquare)) & Target)
+				if (Pawnmap[opp] & setbit(backward_sq(turn, st->epSquare)) & Target)
 				{
 					mv.set_ep();
 					mv.set_to(st->epSquare);
@@ -102,13 +102,13 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		if (can_castle<CASTLE_OO>(st->castleRights[turn]))
 		{
 			if (!(castle_mask<CASTLE_FG>(turn) & Occupied))  // no pieces between the king and rook
-				if (!is_bit_attacked(castle_mask<CASTLE_EG>(turn), op))
+				if (!is_bit_attacked(castle_mask<CASTLE_EG>(turn), opp))
 					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
 		}
 		if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 		{
 			if (!(castle_mask<CASTLE_BD>(turn) & Occupied))  // no pieces between the king and rook
-				if (!is_bit_attacked(castle_mask<CASTLE_CE>(turn), op))
+				if (!is_bit_attacked(castle_mask<CASTLE_CE>(turn), opp))
 					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
 		}
 	}
@@ -154,7 +154,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= attack_map<PAWN>(from) & Oneside[opp];  // pawn capture
+		TempMove |= attack_map<PAWN>(from) & piece_union(opp);  // pawn capture
 		TempMove &= Target;
 		while (TempMove)
 		{
@@ -271,7 +271,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	} while (Ck);
 
 	// generate king flee
-	Ck = Board::king_attack(kSq) & ~Oneside[turn] & ~SliderAttack;
+	Ck = Board::king_attack(kSq) & ~piece_union(turn) & ~SliderAttack;
 	Move mv;
 	mv.set_from(kSq);
 	while (Ck)  // routine add moves
@@ -295,7 +295,7 @@ Bit Position::pinned_map() const
 {
 	Bit middle, ans = 0;
 	Color opp = ~turn;
-	Bit pinners = Oneside[opp];
+	Bit pinners = piece_union(opp);
 	Square kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
 	pinners &= ((Rookmap[opp] | Queenmap[opp]) & rook_ray(kSq))
@@ -304,7 +304,7 @@ Bit Position::pinned_map() const
 	{
 		middle = between(kSq, pop_lsb(pinners)) & Occupied;
 		// one and only one in between, which must be a friendly piece
-		if (middle && !more_than_one_bit(middle) && (middle & Oneside[turn]))
+		if (middle && !more_than_one_bit(middle) && (middle & piece_union(turn)))
 			ans |= middle;
 	}
 	return ans;
@@ -418,7 +418,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	Pieces[piece][turn] ^= FromToMap;
-	Oneside[turn] ^= FromToMap;
+	Colormap[turn] ^= FromToMap;
 	boardPiece[from] = NON;  boardColor[from] = NON_COLOR;
 	boardPiece[to] = piece;  boardColor[to] = turn;
 
@@ -463,7 +463,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			else captSq = to;
 
 		Pieces[capt][opp] ^= ToMap;
-		Oneside[opp] ^= ToMap;
+		Colormap[opp] ^= ToMap;
 
 		// Update piece list, move the last piece at index[capsq] position and
 		// shrink the list.
@@ -543,14 +543,14 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			if (sq2file(to) == 6)  // King side castle
 			{
 				Rookmap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-				Oneside[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
+				Colormap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
 				rfrom = rook_castle_sq<CASTLE_OO>(turn, 0);
 				rto = rook_castle_sq<CASTLE_OO>(turn, 1);
 			}
 			else
 			{
 				Rookmap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-				Oneside[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
+				Colormap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
 				rfrom = rook_castle_sq<CASTLE_OOO>(turn, 0);
 				rto = rook_castle_sq<CASTLE_OOO>(turn, 1);
 			}
@@ -586,7 +586,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 	st->capt = capt;
 	st->key = key;
-	Occupied = Oneside[W] | Oneside[B];
+	Occupied = Colormap[W] | Colormap[B];
 
 	// now we look from our opponents' perspective and update checker info
 	st->CheckerMap = attackers_to(king_sq(opp), turn);
@@ -607,7 +607,7 @@ void Position::unmake_move(Move& mv)
 	turn = ~turn;
 
 	Pieces[piece][turn] ^= FromToMap;
-	Oneside[turn] ^= FromToMap;
+	Colormap[turn] ^= FromToMap;
 	boardPiece[from] = piece; boardColor[from] = turn; // restore
 	boardPiece[to] = NON; boardColor[to] = NON_COLOR;
 
@@ -638,14 +638,14 @@ void Position::unmake_move(Move& mv)
 		if (sq2file(to) == 6)  // king side castling
 		{
 			Rookmap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-			Oneside[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
+			Colormap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
 			rfrom = rook_castle_sq<CASTLE_OO>(turn, 0);
 			rto = rook_castle_sq<CASTLE_OO>(turn, 1);
 		}
 		else
 		{
 			Rookmap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-			Oneside[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
+			Colormap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
 			rfrom = rook_castle_sq<CASTLE_OOO>(turn, 0);
 			rto = rook_castle_sq<CASTLE_OOO>(turn, 1);
 		}
@@ -674,7 +674,7 @@ void Position::unmake_move(Move& mv)
 		}
 
 		Pieces[capt][opp] ^= ToMap;
-		Oneside[opp] ^= ToMap;
+		Colormap[opp] ^= ToMap;
 		boardPiece[to] = capt; boardColor[to] = opp;  // restore the captured piece
 
 		// Update piece list, add a new captured piece in capt square
@@ -682,7 +682,7 @@ void Position::unmake_move(Move& mv)
 		pieceList[opp][capt][plistIndex[to]] = to;
 	}
 
-	Occupied = Oneside[W] | Oneside[B];
+	Occupied = Colormap[W] | Colormap[B];
 
 	st = st->st_prev; // recover the state from previous position
 }

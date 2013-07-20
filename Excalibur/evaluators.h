@@ -74,28 +74,26 @@ namespace Pawnstruct
 		Score pawns_score() const { return score; }
 		Bit pawn_attacks(Color c) const { return pawnAttacks[c]; }
 		Bit passed_pawns(Color c) const { return passedPawns[c]; }
-		int pawns_on_same_color_squares(Color c, Square s) const { return pawnsOnSquares[c][!!(BLACK_SQUARES & s)]; }
+		int pawns_on_same_color_squares(Color c, Square s) const { return pawnsOnSquares[c][!!(B_SQUARES & s)]; }
 		int semiopen(Color c, int f) const { return semiopenFiles[c] & (1 << int(f)); }
 		int semiopen_on_side(Color c, int f, bool left) const 
 		{ return semiopenFiles[c] & (left ? ((1 << int(f)) - 1) : ~((1 << int(f+1)) - 1)); }
 
 		template<Color us>
 		Score king_safety(const Position& pos, Square ksq)  
-		{ return kingSquares[us] == ksq && castleRights[us] == pos.can_castle(us)
-				? kingSafety[us] : update_safety<us>(pos, ksq); }
+		{ return kingSquares[us] == ksq && castleR[us] == pos.can_castle(us)
+				? kingSafety[us] : update_safety(us, pos, ksq); }
 
-		template<Color us>
-		Score update_safety(const Position& pos, Square ksq);
+		Score update_safety(Color us, const Position& pos, Square ksq);
 
-		template<Color us>
-		Value shelter_storm(const Position& pos, Square ksq);
+		Value shelter_storm(Color us, const Position& pos, Square ksq);
 
 		U64 key;
 		Bit passedPawns[COLOR_N];
 		Bit pawnAttacks[COLOR_N];
 		Square kingSquares[COLOR_N];
 		int minKPdistance[COLOR_N];
-		int castleRights[COLOR_N];
+		int castleR[COLOR_N];
 		Score score;
 		int semiopenFiles[COLOR_N]; // 0xFF, 1 bit for each file
 		Score kingSafety[COLOR_N];

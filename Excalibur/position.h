@@ -50,7 +50,7 @@ public:
 	
 	// Bitmaps (first letter cap) for all 12 kinds of pieces, with color as the index.
 	Bit Pieces[PIECE_TYPE_N][COLOR_N];
-	Bit Oneside[COLOR_N];  // entire white/black army
+	Bit Colormap[COLOR_N];  // entire white/black army
 	Bit Occupied;  // everything
 
 	// Incrementally updated info, for fast access:
@@ -76,7 +76,7 @@ public:
 	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
 	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
 	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) const /* default: pseudo non-evasions */
-		{ return legal ? gen_legal_helper(index, ~Oneside[turn], true, pinned) : gen_helper(index, ~Oneside[turn], true); }
+		{ return legal ? gen_legal_helper(index, ~Colormap[turn], true, pinned) : gen_helper(index, ~Colormap[turn], true); }
 
 	int gen_legal(int index) const  { return st->CheckerMap ? 
 		gen_evasions(index, true, pinned_map()) : 	gen_non_evasions(index, true, pinned_map()); }  // generate only legal moves
@@ -96,7 +96,6 @@ public:
 	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), ~turn); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(~turn), turn); }
 	Bit attackers_to(Square sq, Color attacker) const;  // inlined
-	Bit checkermap() const { return st->CheckerMap; }
 	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
@@ -128,6 +127,12 @@ public:
 	U64 pawn_key() const { return st->pawnKey; }
 	Score psq_score() const { return st->psqScore; }
 	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
+
+	// More getter methods
+	Bit checker_map() const { return st->CheckerMap; }
+	byte castle_rights(Color c) const { return st->castleRights[c]; }
+	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
+	Bit piece_union(Color c) const { return Colormap[c]; }
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.

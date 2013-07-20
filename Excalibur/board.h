@@ -14,7 +14,7 @@ namespace Board
 	extern Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
 	// pawn_attack_span represents all squares that can be attacked by a pawn along its file
 	// = inFrontMask[c][rank] & fileAdjacentMask[file]
-	extern Bit PawnAttackSpanMask[COLOR_N][SQ_N];
+	extern Bit pawnAttackSpanMask[COLOR_N][SQ_N];
 	// passed pawn table = inFrontMask[c][sq] & (fileMask[file] | fileAdjacentMask[file])
 	extern Bit passedPawnMask[COLOR_N][SQ_N];
 
@@ -97,7 +97,7 @@ namespace Board
 	inline Bit pawn_attack(Color c, Square sq) { return pawnAttackMask[c][sq]; }
 	inline Bit pawn_push(Color c, Square sq) { return pawnPushMask[c][sq]; }
 	inline Bit pawn_push2(Color c, Square sq) { return pawnPush2Mask[c][sq]; }
-	inline Bit pawn_attack_span(Color c, Square sq) { return PawnAttackSpanMask[c][sq]; }
+	inline Bit pawn_attack_span(Color c, Square sq) { return pawnAttackSpanMask[c][sq]; }
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
 	inline Bit rook_ray(Square sq) { return rookRayMask[sq]; }
 	inline Bit bishop_ray(Square sq) { return bishopRayMask[sq]; }
@@ -112,6 +112,7 @@ namespace Board
 	inline Bit castle_mask(Color c) { return castleMask[c][cas_files]; }
 
 	/* Other board info */
+	// inline Bit setbit(Square sq) { return bitMask[sq]; }
 	inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
 	inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
 	inline Bit between(Square sq1, Square sq2) { return betweenMask[sq1][sq2]; }

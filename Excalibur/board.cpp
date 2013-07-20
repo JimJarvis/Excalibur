@@ -2,27 +2,35 @@
 
 namespace Board
 {
-	// Because we extern the tables in board.h, we must explicitly declare them again:
-	Bit knightMask[SQ_N], kingMask[SQ_N];
-	Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
-	Bit passedPawnMask[COLOR_N][SQ_N], pawnAttackSpanMask[COLOR_N][SQ_N];
-	byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
-	byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
-	Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
-	Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 
-	// Castling masks
-	Bit castleMask[COLOR_N][4];
-	Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
-	Bit ROOK_OO_MASK[COLOR_N];
-	Bit ROOK_OOO_MASK[COLOR_N];
+// Because we extern the tables in board.h, we must explicitly declare them again:
+Bit knightMask[SQ_N], kingMask[SQ_N];
+Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
+Bit passedPawnMask[COLOR_N][SQ_N], pawnAttackSpanMask[COLOR_N][SQ_N];
+byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
+byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
+Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
+Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 
-	Bit forwardMask[COLOR_N][SQ_N];
-	Bit betweenMask[SQ_N][SQ_N];
-	Square squareDistanceTbl[SQ_N][SQ_N];
-	Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
-	Bit inFrontMask[COLOR_N][RANK_N];
+// Castling masks
+Bit castleMask[COLOR_N][4];
+Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
+Bit ROOK_OO_MASK[COLOR_N];
+Bit ROOK_OOO_MASK[COLOR_N];
 
+Bit forwardMask[COLOR_N][SQ_N];
+Bit betweenMask[SQ_N][SQ_N];
+Square squareDistanceTbl[SQ_N][SQ_N];
+Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
+Bit inFrontMask[COLOR_N][RANK_N];
+
+//// setbit() single-bit mask.
+//// currently unused because direct bitshift seems faster
+//void init_bit_mask()
+//{
+//	for (Square sq = 0; sq < SQ_N; sq++)
+//		bitMask[sq] = 1ULL << sq;
+//}
 
 // initialize castleMask
 void init_castle_mask()
@@ -43,36 +51,35 @@ void init_castle_mask()
 // initialize fileMask, rankMask, fileAdjacentMask, inFrontMask
 void init_file_rank_mask()
 {
-	int i;
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		fileMask[i] = (0x0101010101010101 << i);
 		rankMask[i] = (0xffULL << i*8);
 	}
 
-	for (i = 0; i < FILE_N; i++)
+	for (int fl = 0; fl < FILE_N; fl++)
 	{
-		if (i == FILE_A) fileAdjacentMask[i] = fileMask[FILE_B];
-		else if (i == FILE_H) fileAdjacentMask[i] = fileMask[FILE_G];
-		else fileAdjacentMask[i] = fileMask[i-1] | fileMask[i+1];
+		if (fl == FILE_A) fileAdjacentMask[fl] = fileMask[FILE_B];
+		else if (fl == FILE_H) fileAdjacentMask[fl] = fileMask[FILE_G];
+		else fileAdjacentMask[fl] = fileMask[fl-1] | fileMask[fl+1];
 	}
 
 	// inFrontMask: all the squares on all the ranks ahead of a square
 	Bit mask;
 	for (Color c : COLORS)
-		for (i = 0; i < RANK_N; i++)
+		for (int r = 0; r < RANK_N; r++)
 		{
 			mask = 0;
-			for (int r = i + 1; r < RANK_N; r++)
-				mask |= rankMask[relative_rank<RANK_N>(c, r)];
-			inFrontMask[c][relative_rank<RANK_N>(c, i)] = mask;
+			for (int rk = r + 1; rk < RANK_N; rk++)
+				mask |= rankMask[relative_rank<RANK_N>(c, rk)];
+			inFrontMask[c][relative_rank<RANK_N>(c, r)] = mask;
 		}
 }
 
 /* Rook magic bitboard */
 void init_rook_magics(Square sq, int fl, int rk)
 {
-	rookMagics[sq].mask = ( (126ULL << (rk << 3)) | (0x0001010101010100ULL << fl) ) & unsetbit(sq);  // ( rank | file) unset center bit
+	rookMagics[sq].mask = ( (126ULL << (rk << 3)) | (0x0001010101010100ULL << fl) ) & ~setbit(sq);  // ( rank | file) unset center bit
 	if (sq == 0) rookMagics[0].offset = 0;	else if (sq == 63) return;
 	int west = fl, east = 7-fl, south = rk, north = 7-rk;
 	if (west == 0) west = 1;  if (east == 0) east = 1;  if (south == 0) south = 1; if (north == 0) north = 1;
@@ -165,7 +172,7 @@ void init_bishop_magics(Square sq, int fl, int rk)
 	while ((xnw--) != 0 && (ynw++) != 7) { mask |= setbit(pnw); pnw += DELTA_NW; nw++; }   // nw isn't at the west border
 	while ((xse++) != 7 && (yse--) != 0) { mask |= setbit(pse); pse += DELTA_SE; se++; }   // se isn't at the east border
 	while ((xsw--) != 0 && (ysw--) !=0) {mask |= setbit(psw); psw += DELTA_SW; sw++; }   // sw isn't at the west border
-	mask &= unsetbit(sq);  // get rid of the central bit
+	mask &= ~setbit(sq);  // get rid of the central bit
 	bishopMagics[sq].mask = mask;
 
 	if (sq == 0)  bishopMagics[0].offset = 0;	else if (sq == 63)   return;
@@ -247,7 +254,7 @@ void init_bishop_mask(Square sq, int fl, int rk)
 }
 
 // rook, bishop and queen attackmap on an unoccupied board
-void init_ray_mask(Square sq)
+void init_ray_masks(Square sq)
 {
 	rookRayMask[sq] = rook_attack(sq, 0);
 	bishopRayMask[sq] = bishop_attack(sq, 0);
@@ -297,9 +304,11 @@ void init_king_mask(Square sq, int fl, int rk)
 	kingMask[sq] = ans;
 }
 
-// Pawn attack table - 2 colors
-void init_pawn_attack_mask( Square sq, int fl, int rk, Color c )
+// initialize pawnAttackMask, pawnPushMask, pawnPush2Mask,
+// passedPawnMask and pawnAttackSpanMask
+void init_pawn_masks(Square sq, int fl, int rk, Color c)
 {
+	/* pawnAttackMask */
 	if (relative_rank<RANK_N>(c,rk) == RANK_8) 
 	{
 		pawnAttackMask[c][sq] = 0;
@@ -312,30 +321,26 @@ void init_pawn_attack_mask( Square sq, int fl, int rk, Color c )
 	if (fl + 1 < 8)
 		ans |= setbit(fr2sq(fl+1, rk+offset)); // white color = 0, black = 1
 	pawnAttackMask[c][sq] = ans;
-}
-void init_pawn_push_mask( Square sq, int fl, int rk, Color c )
-{
+
+	/* pawnPushMask */
 	if (rk == RANK_1 || rk == RANK_8) // pawns can never be on these squares
 		pawnPushMask[c][sq]= 0;
 	else
 		pawnPushMask[c][sq] = setbit(sq + (c==W ? DELTA_N : DELTA_S));
-}
-void init_pawn_push2_mask( Square sq, int fl, int rk, Color c )
-{
+
+	/* pawnPush2Mask */
 	if (rk == (c==W ? RANK_2 : RANK_7)) // can only happen on the 2nd or 7th rank
 		pawnPush2Mask[c][sq] = setbit(sq + (c==W ? DELTA_N : DELTA_S) *2 );
 	else
 		pawnPush2Mask[c][sq] = 0;
-}
-void init_pawn_attack_span_mask(Square sq, int fl, int rk, Color c)
-{
-	pawnAttackSpanMask[c][sq] = inFrontMask[c][rk] & fileAdjacentMask[fl];
-}
 
-void init_passed_pawn_mask(Square sq, int fl, int rk, Color c)
-{
+	/* pawnAttackSpanMask */
+	pawnAttackSpanMask[c][sq] = inFrontMask[c][rk] & fileAdjacentMask[fl];
+
+	/* passedPawnMask */
 	passedPawnMask[c][sq] = inFrontMask[c][rk] & (fileMask[fl] | fileAdjacentMask[fl]);
 }
+
 
 // iterate inside for x2, y2, sq2. Get the between mask for 2 diagonally or orthogonally aligned squares
 void init_between_mask(Square sq1, int fl1, int rk1)
@@ -399,11 +404,9 @@ void init_tables()
 		// pawn has different colors
 		for (Color c : COLORS) // iterate through Color::W and B
 		{
-			init_pawn_attack_mask(sq, fl, rk, c);
-			init_pawn_push_mask(sq, fl, rk, c);
-			init_pawn_push2_mask(sq, fl, rk, c);
-			init_pawn_attack_span_mask(sq, fl, rk, c);
-			init_passed_pawn_mask(sq, fl, rk, c);
+			// init pawnAttackMask, pawnPushMask, pawnPush2Mask, 
+			//  pawnAttackSpanMask and passedPawnMask
+			init_pawn_masks(sq, fl, rk, c);
 			init_forward_masks(sq, fl, rk, c);
 		}
 
@@ -415,7 +418,7 @@ void init_tables()
 		init_bishop_key(sq, fl, rk);
 		init_bishop_mask(sq, fl, rk);
 
-		init_ray_mask(sq);
+		init_ray_masks(sq);
 
 		init_between_mask(sq, fl, rk);
 		init_square_distance_tbl(sq);

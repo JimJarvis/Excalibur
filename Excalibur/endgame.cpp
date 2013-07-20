@@ -1,9 +1,6 @@
 #include "endgame.h"
 using namespace Board;
 
-const Square SQ_A8 = 56, SQ_H8 = 63, SQ_A7 = 48, 
-	SQ_H7 = 55, SQ_A1 = 0, SQ_H5 = 39, SQ_G7 = 54;
-
 /* A few predetermined tables */
 // Table used to drive the defending king towards the edge of the board
 // in KX vs K and KQ vs KR endgames.
@@ -113,7 +110,7 @@ template<>
 Value EndEvaluator<KXK>::operator()(const Position& pos) const 
 {
 	// Stalemate detection with lone king
-	if ( pos.turn == weakerSide && !pos.checkermap()
+	if ( pos.turn == weakerSide && !pos.checker_map()
 		&& pos.count_legal() == 0)
 			return VALUE_DRAW;
 

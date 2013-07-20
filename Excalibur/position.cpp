@@ -120,13 +120,14 @@ void Position::parseFEN(string fenstr)
 			PieceType pt;
 			switch (ch)
 			{
-			case 'p': Pawnmap[c] |= mask; pt = PAWN; break;
-			case 'n': Knightmap[c] |= mask; pt = KNIGHT; break;
-			case 'b': Bishopmap[c] |= mask; pt = BISHOP; break;
-			case 'r': Rookmap[c] |= mask; pt = ROOK; break;
-			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
-			case 'k': Kingmap[c] |= mask; pt = KING; break;
+			case 'p': pt = PAWN; break;
+			case 'n': pt = KNIGHT; break;
+			case 'b': pt = BISHOP; break;
+			case 'r': pt = ROOK; break;
+			case 'q': pt = QUEEN; break;
+			case 'k': pt = KING; break;
 			}
+			Pieces[pt][c] |= mask;
 			Square sq = fr2sq(file, rank);
 			plistIndex[sq] = pieceCount[c][pt] ++;
 			pieceList[c][pt][plistIndex[sq]] = sq;
@@ -138,11 +139,11 @@ void Position::parseFEN(string fenstr)
 
 	for (Color c : COLORS)
 	{
-		Oneside[c] = 0;
+		Colormap[c] = 0;
 		for (PieceType pt : PIECE_TYPES)
-			Oneside[c] |= Pieces[pt][c];
+			Colormap[c] |= Pieces[pt][c];
 	}
-	Occupied = Oneside[W] | Oneside[B];
+	Occupied = Colormap[W] | Colormap[B];
 
 	turn =  fen.get()=='w' ? W : B;  // indicate active part
 	fen.get(); // consume the space
@@ -286,13 +287,11 @@ U64 Position::calc_pawn_key() const {
 
 	U64 key = 0;
 	Bit pawns = Pawnmap[W] | Pawnmap[B];
-
 	while (pawns)
 	{
 		int sq = pop_lsb(pawns);
 		key ^= Zobrist::psq[boardColor[sq]][PAWN][sq];
 	}
-
 	return key;
 }
 
@@ -300,12 +299,10 @@ U64 Position::calc_pawn_key() const {
 Score Position::calc_psq_score() const 
 {
 	Score score = Score(0);
-
 	PieceType pt;
 	for (int sq = 0; sq < SQ_N; sq++)
 		if ((pt = boardPiece[sq]) != NON)
 			score += pieceSquareTable[boardColor[sq]][pt][sq];
-
 	return score;
 }
 
@@ -315,7 +312,6 @@ Score Position::calc_psq_score() const
 Value Position::calc_non_pawn_material(Color c) const 
 {
 	Value value = 0;
-
 	for (PieceType pt : PIECE_TYPES)
 	{
 		if (pt == PAWN) continue;
