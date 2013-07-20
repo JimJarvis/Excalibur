@@ -43,6 +43,13 @@ const Square SQ_NONE = 100;  // denote a non-existent square
 const Bit BLACK_SQUARES = 0xAA55AA55AA55AA55ULL;
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
+// Square shift in 6 directions
+const int DELTA_N =  8, DELTA_E =  1,
+	DELTA_S = -8, DELTA_W = -1,
+	DELTA_NE = DELTA_N + DELTA_E,
+	DELTA_SE = DELTA_S + DELTA_E,
+	DELTA_SW = DELTA_S + DELTA_W,
+	DELTA_NW = DELTA_N + DELTA_W;
 
 #define COLOR_N 2
 enum Color : byte
@@ -74,6 +81,22 @@ const PieceType PIECE_TYPES[PIECE_TYPE_N - 1] = {PAWN, KNIGHT, BISHOP, ROOK, QUE
 static const char* PIECE_NOTATION[PIECE_TYPE_N] = {"", "", "N", "B", "R", "Q", "K"};
 static const char* PIECE_FEN[COLOR_N][PIECE_TYPE_N] = { {"", "P", "N", "B", "R", "Q", "K"}, {"", "p", "n", "b", "r", "q", "k"} };  // FEN name. White - capital letters.
 static const char* PIECE_FULL_NAME[PIECE_TYPE_N] = {"", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};
+
+// Castle types
+#define CASTLE_TYPES_N 2
+enum CastleType: byte
+{
+	CASTLE_OO = 0,
+	CASTLE_OOO = 1,
+	// castling mask constants
+	// King-side
+	CASTLE_FG = 0,  // file f to g should be vacant
+	CASTLE_EG = 1, // file e to g shouldn't be attacked
+	// Queen-side
+	CASTLE_BD = 2,  // file b to d should be vacant
+	CASTLE_CE = 3  // file c to e shouldn't be attacked
+	// the CASTLE_MASK is filled out in Board::init_tables()
+};
 
 enum GameStatus : byte
 {

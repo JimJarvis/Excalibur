@@ -49,13 +49,14 @@ inline ostream& operator<<(ostream& os, Move& m)
 }
 
 /* Constants for castling */
-const Move MOVE_OO_KING[COLOR_N] = { 0x4184U, 0x4fbcU };
-const Move MOVE_OOO_KING[COLOR_N] = { 0x4084U, 0x4ebcU };
+const Move MOVE_CASTLING[COLOR_N][CASTLE_TYPES_N] = {{0x4184U, 0x4084U}, {0x4fbcU, 0x4ebcU}};
 
 // Castling right query
-inline bool can_castleOO(byte castleRight) { return (castleRight & 1) == 1; }
-inline bool can_castleOOO(byte castleRight) { return (castleRight & 2) == 2; }
-inline void delete_castleOO(byte& castleRight) { castleRight &= 2; }
-inline void delete_castleOOO(byte& castleRight) { castleRight &= 1; }
+template<CastleType> inline bool can_castle(byte castleRight);
+template<> inline bool can_castle<CASTLE_OO>(byte castleRight) { return (castleRight & 1) == 1; }
+template<> inline bool can_castle<CASTLE_OOO>(byte castleRight) { return (castleRight & 2) == 2; }
+template<CastleType> inline void delete_castle(byte& castleRight);
+template<> inline void delete_castle<CASTLE_OO>(byte& castleRight) { castleRight &= 2; }
+template<> inline void delete_castle<CASTLE_OOO>(byte& castleRight) { castleRight &= 1; }
 
 #endif // __move_h__

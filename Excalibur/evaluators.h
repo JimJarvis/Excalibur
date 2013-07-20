@@ -27,14 +27,14 @@ namespace Material
 	/// of 4, which will result in scores of absolute value less than one pawn.
 	struct Entry
 	{
-		Score material_value() const { return make_score(value, value); }
+		Score material_score() const { return make_score(score, score); }
 		// does pos have a tabulated endgame evalFunc()? 
 		bool has_endgame_evalfunc() const { return evalFunc != nullptr; }
 		Value eval_func(const Position& p) const { return (*evalFunc)(p); }
 		ScaleFactor scale_factor(const Position& pos, Color c) const;
 
 		U64 key;
-		short value; // computed by imbalance()
+		short score; // computed by imbalance()
 		byte scalor[COLOR_N]; // used when no scalingFunc() is available
 		int spaceWeight;
 		Phase gamePhase;
@@ -42,6 +42,7 @@ namespace Material
 		EndEvaluatorBase* scalingFunc[COLOR_N];
 	};
 
+	// stores all the probed entries
 	extern HashTable<Entry, 8192> materialTable;
 
 	Entry* probe(const Position& pos);
@@ -70,27 +71,23 @@ namespace Pawnstruct
 	/// returns a pointer to an Entry object.
 	struct Entry
 	{
-		Score pawns_value() const { return value; }
+		Score pawns_score() const { return score; }
 		Bit pawn_attacks(Color c) const { return pawnAttacks[c]; }
 		Bit passed_pawns(Color c) const { return passedPawns[c]; }
 		int pawns_on_same_color_squares(Color c, Square s) const { return pawnsOnSquares[c][!!(BLACK_SQUARES & s)]; }
 		int semiopen(Color c, int f) const { return semiopenFiles[c] & (1 << int(f)); }
-		int semiopen_on_side(Color c, int f, bool left) const {
+		int semiopen_on_side(Color c, int f, bool left) const 
+		{ return semiopenFiles[c] & (left ? ((1 << int(f)) - 1) : ~((1 << int(f+1)) - 1)); }
 
-			return semiopenFiles[c] & (left ? ((1 << int(f)) - 1) : ~((1 << int(f+1)) - 1));
-		}
+		template<Color us>
+		Score king_safety(const Position& pos, Square ksq)  
+		{ return kingSquares[us] == ksq && castleRights[us] == pos.can_castle(us)
+				? kingSafety[us] : update_safety<us>(pos, ksq); }
 
-		template<Color Us>
-		Score king_safety(const Position& pos, Square ksq)  {
-
-			return kingSquares[Us] == ksq && castleRights[Us] == pos.can_castle(Us)
-				? kingSafety[Us] : update_safety<Us>(pos, ksq);
-		}
-
-		template<Color Us>
+		template<Color us>
 		Score update_safety(const Position& pos, Square ksq);
 
-		template<Color Us>
+		template<Color us>
 		Value shelter_storm(const Position& pos, Square ksq);
 
 		U64 key;
@@ -99,13 +96,15 @@ namespace Pawnstruct
 		Square kingSquares[COLOR_N];
 		int minKPdistance[COLOR_N];
 		int castleRights[COLOR_N];
-		Score value;
-		int semiopenFiles[COLOR_N];
+		Score score;
+		int semiopenFiles[COLOR_N]; // 0xFF, 1 bit for each file
 		Score kingSafety[COLOR_N];
+		// pawnsOnSquares[us/opp][boardSqColor black or white square]
 		int pawnsOnSquares[COLOR_N][COLOR_N];
 	};
 
-	typedef HashTable<Entry, 16384> Table;
+	// stores all the probed entries
+	extern HashTable<Entry, 16384> pawnsTable;
 
 	Entry* probe(const Position& pos);
 

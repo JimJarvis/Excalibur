@@ -12,7 +12,10 @@ namespace Board
 	extern Bit knightMask[SQ_N], kingMask[SQ_N];
 	 // pawn has 3 kinds of moves: attack, push, and double push (push2)
 	extern Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
-	// passed pawn table = inFrontMask[c][sq] & (fileMask[file] | fileAdjacentMask[sq])
+	// pawn_attack_span represents all squares that can be attacked by a pawn along its file
+	// = inFrontMask[c][rank] & fileAdjacentMask[file]
+	extern Bit PawnAttackSpanMask[COLOR_N][SQ_N];
+	// passed pawn table = inFrontMask[c][sq] & (fileMask[file] | fileAdjacentMask[file])
 	extern Bit passedPawnMask[COLOR_N][SQ_N];
 
 	// Precalculated attack tables for sliding pieces. 
@@ -24,26 +27,24 @@ namespace Board
 	extern Bit bishopRayMask[SQ_N];
 	extern Bit queenRayMask[SQ_N];
 
-	/* Castling constants and masks */
-	// King-side
-	const int CASTLE_FG = 0;  // file f to g should be vacant
-	const int CASTLE_EG = 1; // file e to g shouldn't be attacked
-	// Queen-side
-	const int CASTLE_BD = 2;  // file b to d should be vacant
-	const int CASTLE_CE = 3;  // file c to e shouldn't be attacked
-	// the CASTLE_MASK is filled out in Board::init_tables()
-	extern Bit CASTLE_MASK[COLOR_N][4];
-	// location of the rook for castling: [COLOR_N][0=from, 1=to]. Used in make/unmakeMove
-	const Square SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
-	const Square SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
-	// Rook from-to
+	/* Castling masks */
+   // here [4] should be one of CASTLE_CE, _BD, _FG, _EG
+	extern Bit castleMask[COLOR_N][4];
+	// location of the rook for castling: [COLOR_N][0=from, 1=to][OO or OOO]. Used in make/unmakeMove
+	const Square rookCastleSquares[COLOR_N][2][CASTLE_TYPES_N] = {
+		{	{7, 0}, {5, 3}	},   // W
+		{	{63, 56}, {61, 59}}  }; // B
+	//const Square SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
+	//const Square SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+	// Rook from-to map
+	extern Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
 	extern Bit ROOK_OO_MASK[COLOR_N];
 	extern Bit ROOK_OOO_MASK[COLOR_N];
 
 	// Other tables
 	extern Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
 	extern Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
-	extern int squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
+	extern Square squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
 	extern Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N]; // entire row or column
 	extern Bit inFrontMask[COLOR_N][RANK_N]; // Everything in front of a rank, with respect to a color
 
@@ -85,7 +86,7 @@ namespace Board
 	#define bhash(sq, bishop) ((bishop) * BISHOP_MAGIC[sq])>>55  // get the hash value of a bishop &-result, shift 64-9
 
 
-	/* Functions that would actually be used to answer queries */
+	/* Functions that would be used to answer queries */
 	inline Bit rook_attack(Square sq, Bit occup)
 		{ return rookMask[ rookKey[sq][rhash(sq, occup & rookMagics[sq].mask)] + rookMagics[sq].offset ]; }
 	inline Bit bishop_attack(Square sq, Bit occup)
@@ -96,13 +97,23 @@ namespace Board
 	inline Bit pawn_attack(Color c, Square sq) { return pawnAttackMask[c][sq]; }
 	inline Bit pawn_push(Color c, Square sq) { return pawnPushMask[c][sq]; }
 	inline Bit pawn_push2(Color c, Square sq) { return pawnPush2Mask[c][sq]; }
+	inline Bit pawn_attack_span(Color c, Square sq) { return PawnAttackSpanMask[c][sq]; }
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
 	inline Bit rook_ray(Square sq) { return rookRayMask[sq]; }
 	inline Bit bishop_ray(Square sq) { return bishopRayMask[sq]; }
 	inline Bit queen_ray(Square sq) { return queenRayMask[sq]; }
 
-	inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? 8: -8);  }
-	inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? -8 : 8);  }
+	/* Castling concerns */
+	template<CastleType cas> inline Square rook_castle_sq(Color c, int from_to) { return rookCastleSquares[c][from_to][cas]; }
+	// rook castling from-to map
+	template<CastleType cas> inline Bit rook_castle_mask(Color c) { return rookCastleMask[c][cas]; }
+	   // here CastleType should be one of CASTLE_CE, _BD, _FG, _EG
+	template<CastleType cas_files>
+	inline Bit castle_mask(Color c) { return castleMask[c][cas_files]; }
+
+	/* Other board info */
+	inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
+	inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
 	inline Bit between(Square sq1, Square sq2) { return betweenMask[sq1][sq2]; }
 	inline bool is_aligned(Square sq1, Square sq2, Square sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
@@ -110,7 +121,7 @@ namespace Board
 	inline int square_distance(Square sq1, Square sq2) { return squareDistanceTbl[sq1][sq2]; }
 	inline Bit file_mask(int file) { return fileMask[file]; }
 	inline Bit rank_mask(int rank) { return rankMask[rank]; }
-	inline Bit file_adjacent_mask(Square sq) { return fileAdjacentMask[sq2file(sq)]; }
+	inline Bit file_adjacent_mask(int file) { return fileAdjacentMask[file]; }
 	inline Bit in_front_mask(Color c, Square sq) { return inFrontMask[c][sq2rank(sq)]; }
 	inline Bit forward_mask(Color c, Square sq) { return forwardMask[c][sq]; }
 
@@ -123,6 +134,15 @@ namespace Board
 		// default to relative rank of a square
 	inline int relative_rank(Color c, int sq) { return relative_rank<SQ_N>(c, sq); }
 
+	// Shift the bitboard by a DELTA
+	template<int delta>
+	inline Bit shift_board(Bit b) 
+	{
+		return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
+			: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 : delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
+			: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 : delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9
+			: 0;
+	}
 }  // namespace Board
 
 #endif // __board_h__

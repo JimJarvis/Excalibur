@@ -246,7 +246,7 @@ Entry* probe(const Position& pos)
 		ent->spaceWeight = make_score(minorPieceCount * minorPieceCount, 0);
 	}
 
-	ent->value = (short)((imbalance(W, pos) - imbalance(B, pos)) / 16);
+	ent->score = (short)((imbalance(W, pos) - imbalance(B, pos)) / 16);
 	return ent;
 }
 

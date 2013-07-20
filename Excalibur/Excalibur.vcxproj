@@ -27,6 +27,7 @@
     <ClCompile Include="kpkbase.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="move.cpp" />
+    <ClCompile Include="pawnstruct.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="board.cpp" />

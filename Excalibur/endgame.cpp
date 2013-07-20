@@ -1,7 +1,7 @@
 #include "endgame.h"
 using namespace Board;
 
-const int SQ_A8 = 56, SQ_H8 = 63, SQ_A7 = 48, 
+const Square SQ_A8 = 56, SQ_H8 = 63, SQ_A7 = 48, 
 	SQ_H7 = 55, SQ_A1 = 0, SQ_H5 = 39, SQ_G7 = 54;
 
 /* A few predetermined tables */
@@ -245,8 +245,8 @@ Value EndEvaluator<KRKP>::operator()(const Position& pos) const
 
 	else
 		result =  200
-		- square_distance(wksq, bpsq - 8) * 8
-		+ square_distance(bksq, bpsq - 8) * 8
+		- square_distance(wksq, bpsq + DELTA_S) * 8
+		+ square_distance(bksq, bpsq + DELTA_S) * 8
 		+ square_distance(bpsq, queeningSq) * 8;
 
 	return strongerSide == pos.turn ? result : -result;
@@ -506,7 +506,7 @@ ScaleFactor EndEvaluator<KRPKR>::operator()(const Position& pos) const {
 	// If the defending king blocks the pawn and the attacking king is too far
 	// away, it's a draw.
 	if (   r <= RANK_5
-		&& bksq == wpsq + 8
+		&& bksq == wpsq + DELTA_N
 		&& square_distance(wksq, wpsq) - tempo >= 2
 		&& square_distance(wksq, brsq) - tempo >= 2)
 		return SCALE_FACTOR_DRAW;
@@ -527,10 +527,10 @@ ScaleFactor EndEvaluator<KRPKR>::operator()(const Position& pos) const {
 		&& sq2file(wrsq) == f
 		&& wrsq < wpsq
 		&& (square_distance(wksq, queeningSq) < square_distance(bksq, queeningSq) - 2 + tempo)
-		&& (square_distance(wksq, wpsq + 8) < square_distance(bksq, wpsq + 8) - 2 + tempo)
+		&& (square_distance(wksq, wpsq + DELTA_N) < square_distance(bksq, wpsq + DELTA_N) - 2 + tempo)
 		&& (  square_distance(bksq, wrsq) + tempo >= 3
 		|| (    square_distance(wksq, queeningSq) < square_distance(bksq, wrsq) + tempo
-		&& (square_distance(wksq, wpsq + 8) < square_distance(bksq, wrsq) + tempo))))
+		&& (square_distance(wksq, wpsq + DELTA_N) < square_distance(bksq, wrsq) + tempo))))
 		return SCALE_FACTOR_MAX
 		- 8 * square_distance(wpsq, queeningSq)
 		- 2 * square_distance(wksq, queeningSq);

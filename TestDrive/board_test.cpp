@@ -8,7 +8,8 @@ Position pos;
 #define k(str) king_attack(str2sq(str))
 #define patk(str, color) pawn_attack(color, str2sq(str))
 #define ppush(str, color) pawn_push(color, str2sq(str))
-#define ppush2(str, color) pawn_push2(color, str2sq(str))
+#define ppush2(str, color) pawn_push2(color, str2sq(str))
+
 string fenList[TEST_SIZE];  // 200 FEN literals
 
 TEST(Misc, Setup)
@@ -141,10 +142,10 @@ TEST(Board, Init)
 {
 	pos.parseFEN("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_EQ(pos.Occupied, 0xfffb00041000efff);	
-	ASSERT_TRUE(can_castleOO(pos.st->castleRights[W]));
-	ASSERT_TRUE(can_castleOOO(pos.st->castleRights[W]));
-	ASSERT_FALSE(can_castleOO(pos.st->castleRights[B]));
-	ASSERT_TRUE(can_castleOOO(pos.st->castleRights[B]));
+	ASSERT_TRUE(can_castle<CASTLE_OO>(pos.st->castleRights[W]));
+	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[W]));
+	ASSERT_FALSE(can_castle<CASTLE_OO>(pos.st->castleRights[B]));
+	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[B]));
 	ASSERT_EQ(pos.st->fiftyMove, 21);
 	ASSERT_EQ(pos.st->fullMove, 33);
 	ASSERT_EQ(pos.st->epSquare, 42);
