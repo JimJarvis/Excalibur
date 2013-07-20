@@ -38,13 +38,12 @@ namespace Board
 	//const Square SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
 	// Rook from-to map
 	extern Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
-	extern Bit ROOK_OO_MASK[COLOR_N];
-	extern Bit ROOK_OOO_MASK[COLOR_N];
 
 	// Other tables
 	extern Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
 	extern Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
 	extern Square squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
+	extern Bit distanceRingMask[SQ_N][8]; // all the squares that are d-unit square-distance away from a particular sq
 	extern Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N]; // entire row or column
 	extern Bit inFrontMask[COLOR_N][RANK_N]; // Everything in front of a rank, with respect to a color
 
@@ -120,6 +119,7 @@ namespace Board
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )
 				& ( setbit(sq1) | setbit(sq2) | setbit(sq3) )   ) != 0;  }
 	inline int square_distance(Square sq1, Square sq2) { return squareDistanceTbl[sq1][sq2]; }
+	inline Bit distance_ring_mask(Square sq, int dist) { return distanceRingMask[sq][dist]; }
 	inline Bit file_mask(int file) { return fileMask[file]; }
 	inline Bit rank_mask(int rank) { return rankMask[rank]; }
 	inline Bit file_adjacent_mask(int file) { return fileAdjacentMask[file]; }

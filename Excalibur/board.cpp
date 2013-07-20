@@ -15,12 +15,11 @@ Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 // Castling masks
 Bit castleMask[COLOR_N][4];
 Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
-Bit ROOK_OO_MASK[COLOR_N];
-Bit ROOK_OOO_MASK[COLOR_N];
 
 Bit forwardMask[COLOR_N][SQ_N];
 Bit betweenMask[SQ_N][SQ_N];
 Square squareDistanceTbl[SQ_N][SQ_N];
+Bit distanceRingMask[SQ_N][8];
 Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N];
 Bit inFrontMask[COLOR_N][RANK_N];
 
@@ -387,6 +386,15 @@ void init_square_distance_tbl(Square sq1)
 	}
 }
 
+// Bitboard that contains all the positions that are d-unit square-distance away from a particular sq
+void init_distance_ring_mask(Square sq1)
+{
+	for (int dist = 1; dist < 8; dist++)
+		for (Square sq2 = 0; sq2 <= SQ_N; sq2++)
+			if (squareDistanceTbl[sq1][sq2] == dist)
+				distanceRingMask[sq1][dist - 1] |= setbit(sq2);
+}
+
 
 /* Main init method: Initialize various tables and masks */
 void init_tables()
@@ -422,6 +430,7 @@ void init_tables()
 
 		init_between_mask(sq, fl, rk);
 		init_square_distance_tbl(sq);
+		init_distance_ring_mask(sq);
 	}
 }
 

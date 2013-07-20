@@ -47,7 +47,7 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= attack_map<PAWN>(from) & piece_union(opp);  // pawn capture
+		TempMove |= attack_map<PAWN>(from) & Colormap[opp];  // pawn capture
 		TempMove &= Target;
 		while (TempMove)
 		{
@@ -154,7 +154,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
 			TempMove |= pawn_push2(from) & Freesq; 
-		TempMove |= attack_map<PAWN>(from) & piece_union(opp);  // pawn capture
+		TempMove |= attack_map<PAWN>(from) & Colormap[opp];  // pawn capture
 		TempMove &= Target;
 		while (TempMove)
 		{
@@ -271,7 +271,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	} while (Ck);
 
 	// generate king flee
-	Ck = Board::king_attack(kSq) & ~piece_union(turn) & ~SliderAttack;
+	Ck = Board::king_attack(kSq) & ~Colormap[turn] & ~SliderAttack;
 	Move mv;
 	mv.set_from(kSq);
 	while (Ck)  // routine add moves
@@ -295,7 +295,7 @@ Bit Position::pinned_map() const
 {
 	Bit middle, ans = 0;
 	Color opp = ~turn;
-	Bit pinners = piece_union(opp);
+	Bit pinners = Colormap[opp];
 	Square kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
 	pinners &= ((Rookmap[opp] | Queenmap[opp]) & rook_ray(kSq))
@@ -304,7 +304,7 @@ Bit Position::pinned_map() const
 	{
 		middle = between(kSq, pop_lsb(pinners)) & Occupied;
 		// one and only one in between, which must be a friendly piece
-		if (middle && !more_than_one_bit(middle) && (middle & piece_union(turn)))
+		if (middle && !more_than_one_bit(middle) && (middle & Colormap[turn]))
 			ans |= middle;
 	}
 	return ans;

@@ -202,18 +202,17 @@ namespace Pawnstruct
 		return safety;
 	}
 
-	/*
 	/// Entry::update_safety() calculates and caches a bonus for king safety. It is
-	/// called only when king square changes, about 20% of total king_safety() calls.
+	/// called only when king square or castle rights change, about 20% of total king_safety() calls.
 	Score Entry::update_safety(Color us, const Position& pos, Square ksq)
 	{
 		kingSquares[us] = ksq;
-		castleR[us] = pos.can_castle(us);
+		castleRights[us] = pos.castle_rights(us);
 		minKPdistance[us] = 0;
 
 		Bit pawns = pos.Pawnmap[us];
 		if (pawns)
-			while (!(DistanceRingsBB[ksq][minKPdistance[us]++] & pawns)) {}
+			while (!(distance_ring_mask(ksq, minKPdistance[us]++) & pawns)) {}
 
 			if (relative_rank(us, ksq) > RANK_4)
 				return kingSafety[us] = make_score(0, -16 * minKPdistance[us]);
@@ -221,14 +220,13 @@ namespace Pawnstruct
 			Value bonus = shelter_storm(us, pos, ksq);
 
 			// If we can castle use the bonus after the castle if is bigger
-			if (can_castle<CASTLE_OO>())
+			if (can_castle<CASTLE_OO>(pos.castle_rights(us)))
 				bonus = max(bonus, shelter_storm(us, pos, relative_square(us, SQ_G1)));
 
-			if (pos.can_castle(make_castle_right(us, QUEEN_SIDE)))
+			if (can_castle<CASTLE_OOO>(pos.castle_rights(us)))
 				bonus = max(bonus, shelter_storm(us, pos, relative_square(us, SQ_C1)));
 
 			return kingSafety[us] = make_score(bonus, -16 * minKPdistance[us]);
 	}
-	*/
 
 } // namespace Pawns
