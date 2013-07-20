@@ -76,10 +76,10 @@ template<> bool is_endgame<KQKRPs>(Color us, const Position& pos)
 
 /// imbalance() calculates imbalance comparing piece count of each
 /// piece type for both colors.
-template<Color us>
-int imbalance(const Position& pos) {
+int imbalance(Color us, const Position& pos)
+{
 	// template instantiation
-	const Color opp = (us == W? B: W);
+	Color opp = ~us;
 
 	int pt1, pt2, pc, v;
 	int value = 0;
@@ -152,6 +152,7 @@ Entry* probe(const Position& pos)
 		if (   pos.pieceCount[W][BISHOP] + pos.pieceCount[W][KNIGHT] <= 2
 			&& pos.pieceCount[B][BISHOP] + pos.pieceCount[B][KNIGHT] <= 2)
 		{
+			cout << "EvalFuncKmmKm" << endl;
 			ent->evalFunc = &EvalFuncKmmKm[pos.turn];
 			return ent;
 		}
@@ -175,14 +176,26 @@ Entry* probe(const Position& pos)
 	// Note that these ones don't return after setting the function.
 	
 	if (is_endgame<KBPsK>(W, pos))
+	{
+		cout << "ScaleKBPsK for W" << endl;
 		ent->scalingFunc[W] = &ScalingFuncKBPsK[W];
+	}
 	if (is_endgame<KBPsK>(B, pos))
+	{
+		cout << "ScaleKBPsK for B" << endl;
 		ent->scalingFunc[B] = &ScalingFuncKBPsK[B];
+	}
 
 	if (is_endgame<KQKRPs>(W, pos))
+	{
+		cout << "ScaleKQKRPs for W" << endl;
 		ent->scalingFunc[W] = &ScalingFuncKQKRPs[W];
+	}
 	else if (is_endgame<KQKRPs>(B, pos))
+	{
+		cout << "ScaleKQKRPs for B" << endl;
 		ent->scalingFunc[B] = &ScalingFuncKQKRPs[B];
+	}
 
 	Value npm_w = pos.non_pawn_material(W);
 	Value npm_b = pos.non_pawn_material(B);
@@ -190,17 +203,26 @@ Entry* probe(const Position& pos)
 	if (npm_w + npm_b == VALUE_ZERO)
 	{
 		if (pos.pieceCount[B][PAWN] == 0)
+		{
+			cout << "ScaleKPsK for W" << endl;
 			ent->scalingFunc[W] = &ScalingFuncKPsK[W];
+		}
 		else if (pos.pieceCount[W][PAWN] == 0)
+		{
+			cout << "ScaleKPsK for W" << endl;
 			ent->scalingFunc[B] = &ScalingFuncKPsK[B];
+		}
 		else if (pos.pieceCount[W][PAWN] == 1 && pos.pieceCount[B][PAWN] == 1)
 		{
+			cout << "ScaleKPKP for W" << endl;
 			// This is a special case because we set scaling functions
 			// for both colors instead of only one.
 			ent->scalingFunc[W] = &ScalingFuncKPKP[W];
 			ent->scalingFunc[B] = &ScalingFuncKPKP[B];
 		}
 	}
+
+	cout << "No special stuff" << endl;
 
 	// No pawns makes it difficult to win, even with a material advantage
 	if (pos.pieceCount[W][PAWN] == 0 && npm_w - npm_b <= MG_BISHOP)
@@ -224,7 +246,7 @@ Entry* probe(const Position& pos)
 		ent->spaceWeight = make_score(minorPieceCount * minorPieceCount, 0);
 	}
 
-	ent->value = (short)((imbalance<W>(pos) - imbalance<B>(pos)) / 16);
+	ent->value = (short)((imbalance(W, pos) - imbalance(B, pos)) / 16);
 	return ent;
 }
 

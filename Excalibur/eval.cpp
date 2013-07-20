@@ -26,7 +26,7 @@ const Score RookHalfOpenFileBonus = S(19, 10);
 struct EvalInfo {
 
 	// Pointers to material and pawn hash table entries
-	//Material::Entry* mi;
+	Material::Entry* mi;
 	//Pawns::Entry* pi;
 
 	// attackedBy[color][piece type] is a bitboard representing all squares

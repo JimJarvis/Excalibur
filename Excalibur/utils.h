@@ -89,20 +89,20 @@ inline int bit_count(U64 b) { return bit_count<CNT_MAX15>(b); }
 // display a bitmap as 8*8. For debugging
 Bit dispbit(Bit, bool = 1);
 // convert a name to its square index. a1 is 0 and h8 is 63
-inline uint str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
-inline string sq2str(uint sq) { return SQ_NAME[sq]; }
+inline Square str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
+inline string sq2str(Square sq) { return SQ_NAME[sq]; }
 inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
 
 // file/rank and square conversion
-inline int sq2file(uint sq) { return sq & 7; }
-inline int sq2rank(uint sq) { return sq >> 3; }
-inline uint fr2sq(int f, int r) { return (r << 3) | f; }
-inline int file_distance(uint sq1, uint sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
-inline int rank_distance(uint sq1, uint sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
-inline int delta_sq(Color c, uint sq) { return sq + (c==W ? 8 : -8); }
+inline int sq2file(Square sq) { return sq & 7; }
+inline int sq2rank(Square sq) { return sq >> 3; }
+inline Square fr2sq(int f, int r) { return (r << 3) | f; }
+inline int file_distance(Square sq1, Square sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
+inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
+inline int delta_sq(Color c, Square sq) { return sq + (c==W ? 8 : -8); }
 
-inline uint flip_vert(uint sq) { return sq ^ 56; }  // vertical flip a square
-inline void flip_horiz(uint& sq) { sq ^= 7; } // horizontally flip a square
+inline Square flip_vert(Square sq) { return sq ^ 56; }  // vertical flip a square
+inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
 
 inline bool opp_color_sq(int sq1, int sq2) {
 	int s = sq1 ^ sq2;

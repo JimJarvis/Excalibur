@@ -15,7 +15,7 @@ uint KPKBitbase[INDEX_MAX / 32];
 // bit    12: side to move (WHITE or BLACK)
 // bit 13-14: white pawn file (from FILE_A to FILE_D)
 // bit 15-17: white pawn 6 - rank (from 6 - RANK_7 to 6 - RANK_2)
-uint index(Color us, uint bksq, uint wksq, uint psq) {
+uint index(Color us, Square bksq, Square wksq, Square psq) {
 	return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((6 - sq2rank(psq)) << 15);
 }
 
@@ -36,7 +36,7 @@ public:
 
 private:
 	Color us;
-	uint bksq, wksq, psq;
+	Square bksq, wksq, psq;
 	int res;
 };
 
@@ -95,7 +95,7 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 
 	if (us == W && sq2rank(psq) < 6) // no promotion
 	{
-		uint s = psq + 8;
+		Square s = psq + 8;
 		r |= db[index(B, bksq, wksq, s)]; // Single push
 
 		if (sq2rank(s) == 2 && s != wksq && s != bksq)
@@ -113,7 +113,7 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 
 namespace KPKbase
 {
-	bool probe(uint wksq, uint wpsq, uint bksq, Color us) 
+	bool probe(Square wksq, Square wpsq, Square bksq, Color us) 
 	{
 		uint idx = index(us, bksq, wksq, wpsq);
 		return (  KPKBitbase[idx / 32] & (1 << (idx & 0x1F))  ) != 0;

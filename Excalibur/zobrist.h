@@ -5,7 +5,6 @@
 
 extern Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 
-
 #define S(mg, eg) make_score(mg, eg)
 
 /// PSQT[PieceType][Square] contains Piece-Square scores. For each piece type on

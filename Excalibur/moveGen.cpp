@@ -14,9 +14,9 @@ int moveBufEnds[64];
 // Define a macro to facilitate the update of each piece
 #define genPseudoMacro(pt)  \
 tempPiece = pieceList[turn][pt]; \
-for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
+for (int i = 0; i < pieceCount[turn][pt]; i ++) \
 { \
-	from = tempPiece[iter]; \
+	from = tempPiece[i]; \
 	mv.set_from(from);  \
 	TempMove = attack_map<pt>(from) & Target;  \
 	while (TempMove)  \
@@ -34,15 +34,15 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 	Color op = ~turn;
 	Bit Freesq = ~Occupied;
 	Bit TempMove;
-	const uint *tempPiece;
-	uint from, to, iter;
+	const Square *tempPiece;
+	Square from, to;
 	Move mv;
 
 	/*************** Pawns ***************/
 	tempPiece = pieceList[turn][PAWN];
-	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
+	for (int i = 0; i < pieceCount[turn][PAWN]; i ++)
 	{
-		from = tempPiece[iter];
+		from = tempPiece[i];
 		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
@@ -120,9 +120,9 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 // Define a handy macro to update various pieces
 #define genLegalMacro(pt) \
 	tempPiece = pieceList[turn][pt]; \
-	for (iter = 0; iter < pieceCount[turn][pt]; iter ++) \
+	for (int i = 0; i < pieceCount[turn][pt]; i ++) \
 	{ \
-		from = tempPiece[iter]; \
+		from = tempPiece[i]; \
 		mv.set_from(from); \
 		TempMove = attack_map<pt>(from) & Target; \
 		while (TempMove) \
@@ -138,18 +138,18 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& pinned) const
 {
 	Color opp = ~turn;
-	uint kSq = king_sq(turn);
+	Square kSq = king_sq(turn);
 	Bit Freesq = ~Occupied;
 	Bit TempMove;
-	const uint *tempPiece;
-	uint from, to, iter;
+	const Square *tempPiece;
+	Square from, to;
 	Move mv;
 
 	/*************** Pawns ***************/
 	tempPiece = pieceList[turn][PAWN];
-	for (iter = 0; iter < pieceCount[turn][PAWN]; iter ++)
+	for (int i = 0; i < pieceCount[turn][PAWN]; i ++)
 	{
-		from = tempPiece[iter];
+		from = tempPiece[i];
 		mv.set_from(from);
 		TempMove = pawn_push(from) & Freesq;  // normal push
 		if (TempMove != 0) // double push possible
@@ -172,7 +172,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			else
 				update;
 		}
-		uint ep = st->epSquare;
+		Square ep = st->epSquare;
 		if (ep) // en-passant
 		{
 			if (attack_map<PAWN>(from) & setbit(ep))
@@ -296,7 +296,7 @@ Bit Position::pinned_map() const
 	Bit middle, ans = 0;
 	Color opp = ~turn;
 	Bit pinners = Oneside[opp];
-	uint kSq = king_sq(turn);
+	Square kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
 	pinners &= ((Rookmap[opp] | Queenmap[opp]) & rook_ray(kSq))
 		| ((Bishopmap[opp] | Queenmap[opp]) & bishop_ray(kSq));
@@ -313,14 +313,14 @@ Bit Position::pinned_map() const
 /* Check if a pseudo-legal move is actually legal */
 bool Position::is_legal(Move& mv, Bit& pinned) const
 {
-	uint from = mv.get_from();
-	uint to = mv.get_to();
+	Square from = mv.get_from();
+	Square to = mv.get_to();
 	if (boardPiece[from] == KING)  // we already checked castling legality
 		return mv.is_castle() || !is_sq_attacked(to, ~turn);
 	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
 	if (mv.is_ep()) // we do it by testing if the king is attacked after the move s made
 	{
-		uint kSq = king_sq(turn);
+		Square kSq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
 		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | setbit(backward_sq(turn, to)) );
@@ -340,7 +340,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 int Position::genLegal(int index) const
 {
 	Bit pinned = pinnedMap();
-	uint kSq = king_sq(turn);
+	Square kSq = king_sq(turn);
 	int end =st->CheckerMap ? genEvasions(index) : genNonEvasions(index);
 	while (index != end)
 	{
@@ -365,7 +365,7 @@ int Position::genLegal(int index) const
  */
 bool Position::is_bit_attacked(Bit Target, Color attacker) const
 {
-	uint to;
+	Square to;
 	Color defender = ~attacker;
 	Bit pawn_map = Pawnmap[attacker];
 	Bit knight_map = Knightmap[attacker];
@@ -408,8 +408,8 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	nextSt.st_prev = st;
 	st = &nextSt;
 
-	uint from = mv.get_from();
-	uint to = mv.get_to();
+	Square from = mv.get_from();
+	Square to = mv.get_to();
 	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
 	Bit FromToMap = setbit(from) | ToMap;
 	PieceType piece = boardPiece[from];
@@ -453,7 +453,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 				}  }
 		}
 		
-		uint captSq;  // consider EP capture
+		Square captSq;  // consider EP capture
 		if (mv.is_ep()) 
 		{
 			captSq = backward_sq(turn, st->st_prev->epSquare);
@@ -471,7 +471,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		// captured piece in undo_move() we will put it at the end of the list and
 		// not in its original place, it means index[] and pieceList[] are not
 		// guaranteed to be invariant to a do_move() + undo_move() sequence.
-		uint lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
+		Square lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
 		plistIndex[lastSq] = plistIndex[captSq];
 		pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
 		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_NONE;
@@ -515,7 +515,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 			// Update piece lists, move the last pawn at index[to] position
 			// and shrink the list. Add a new promotion piece to the list.
-			uint lastSq = pieceList[turn][PAWN][-- pieceCount[turn][PAWN]];
+			Square lastSq = pieceList[turn][PAWN][-- pieceCount[turn][PAWN]];
 			plistIndex[lastSq] = plistIndex[to];
 			pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
 			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_NONE;
@@ -539,7 +539,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		st->castleRights[turn] = 0;  // cannot castle any more
 		if (mv.is_castle())
 		{
-			uint rfrom, rto;
+			Square rfrom, rto;
 			if (sq2file(to) == 6)  // King side castle
 			{
 				Rookmap[turn] ^= ROOK_OO_MASK[turn];
@@ -597,8 +597,8 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 /* Unmake move and restore the Position internal states */
 void Position::unmake_move(Move& mv)
 {
-	uint from = mv.get_from();
-	uint to = mv.get_to();
+	Square from = mv.get_from();
+	Square to = mv.get_to();
 	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
 	Bit FromToMap = setbit(from) | ToMap;
 	PieceType piece = mv.is_promo() ? PAWN : boardPiece[to];
@@ -624,7 +624,7 @@ void Position::unmake_move(Move& mv)
 
 		// Update piece lists, move the last promoted piece at index[to] position
 		// and shrink the list. Add a new pawn to the list.
-		uint lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
+		Square lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
 		plistIndex[lastSq] = plistIndex[to];
 		pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
 		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_NONE;
@@ -634,7 +634,7 @@ void Position::unmake_move(Move& mv)
 	// Castling
 	else if (mv.is_castle())
 	{
-		uint rfrom, rto;
+		Square rfrom, rto;
 		if (sq2file(to) == 6)  // king side castling
 		{
 			Rookmap[turn] ^= ROOK_OO_MASK[turn];
@@ -695,7 +695,7 @@ GameStatus Position::mate_status() const
 	// 8192 - 218 = 7974, 218 is the most move a legal position can ever make
 	Bit pinned = pinned_map();
 	int start = 7974;
-	uint kSq = king_sq(turn);
+	Square kSq = king_sq(turn);
 	int end =st->CheckerMap ? gen_evasions(start) : gen_non_evasions(start);
 	while (start != end)
 	{

@@ -23,9 +23,6 @@
     <ClCompile Include="move_test.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="board_init_test.cpp">
-      <Filter>Test Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Excalibur\movegen.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
@@ -55,6 +52,15 @@
     </ClCompile>
     <ClCompile Include="..\Excalibur\kpkbase.cpp">
       <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Excalibur\material.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="eval_test.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="board_test.cpp">
+      <Filter>Test Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

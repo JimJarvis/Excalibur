@@ -26,6 +26,7 @@ typedef unsigned long long U64; // Unsigned ULL
 typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned char byte;
+typedef unsigned int Square;
 typedef int Value;
 typedef int ScaleFactor;
 
@@ -38,7 +39,8 @@ enum Score : int {};
 #define FILE_N 8
 #define RANK_N 8
 
-const uint SQ_NONE = 100;  // denote a non-existent square
+const Square SQ_NONE = 100;  // denote a non-existent square
+const Bit BLACK_SQUARES = 0xAA55AA55AA55AA55ULL;
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 

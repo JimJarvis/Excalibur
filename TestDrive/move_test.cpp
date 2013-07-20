@@ -52,9 +52,9 @@ TEST(Move, Judgement)
 	Move m;
 
 	srand(time(NULL));
-	uint from = rand() % 64;
+	Square from = rand() % 64;
 	m.set_from(from);
-	uint to = rand() % 64;
+	Square to = rand() % 64;
 	m.set_to(to);
 	PieceType proms[4] = {QUEEN, BISHOP, KNIGHT, ROOK}; // promoted
 	for (PieceType prom : proms)
@@ -100,7 +100,7 @@ TEST(Move, Mates)
 // Test pieceList[][][] consistency
 bool is_piece_list_invariant(Position& pos)
 {
-	uint pieceListStd[COLOR_N][PIECE_TYPE_N][16];
+	Square pieceListStd[COLOR_N][PIECE_TYPE_N][16];
 	int index[COLOR_N][PIECE_TYPE_N];
 	for (Color c : COLORS)
 		for (PieceType pt : PIECE_TYPES)
@@ -112,12 +112,12 @@ bool is_piece_list_invariant(Position& pos)
 		PieceType pt = pos.boardPiece[i];
 		pieceListStd[c][pt][index[c][pt]++] = i;
 	}
-	std::set<uint> setStd, setActual;
+	std::set<Square> setStd, setActual;
 	for (Color c : COLORS)
 		for (PieceType pt : PIECE_TYPES)
 		{
 			setStd.clear(); setActual.clear();
-			for (uint pc = 0; pc < pos.pieceCount[c][pt]; pc++)
+			for (int pc = 0; pc < pos.pieceCount[c][pt]; pc++)
 			{
 				setActual.insert(pos.pieceList[c][pt][pc]);
 				setStd.insert(pieceListStd[c][pt][pc]);

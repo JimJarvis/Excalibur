@@ -8,7 +8,7 @@ namespace KPKbase
 {
 	// initialized with Endgame::init()
 	void init();
-	bool probe(uint wksq, uint wpsq, uint bksq, Color us);
+	bool probe(Square wksq, Square wpsq, Square bksq, Color us);
 }
 
 // EndgameType lists all supported endgames
@@ -57,7 +57,7 @@ class EndEvaluator : public EndEvaluatorBase
 public:
 	explicit EndEvaluator(Color c) : strongerSide(c), weakerSide(~c) {}
 	Color strong_color() const { return strongerSide; }
-	int operator()(const Position&) const {return 0;}; // return either Value or ScaleFactor
+	int operator()(const Position&) const; // return either Value or ScaleFactor
 private:
 	Color strongerSide, weakerSide;
 };

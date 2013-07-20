@@ -127,7 +127,7 @@ void Position::parseFEN(string fenstr)
 			case 'q': Queenmap[c] |= mask; pt = QUEEN; break;
 			case 'k': Kingmap[c] |= mask; pt = KING; break;
 			}
-			uint sq = fr2sq(file, rank);
+			Square sq = fr2sq(file, rank);
 			plistIndex[sq] = pieceCount[c][pt] ++;
 			pieceList[c][pt][plistIndex[sq]] = sq;
 			boardPiece[sq] = pt;

@@ -81,7 +81,7 @@ void init_rook_magics(int sq, int x, int y)
 // Using a unique recoverable coding scheme
 void init_rook_key(int sq, int x, int y)
 {
-	Bit mask, ans; uint perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
+	Bit mask, ans; int perm, x0, y0, north, south, east, west, wm, em, nm, sm; bool wjug, ejug, njug, sjug;
 	// generate all 2^bits permutations of the rook cross bitmap
 	int n = 0;  // n will eventually store the bitCount of a mask
 	int lsbarray[12];  // store the LSB locations for a particular mask
@@ -89,7 +89,7 @@ void init_rook_key(int sq, int x, int y)
 	while (mask)
 		lsbarray[n++] = pop_lsb(mask);
 
-	uint possibility = 1 << n; // 2^n
+	int possibility = 1 << n; // 2^n
 	// Xm stands for the maximum possible range along that direction. Counterclockwise with S most significant
 	wm = x; em = 7-x; nm = 7-y; sm = y;
 	wjug = ejug = njug = sjug = 0;  // to indicate whether we are on the border or not.
@@ -125,14 +125,14 @@ void init_rook_key(int sq, int x, int y)
 void init_rook_mask(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
-	uint wm, em, nm, sm, wi, ei, ni, si, wii, eii, nii, sii; bool wjug, ejug, njug, sjug;
+	int wm, em, nm, sm, wi, ei, ni, si, wii, eii, nii, sii; bool wjug, ejug, njug, sjug;
 	wm = x; em = 7-x; nm = 7-y; sm = y;
 	wjug = ejug = njug = sjug = 0;  // to indicate whether we are on the border or not.
 	if (wm == 0)  wm = wjug = 1; else if (em == 0)  em = ejug = 1;
 	if (nm == 0)  nm = njug = 1; else if (sm == 0)  sm = sjug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
 	byte key;  Bit mask;
-	uint offset = rookMagics[sq].offset;  // constant for one sq.
+	int offset = rookMagics[sq].offset;  // constant for one sq.
 		// loop through all 4 directions, starting from E and go counterclockwise
 	for (ei = 1; ei <= em; ei++)		{
 		for (ni = 1; ni <= nm; ni++)		{
@@ -158,7 +158,7 @@ void init_rook_mask(int sq, int x, int y)
 void init_bishop_magics(int sq, int x, int y)
 {
 	// set the bishop masks: directions NE+9, NW+7, SE-7, SW-9
-	uint pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
+	int pne, pnw, pse, psw, xne, xnw, xse, xsw, yne, ynw, yse, ysw, ne, nw, se, sw;
 	pne = pnw = pse = psw = sq; xne = xnw = xse = xsw = x; yne = ynw = yse = ysw = y; ne = nw = se = sw = 0;
 	Bit mask = 0;
 	while ((xne++) != 7 && (yne++) != 7) { mask |= setbit(pne); pne += 9;  ne++; }   // ne isn't at the east border
@@ -175,7 +175,7 @@ void init_bishop_magics(int sq, int x, int y)
 
 void init_bishop_key(int sq, int x, int y)
 {
-	Bit mask, ans; uint perm, x0, y0, ne, nw, se, sw, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
+	Bit mask, ans; int perm, x0, y0, ne, nw, se, sw, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
 	// generate all 2^bits permutations of the rook cross bitmap
 	int n = 0;  // n will eventually store the bitCount of a mask
 	int lsbarray[9];  // store the lsb locations for a particular mask
@@ -183,7 +183,7 @@ void init_bishop_key(int sq, int x, int y)
 	while (mask)
 		lsbarray[n++] = pop_lsb(mask);
 
-	uint possibility = 1 << n; // 2^n
+	int possibility = 1 << n; // 2^n
 	// Xm stands for the maximum possible range along that diag direction. Counterclockwise with SE most significant
 	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y); // min is a lambda function
 	nejug = nwjug = sejug = swjug = 0;
@@ -218,14 +218,14 @@ void init_bishop_key(int sq, int x, int y)
 void init_bishop_mask(int sq, int x, int y)
 {
 	// get the maximum possible range along 4 directions
-	uint ne, nw, se, sw, nei, nwi, sei, swi, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
+	int ne, nw, se, sw, nei, nwi, sei, swi, nem, nwm, sem, swm; bool nejug, nwjug, sejug, swjug;
 	nem = min(7-x, 7-y);   nwm = min(x, 7-y);  swm = min(x, y);  sem = min(7-x, y); // min is a lambda function
 	nejug = nwjug = sejug = swjug = 0;
 	if (nem == 0) nem = nejug = 1;  if (nwm == 0) nwm = nwjug = 1;  // set 0's to 1 for multiplication purposes
 	if (swm == 0) swm = swjug = 1;  if (sem == 0) sem = sejug = 1;
 	// restore the attack_map from the 1-byte key. The offset is cumulative
 	byte key;  Bit mask;
-	uint offset = bishopMagics[sq].offset;  // constant for one sq.
+	int offset = bishopMagics[sq].offset;  // constant for one sq.
 	// loop through all 4 directions, starting from E and go counterclockwise
 	for (ne = 1; ne <= nem; ne++)		{
 		for (nw = 1; nw <= nwm; nw++)		{
@@ -423,7 +423,7 @@ void init_tables()
 // Rook magicU64 multiplier generator. Will be pretabulated literals.
 void rook_magicU64_generator()
 {
-	Bit mask, ans; uint i, n, perm, possibility, jug, tries; bool fail; 
+	Bit mask, ans; int i, n, perm, possibility, jug, tries; bool fail; 
 	U64 hashcheck[4096];  // table used to check hash collision
 	U64 allstates[4096];
 	U64 magic;
@@ -470,7 +470,7 @@ void rook_magicU64_generator()
 // Bishop magicU64 multiplier generator. Will be pretabulated literals.
 void bishop_magicU64_generator()
 {
-	Bit mask, ans; uint perm, possibility, n, jug, tries, i; bool fail;
+	Bit mask, ans; int perm, possibility, n, jug, tries, i; bool fail;
 	U64 hashcheck[512];  // table used to check hash collision
 	U64 allstates[512];
 	U64 magic;
