@@ -151,7 +151,6 @@ Score eval_pawns(const Position& pos, Pawnstruct::Entry* ent)
 
 namespace Pawnstruct 
 {
-
 	HashTable<Entry, 16384> pawnsTable;
 
 	/// probe() takes a position object as input, computes a Entry object, and returns

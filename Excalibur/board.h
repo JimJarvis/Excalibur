@@ -27,17 +27,17 @@ namespace Board
 	extern Bit bishopRayMask[SQ_N];
 	extern Bit queenRayMask[SQ_N];
 
-	/* Castling masks */
+	/* Castling masks. Will be accessed directly in movegen. */
    // here [4] should be one of CASTLE_CE, _BD, _FG, _EG
-	extern Bit castleMask[COLOR_N][4];
-	// location of the rook for castling: [COLOR_N][0=from, 1=to][OO or OOO]. Used in make/unmakeMove
-	const Square rookCastleSquares[COLOR_N][2][CASTLE_TYPES_N] = {
-		{	{7, 0}, {5, 3}	},   // W
-		{	{63, 56}, {61, 59}}  }; // B
+	extern Bit CastleMask[COLOR_N][4];
 	//const Square SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
 	//const Square SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
+	// location of the rook for castling: [COLOR_N][OO or OOO][0=from, 1=to]. Used in make/unmakeMove
+	const Square RookCastleSq[COLOR_N][CASTLE_TYPES_N][2] = {
+		{	{7, 5}, {0, 3}	},   // W
+		{	{63, 61}, {56, 59}}  }; // B
 	// Rook from-to map
-	extern Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
+	extern Bit RookCastleMask[COLOR_N][CASTLE_TYPES_N];
 
 	// Other tables
 	extern Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
@@ -101,14 +101,6 @@ namespace Board
 	inline Bit rook_ray(Square sq) { return rookRayMask[sq]; }
 	inline Bit bishop_ray(Square sq) { return bishopRayMask[sq]; }
 	inline Bit queen_ray(Square sq) { return queenRayMask[sq]; }
-
-	/* Castling concerns */
-	template<CastleType cas> inline Square rook_castle_sq(Color c, int from_to) { return rookCastleSquares[c][from_to][cas]; }
-	// rook castling from-to map
-	template<CastleType cas> inline Bit rook_castle_mask(Color c) { return rookCastleMask[c][cas]; }
-	   // here CastleType should be one of CASTLE_CE, _BD, _FG, _EG
-	template<CastleType cas_files>
-	inline Bit castle_mask(Color c) { return castleMask[c][cas_files]; }
 
 	/* Other board info */
 	// inline Bit setbit(Square sq) { return bitMask[sq]; }

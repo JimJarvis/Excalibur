@@ -13,8 +13,8 @@ Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N];
 Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
 
 // Castling masks
-Bit castleMask[COLOR_N][4];
-Bit rookCastleMask[COLOR_N][CASTLE_TYPES_N];
+Bit CastleMask[COLOR_N][4];
+Bit RookCastleMask[COLOR_N][CASTLE_TYPES_N];
 
 Bit forwardMask[COLOR_N][SQ_N];
 Bit betweenMask[SQ_N][SQ_N];
@@ -31,19 +31,19 @@ Bit inFrontMask[COLOR_N][RANK_N];
 //		bitMask[sq] = 1ULL << sq;
 //}
 
-// initialize castleMask
+// initialize CastleMask
 void init_castle_mask()
 {
 	for (Color c : COLORS)
 	{
 		int delta = c==W ? 0 : 56;
-		castleMask[c][CASTLE_FG] = setbit(5+delta) | setbit(6+delta);
-		castleMask[c][CASTLE_EG] = setbit(4+delta) | setbit(5+delta) | setbit(6+delta);
-		castleMask[c][CASTLE_BD] = setbit(1+delta) | setbit(2+delta) | setbit(3+delta);
-		castleMask[c][CASTLE_CE] = setbit(2+delta) | setbit(3+delta) | setbit(4+delta);
+		CastleMask[c][CASTLE_FG] = setbit(5+delta) | setbit(6+delta);
+		CastleMask[c][CASTLE_EG] = setbit(4+delta) | setbit(5+delta) | setbit(6+delta);
+		CastleMask[c][CASTLE_BD] = setbit(1+delta) | setbit(2+delta) | setbit(3+delta);
+		CastleMask[c][CASTLE_CE] = setbit(2+delta) | setbit(3+delta) | setbit(4+delta);
 
-		rookCastleMask[c][CASTLE_OO] =  setbit(7+delta) | setbit(5+delta);
-		rookCastleMask[c][CASTLE_OOO] =  setbit(0+delta) | setbit(3+delta);
+		RookCastleMask[c][CASTLE_OO] =  setbit(7+delta) | setbit(5+delta);
+		RookCastleMask[c][CASTLE_OOO] =  setbit(0+delta) | setbit(3+delta);
 	}
 }
 

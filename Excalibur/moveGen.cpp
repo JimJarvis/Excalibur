@@ -101,14 +101,14 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		// King side castling O-O
 		if (can_castle<CASTLE_OO>(st->castleRights[turn]))
 		{
-			if (!(castle_mask<CASTLE_FG>(turn) & Occupied))  // no pieces between the king and rook
-				if (!is_bit_attacked(castle_mask<CASTLE_EG>(turn), opp))
+			if (!(CastleMask[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
+				if (!is_bit_attacked(CastleMask[turn][CASTLE_EG], opp))
 					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
 		}
 		if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 		{
-			if (!(castle_mask<CASTLE_BD>(turn) & Occupied))  // no pieces between the king and rook
-				if (!is_bit_attacked(castle_mask<CASTLE_CE>(turn), opp))
+			if (!(CastleMask[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
+				if (!is_bit_attacked(CastleMask[turn][CASTLE_CE], opp))
 					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
 		}
 	}
@@ -219,14 +219,14 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			// King side castling O-O
 			if (can_castle<CASTLE_OO>(st->castleRights[turn]))
 			{
-				if (!(castle_mask<CASTLE_FG>(turn) & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(castle_mask<CASTLE_EG>(turn), opp))
+				if (!(CastleMask[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
+					if (!is_bit_attacked(CastleMask[turn][CASTLE_EG], opp))
 						moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
 			}
 			if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 			{
-				if (!(castle_mask<CASTLE_BD>(turn) & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(castle_mask<CASTLE_CE>(turn), opp))
+				if (!(CastleMask[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
+					if (!is_bit_attacked(CastleMask[turn][CASTLE_CE], opp))
 						moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
 			}
 
@@ -439,13 +439,13 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		st->fiftyMove = 0;  // clear fifty move counter
 		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
 		{
-		 	if (to == rook_castle_sq<CASTLE_OO>(opp, 0))  
+		 	if (to == RookCastleSq[opp][CASTLE_OO][0])  
 			{	if (can_castle<CASTLE_OO>(st->castleRights[opp]))
 				{
 					key ^= Zobrist::castleOO[opp];  // update castling hash key
 					delete_castle<CASTLE_OO>(st->castleRights[opp]);
 				}  }
-			else if (to == rook_castle_sq<CASTLE_OOO>(opp, 0))  
+			else if (to == RookCastleSq[opp][CASTLE_OOO][0])  
 			{	if (can_castle<CASTLE_OOO>(st->castleRights[opp]))
 				{
 					key ^= Zobrist::castleOOO[opp];
@@ -542,17 +542,17 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			Square rfrom, rto;
 			if (sq2file(to) == 6)  // King side castle
 			{
-				Rookmap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-				Colormap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-				rfrom = rook_castle_sq<CASTLE_OO>(turn, 0);
-				rto = rook_castle_sq<CASTLE_OO>(turn, 1);
+				Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OO];
+				Colormap[turn] ^= RookCastleMask[turn][CASTLE_OO];
+				rfrom = RookCastleSq[turn][CASTLE_OO][0];
+				rto = RookCastleSq[turn][CASTLE_OO][1];
 			}
 			else
 			{
-				Rookmap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-				Colormap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-				rfrom = rook_castle_sq<CASTLE_OOO>(turn, 0);
-				rto = rook_castle_sq<CASTLE_OOO>(turn, 1);
+				Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
+				Colormap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
+				rfrom = RookCastleSq[turn][CASTLE_OOO][0];
+				rto = RookCastleSq[turn][CASTLE_OOO][1];
 			}
 			boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
 			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
@@ -569,13 +569,13 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		break;
 
 	case ROOK:
-		if (from == rook_castle_sq<CASTLE_OO>(turn, 0))   // if the rook moves, cancel the castle rights
+		if (from == RookCastleSq[turn][CASTLE_OO][0])   // if the rook moves, cancel the castle rights
 		{	if (can_castle<CASTLE_OO>(st->castleRights[turn]))
 			{
 				key ^= Zobrist::castleOO[turn];  // update castling hash key
 				delete_castle<CASTLE_OO>(st->castleRights[turn]);
 			}	}
-		else if (from == rook_castle_sq<CASTLE_OOO>(turn, 0))
+		else if (from == RookCastleSq[turn][CASTLE_OOO][0])
 		{	if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 			{
 				key ^= Zobrist::castleOOO[turn];
@@ -637,17 +637,17 @@ void Position::unmake_move(Move& mv)
 		Square rfrom, rto;
 		if (sq2file(to) == 6)  // king side castling
 		{
-			Rookmap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-			Colormap[turn] ^= rook_castle_mask<CASTLE_OO>(turn);
-			rfrom = rook_castle_sq<CASTLE_OO>(turn, 0);
-			rto = rook_castle_sq<CASTLE_OO>(turn, 1);
+			Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OO];
+			Colormap[turn] ^= RookCastleMask[turn][CASTLE_OO];
+			rfrom = RookCastleSq[turn][CASTLE_OO][0];
+			rto = RookCastleSq[turn][CASTLE_OO][1];
 		}
 		else
 		{
-			Rookmap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-			Colormap[turn] ^= rook_castle_mask<CASTLE_OOO>(turn);
-			rfrom = rook_castle_sq<CASTLE_OOO>(turn, 0);
-			rto = rook_castle_sq<CASTLE_OOO>(turn, 1);
+			Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
+			Colormap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
+			rfrom = RookCastleSq[turn][CASTLE_OOO][0];
+			rto = RookCastleSq[turn][CASTLE_OOO][1];
 		}
 		boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
 		boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to

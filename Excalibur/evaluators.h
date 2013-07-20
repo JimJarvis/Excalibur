@@ -80,8 +80,7 @@ namespace Pawnstruct
 		{ return semiopenFiles[c] & (left ? ((1 << f) - 1) : ~((1 << (f+1)) - 1)); }
 
 		// if the king moves or castling rights changes, we must update king safety evaluation
-		template<Color us>
-		Score king_safety(const Position& pos, Square ksq)  
+		Score king_safety(Color us, const Position& pos, Square ksq)
 		{ return kingSquares[us] == ksq && castleRights[us] == pos.castle_rights[us]
 				? kingSafety[us] : update_safety(us, pos, ksq); }
 
