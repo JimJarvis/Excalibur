@@ -103,16 +103,6 @@ TEST(Board, Pawn)
 	ASSERT_EQ(ppush2("a7", B), 4294967296);
 }
 
-TEST(Board, SliderRay)
-{
-	for (int sq = 0; sq < SQ_N; sq++)
-	{
-		ASSERT_EQ(rook_attack(sq, 0), rook_ray(sq));
-		ASSERT_EQ(bishop_attack(sq, 0), bishop_ray(sq));
-		ASSERT_EQ(queen_attack(sq, 0), queen_ray(sq));
-	}
-}
-
 TEST(Board, Between)
 {
 	int sq1, sq2, x1, x2, y1, y2;

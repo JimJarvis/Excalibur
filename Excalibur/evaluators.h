@@ -10,8 +10,9 @@
 namespace Eval
 {
 	void init();
-	// return the evaluation result
-	Value evaluate(const Position& pos);
+	// margin stores the uncertainty estimation of position's evaluation
+	// that typically is used by the search for pruning decisions.
+	Value evaluate(const Position& pos, Value& margin);
 }
 
 /* Material evaluation */
@@ -31,12 +32,15 @@ namespace Material
 		// does pos have a tabulated endgame evalFunc()? 
 		bool has_endgame_evalfunc() const { return evalFunc != nullptr; }
 		Value eval_func(const Position& p) const { return (*evalFunc)(p); }
-		ScaleFactor scale_factor(const Position& pos, Color c) const;
+		ScaleFactor scale_factor(Color c, const Position& pos) const;
+		Score space_weight() const { return spaceWeight; }  // getter 
+		Phase game_phase() const { return gamePhase; }  // getter
 
+		// privates: 
 		U64 key;
 		short score; // computed by imbalance()
 		byte scalor[COLOR_N]; // used when no scalingFunc() is available
-		int spaceWeight;
+		Score spaceWeight;
 		Phase gamePhase;
 		EndEvaluatorBase* evalFunc;
 		EndEvaluatorBase* scalingFunc[COLOR_N];
@@ -48,13 +52,11 @@ namespace Material
 	Entry* probe(const Position& pos);
 	Phase game_phase(const Position& pos);
 
-	/// Material::scale_factor takes a position and a color as input, and
-	/// returns a scale factor for the given color. We have to provide the
-	/// position in addition to the color, because the scale factor need not
-	/// to be a constant: It can also be a function which should be applied to
+	/// We have to provide the position in addition to the color, because the scale factor 
+	/// need not be a constant: It can also be a function which should be applied to
 	/// the position. For instance, in KBP vs K endgames, a scaling function
 	/// which checks for draws with rook pawns and wrong-colored bishops.
-	inline ScaleFactor Entry::scale_factor(const Position& pos, Color c) const
+	inline ScaleFactor Entry::scale_factor( Color c, const Position& pos ) const
 	{
 		return !scalingFunc[c] || (*scalingFunc[c])(pos) == SCALE_FACTOR_NONE
 			? scalor[c] : (*scalingFunc[c])(pos);
@@ -71,8 +73,8 @@ namespace Pawnstruct
 	/// returns a pointer to an Entry object.
 	struct Entry
 	{
-		Score pawns_score() const { return score; }
-		Bit pawn_attacks(Color c) const { return pawnAttacks[c]; }
+		Score pawnstruct_score() const { return score; }
+		Bit pawn_attack_map(Color c) const { return pawnAttackmap[c]; }
 		Bit passed_pawns(Color c) const { return passedPawns[c]; }
 		int pawns_on_same_color_squares(Color c, Square sq) const { return pawnsOnSquares[c][!!(B_SQUARES & setbit(sq))]; }
 		int semiopen(Color c, int f) const { return semiopenFiles[c] & (1 << f); }
@@ -81,7 +83,7 @@ namespace Pawnstruct
 
 		// if the king moves or castling rights changes, we must update king safety evaluation
 		Score king_safety(Color us, const Position& pos, Square ksq)
-		{ return kingSquares[us] == ksq && castleRights[us] == pos.castle_rights[us]
+		{ return kingSquares[us] == ksq && castleRights[us] == pos.castle_rights(us)
 				? kingSafety[us] : update_safety(us, pos, ksq); }
 
 		// privates: 
@@ -90,7 +92,7 @@ namespace Pawnstruct
 
 		U64 key;
 		Bit passedPawns[COLOR_N];
-		Bit pawnAttacks[COLOR_N];
+		Bit pawnAttackmap[COLOR_N];
 		Square kingSquares[COLOR_N];
 		int minKPdistance[COLOR_N];
 		int castleRights[COLOR_N];

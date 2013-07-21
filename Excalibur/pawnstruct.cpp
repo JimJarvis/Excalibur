@@ -73,7 +73,7 @@ Score eval_pawns(const Position& pos, Pawnstruct::Entry* ent)
 	ent->passedPawns[us] = 0;
 	ent->kingSquares[us] = SQ_NONE;
 	ent->semiopenFiles[us] = 0xFF;
-	ent->pawnAttacks[us] = shift_board<RIGHT>(ourPawns) | shift_board<LEFT>(ourPawns);
+	ent->pawnAttackmap[us] = shift_board<RIGHT>(ourPawns) | shift_board<LEFT>(ourPawns);
 	ent->pawnsOnSquares[us][B] = bit_count(ourPawns & B_SQUARES);
 	ent->pawnsOnSquares[us][W] = pos.pieceCount[us][PAWN] - ent->pawnsOnSquares[us][B];
 

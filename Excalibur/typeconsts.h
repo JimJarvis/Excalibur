@@ -40,10 +40,12 @@ enum Score { SCORE_ZERO = 0 };
 #define RANK_N 8
 
 const Bit B_SQUARES = 0xAA55AA55AA55AA55ULL;  // a bitboard of all black squares
+const Bit W_SQUARES = ~B_SQUARES; // a bitboard of all white squares
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 
-enum : uint {
+enum : uint
+{
 	SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
 	SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
 	SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
@@ -82,12 +84,13 @@ const Color COLORS[COLOR_N] = {W, B}; // iterator
 enum PieceType : byte
 {
 	NON = 0,
+	ALL_PT = 0,  // all pieces
 	PAWN = 1,
 	KNIGHT = 2,
 	BISHOP =  3,
 	ROOK = 4,
 	QUEEN = 5,
-	KING = 6
+	KING = 6,
 };
 const PieceType PIECE_TYPES[PIECE_TYPE_N - 1] = {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}; // for iterators
 static const char* PIECE_NOTATION[PIECE_TYPE_N] = {"", "", "N", "B", "R", "Q", "K"};
@@ -118,10 +121,10 @@ enum GameStatus : byte
 };
 
 #define PHASE_N 2
-enum Phase
+enum Phase // endgame or midgame
 {
-	PHASE_ENDGAME = 0,
-	PHASE_MIDGAME = 128,
+	PHASE_EG = 0,
+	PHASE_MG = 128,
 	MG = 0, EG = 1
 };
 
@@ -167,6 +170,18 @@ const Value EG_KNIGHT = PIECE_VALUE[EG][KNIGHT];
 const Value EG_BISHOP = PIECE_VALUE[EG][BISHOP];
 const Value EG_ROOK = PIECE_VALUE[EG][ROOK];
 const Value EG_QUEEN = PIECE_VALUE[EG][QUEEN];
+
+#define DEF_OPERATOR(T)                                         \
+	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \
+	inline T operator-(const T d1, const T d2) { return T(int(d1) - int(d2)); } \
+	inline T operator*(int i, const T d) { return T(i * int(d)); }              \
+	inline T operator*(const T d, int i) { return T(int(d) * i); }              \
+	inline T operator-(const T d) { return T(-int(d)); }                        \
+	inline T& operator+=(T& d1, const T d2) { d1 = d1 + d2; return d1; }        \
+	inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
+	inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }
+DEF_OPERATOR(Score);  // operators enabled
+DEF_OPERATOR(Phase);  // operators enabled
 
 #include <vector>
 // Hashtable implementation. For pawn and material table

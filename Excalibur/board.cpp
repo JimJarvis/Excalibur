@@ -10,7 +10,7 @@ Bit passedPawnMask[COLOR_N][SQ_N], pawnAttackSpanMask[COLOR_N][SQ_N];
 byte rookKey[SQ_N][4096]; Bit rookMask[4900]; 
 byte bishopKey[SQ_N][512]; Bit bishopMask[1428]; 
 Magics rookMagics[SQ_N]; Magics bishopMagics[SQ_N]; 
-Bit rookRayMask[SQ_N], bishopRayMask[SQ_N], queenRayMask[SQ_N];
+Bit RayMask[PIECE_TYPE_N][SQ_N];
 
 // Castling masks
 Bit CastleMask[COLOR_N][4];
@@ -253,11 +253,11 @@ void init_bishop_mask(Square sq, int fl, int rk)
 }
 
 // rook, bishop and queen attackmap on an unoccupied board
-void init_ray_masks(Square sq)
+void init_ray_mask(Square sq)
 {
-	rookRayMask[sq] = rook_attack(sq, 0);
-	bishopRayMask[sq] = bishop_attack(sq, 0);
-	queenRayMask[sq] = rookRayMask[sq] | bishopRayMask[sq];
+	RayMask[ROOK][sq] = rook_attack(sq, 0);
+	RayMask[BISHOP][sq] = bishop_attack(sq, 0);
+	RayMask[QUEEN][sq] = RayMask[ROOK][sq] | RayMask[BISHOP][sq];
 }
 
 // knight attack table
@@ -426,7 +426,7 @@ void init_tables()
 		init_bishop_key(sq, fl, rk);
 		init_bishop_mask(sq, fl, rk);
 
-		init_ray_masks(sq);
+		init_ray_mask(sq);
 
 		init_between_mask(sq, fl, rk);
 		init_square_distance_tbl(sq);

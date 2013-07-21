@@ -258,8 +258,8 @@ Phase game_phase(const Position& pos)
 {
 	Value npm = pos.non_pawn_material(W) + pos.non_pawn_material(B);
 
-	return  npm >= MidgameLimit ? PHASE_MIDGAME
-		: npm <= EndgameLimit ? PHASE_ENDGAME
+	return  npm >= MidgameLimit ? PHASE_MG
+		: npm <= EndgameLimit ? PHASE_EG
 		: Phase(((npm - EndgameLimit) * 128) / (MidgameLimit - EndgameLimit));
 }
 

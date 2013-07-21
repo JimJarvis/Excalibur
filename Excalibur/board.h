@@ -23,9 +23,7 @@ namespace Board
 	extern Bit rookMask[4900];  // Rook attack table. Use attack_key to lookup. 4900: all unique possible masks
 	extern byte bishopKey[SQ_N][512]; // Bishop attack keys. any &mask-result is hashed to 2 ** 9
 	extern Bit bishopMask[1428]; // Bishop attack table. 1428: all unique possible masks
-	extern Bit rookRayMask[SQ_N];
-	extern Bit bishopRayMask[SQ_N];
-	extern Bit queenRayMask[SQ_N];
+	extern Bit RayMask[PIECE_TYPE_N][SQ_N];  // Sliding pieces pseudo attacks on an unoccupied board
 
 	/* Castling masks. Will be accessed directly in movegen. */
    // here [4] should be one of CASTLE_CE, _BD, _FG, _EG
@@ -98,9 +96,6 @@ namespace Board
 	inline Bit pawn_push2(Color c, Square sq) { return pawnPush2Mask[c][sq]; }
 	inline Bit pawn_attack_span(Color c, Square sq) { return pawnAttackSpanMask[c][sq]; }
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
-	inline Bit rook_ray(Square sq) { return rookRayMask[sq]; }
-	inline Bit bishop_ray(Square sq) { return bishopRayMask[sq]; }
-	inline Bit queen_ray(Square sq) { return queenRayMask[sq]; }
 
 	/* Other board info */
 	// inline Bit setbit(Square sq) { return bitMask[sq]; }
@@ -117,6 +112,8 @@ namespace Board
 	inline Bit file_adjacent_mask(int file) { return fileAdjacentMask[file]; }
 	inline Bit in_front_mask(Color c, Square sq) { return inFrontMask[c][sq2rank(sq)]; }
 	inline Bit forward_mask(Color c, Square sq) { return forwardMask[c][sq]; }
+	inline Bit same_color_sq_mask(Square sq) // return a bitmap of all squares same color as sq
+	{ return (W_SQUARES & setbit(sq)) ? W_SQUARES : B_SQUARES; }
 
 	// with respect to the reference frame of Color
 	inline Square relative_square(Color c, Square s) { return s ^ (c * 56); }
@@ -129,13 +126,16 @@ namespace Board
 
 	// Shift the bitboard by a DELTA
 	template<int delta>
-	inline Bit shift_board(Bit b) 
-	{
-		return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
+	inline Bit shift_board(Bit b) // template version
+	{ return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
 			: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 : delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
 			: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 : delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9
-			: 0;
-	}
+			: 0; }
+	inline Bit shift_board(Bit b, int delta)  // non-template version 
+	{ return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
+	: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 : delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
+	: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 : delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9
+	: 0; }
 }  // namespace Board
 
 #endif // __board_h__

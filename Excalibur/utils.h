@@ -127,16 +127,4 @@ inline Score apply_weight(Score v, Score w)
 		(int(eg_value(v)) * eg_value(w)) / 0x100);
 }
 
-#define DEF_OPERATOR(T)                                         \
-	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \
-	inline T operator-(const T d1, const T d2) { return T(int(d1) - int(d2)); } \
-	inline T operator*(int i, const T d) { return T(i * int(d)); }              \
-	inline T operator*(const T d, int i) { return T(int(d) * i); }              \
-	inline T operator-(const T d) { return T(-int(d)); }                        \
-	inline T& operator+=(T& d1, const T d2) { d1 = d1 + d2; return d1; }        \
-	inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
-	inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }
-DEF_OPERATOR(Score);  // operators enabled
-DEF_OPERATOR(Phase);  // operators enabled
-
 #endif // __utils_h__
