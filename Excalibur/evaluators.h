@@ -76,7 +76,7 @@ namespace Pawnstruct
 		Score pawnstruct_score() const { return score; }
 		Bit pawn_attack_map(Color c) const { return pawnAttackmap[c]; }
 		Bit passed_pawns(Color c) const { return passedPawns[c]; }
-		int pawns_on_same_color_squares(Color c, Square sq) const { return pawnsOnSquares[c][!!(B_SQUARES & setbit(sq))]; }
+		int pawns_on_same_color_sq(Color c, Square sq) const { return pawnsOnSquares[c][!!(B_SQUARES & setbit(sq))]; }
 		int semiopen(Color c, int f) const { return semiopenFiles[c] & (1 << f); }
 		int semiopen_on_side(Color c, int f, bool left) const 
 		{ return semiopenFiles[c] & (left ? ((1 << f) - 1) : ~((1 << (f+1)) - 1)); }

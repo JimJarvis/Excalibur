@@ -91,7 +91,7 @@ int imbalance(Color us, const Position& pos)
 		+ RedundantQueenPenalty * pos.pieceCount[us][QUEEN];
 
 	// Second-degree polynomial material imbalance by Tord Romstad
-	for (pt1 = 0; pt1 < PIECE_TYPE_N; pt1 ++)
+	for (pt1 = NON; pt1 <= QUEEN; pt1 ++)
 	{
 		// we use zero as a place holder for the bishop pair
 		pc = pt1==0 ? (pos.pieceCount[us][BISHOP] > 1) : pos.pieceCount[us][pt1];
@@ -100,7 +100,7 @@ int imbalance(Color us, const Position& pos)
 
 		v = LinearCoefficients[pt1];
 
-		for (pt2 = 0; pt2 <= pt1; pt2++)
+		for (pt2 = NON; pt2 <= pt1; pt2++)
 			v +=  QuadraticCoefficientsSameColor[pt1][pt2] * (pt2==0 ? (pos.pieceCount[us][BISHOP] > 1) : pos.pieceCount[us][pt2])
 		+ QuadraticCoefficientsOppositeColor[pt1][pt2] * (pt2==0 ? (pos.pieceCount[opp][BISHOP] > 1) : pos.pieceCount[opp][pt2]);
 

@@ -98,9 +98,6 @@ namespace Board
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
 
 	/* Other board info */
-	// inline Bit setbit(Square sq) { return bitMask[sq]; }
-	inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
-	inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
 	inline Bit between(Square sq1, Square sq2) { return betweenMask[sq1][sq2]; }
 	inline bool is_aligned(Square sq1, Square sq2, Square sq3)  // are sq1, 2, 3 aligned?
 	{		return (  ( between(sq1, sq2) | between(sq1, sq3) | between(sq2, sq3) )

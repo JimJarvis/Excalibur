@@ -19,6 +19,7 @@ TEST(Misc, Setup)
 	Board::init_tables();
 	Zobrist::init();
 	Endgame::init();
+	Eval::init();
 
 	// Read from FEN.epd
 	ifstream fin("FEN.epd");

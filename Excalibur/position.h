@@ -133,6 +133,7 @@ public:
 	byte castle_rights(Color c) const { return st->castleRights[c]; }
 	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
 	Bit piece_union(Color c) const { return Colormap[c]; }
+	Bit piece_union(Color c, PieceType pt1, PieceType pt2) const { return Pieces[pt1][c] | Pieces[pt2][c]; }
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.

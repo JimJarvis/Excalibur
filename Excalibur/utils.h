@@ -96,6 +96,8 @@ inline int sq2rank(Square sq) { return sq >> 3; }
 inline Square fr2sq(int f, int r) { return (r << 3) | f; }
 inline int file_distance(Square sq1, Square sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
 inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
+inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
+inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
 
 inline Square flip_vert(Square sq) { return sq ^ 56; }  // vertical flip a square
 inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
@@ -119,12 +121,5 @@ inline Value eg_value(Score s) {
 /// Division of a Score must be handled separately for each term
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
-
-/// Weight score v by score w trying to prevent overflow
-inline Score apply_weight(Score v, Score w)
-{
-	return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
-		(int(eg_value(v)) * eg_value(w)) / 0x100);
-}
 
 #endif // __utils_h__

@@ -8,6 +8,7 @@ int main(int argc, char **argv)
 	Board::init_tables();
 	Zobrist::init();
 	Endgame::init();
+	Eval::init();
 
 	if (argc > 1)
 		perft_epd_verifier("perftsuite.epd", *++argv);

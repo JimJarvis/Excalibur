@@ -4,7 +4,8 @@ using namespace Board;
 /* A few predetermined tables */
 // Table used to drive the defending king towards the edge of the board
 // in KX vs K and KQ vs KR endgames.
-const int MateTable[SQ_N] = {
+const int MateTable[SQ_N] =
+{
 	100, 90, 80, 70, 70, 80, 90, 100,
 	90, 70, 60, 50, 50, 60, 70,  90,
 	80, 60, 40, 30, 30, 40, 60,  80,
@@ -17,7 +18,8 @@ const int MateTable[SQ_N] = {
 
 // Table used to drive the defending king towards a corner square of the
 // right color in KBN vs K endgames.
-const int KBNKMateTable[SQ_N] = {
+const int KBNKMateTable[SQ_N] =
+{
 	200, 190, 180, 170, 160, 150, 140, 130,
 	190, 180, 170, 160, 150, 140, 130, 140,
 	180, 170, 155, 140, 140, 125, 140, 150,
