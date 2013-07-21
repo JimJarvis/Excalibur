@@ -1,23 +1,24 @@
 #include "zobrist.h"
 
-Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
+// accessed as constants in movegen
+Score PieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 
-namespace Zobrist {
-
+namespace Zobrist
+{
 	U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
 	U64 ep[FILE_N];
 	U64 castleOO[COLOR_N], castleOOO[COLOR_N];
 	U64 turn;
 	U64 exclusion;
 
-	/// init() initializes at startup the various arrays used to compute hash keys
+	/// init_keys() initializes at startup the various arrays used to compute hash keys
 	/// and the piece square tables. The latter is a two-step operation: First, the
 	/// white halves of the tables are copied from PSQT[] tables. Second, the black
 	/// halves of the tables are initialized by flipping and changing the sign of
 	/// the white scores.
 
-	void init() {
-
+	void init_keys()
+	{
 		for (Color c : COLORS)
 			for (PieceType pt : PIECE_TYPES)
 				for (int sq = 0; sq < SQ_N; sq ++)
@@ -41,8 +42,8 @@ namespace Zobrist {
 
 			for (int sq = 0; sq < SQ_N; sq++)
 			{
-				pieceSquareTable[W][pt][sq] =  v + PSQT[pt][sq];
-				pieceSquareTable[B][pt][flip_vert(sq)] = -(v + PSQT[pt][sq]); // vertical flip
+				PieceSquareTable[W][pt][sq] =  v + PSQT[pt][sq];
+				PieceSquareTable[B][pt][flip_vert(sq)] = -(v + PSQT[pt][sq]); // vertical flip
 			}
 		}
 	}

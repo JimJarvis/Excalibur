@@ -5,11 +5,14 @@
 
 #include "typeconsts.h"
 
+// uncomment the following macro to show debug messages
+#define DEBUG 
+
 // initialize utility arrays/tools and RKiss random generator
 namespace Utils
 { void init(); }
 
-// Special RKISS random number generator for hashkeys
+// Special RKISS random number generator for hash keys
 namespace RKiss
 {
 	void init_seed(int seed = 73);
@@ -121,5 +124,25 @@ inline Value eg_value(Score s) {
 /// Division of a Score must be handled separately for each term
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
+
+/*
+ *	Variadic MACRO utilities. Used mainly for debugging
+ * Usage:
+ * #define example(...) VARARG(example, __VA_ARGS__)
+ * #define example_0() "with zero parameters"
+ * #define example_1() "with 1 parameter"
+ * #define example_3() "with 3 parameter"
+ * // call as if the 'example' macro is overloaded
+ * example() + example(66) + example(34, 23, 99)
+ */
+// The MSVC has a bug when parsing '__VA_ARGS__'. Workaround:
+#define VA_EXPAND(x) x
+// always return the fifth argument in place
+#define VARARG_INDEX(_0, _1, _2, _3, _4, _5, ...) _5
+// how many variadic parameters?
+#define VARARG_COUNT(...) VA_EXPAND(VARARG_INDEX(__VA_ARGS__, 5, 4, 3, 2, 1))
+#define VARARG_HELPER2(base, count, ...) base##_##count(__VA_ARGS__)
+#define VARARG_HELPER(base, count, ...) VARARG_HELPER2(base, count, __VA_ARGS__)
+#define VARARG(base, ...) VARARG_HELPER(base, VARARG_COUNT(__VA_ARGS__), __VA_ARGS__)
 
 #endif // __utils_h__

@@ -302,7 +302,7 @@ Score Position::calc_psq_score() const
 	PieceType pt;
 	for (int sq = 0; sq < SQ_N; sq++)
 		if ((pt = boardPiece[sq]) != NON)
-			score += pieceSquareTable[boardColor[sq]][pt][sq];
+			score += PieceSquareTable[boardColor[sq]][pt][sq];
 	return score;
 }
 

@@ -7,7 +7,6 @@ TEST(Misc, Other)
 	
 }
 
-
 // Test lsb, msb and bit_count
 TEST(Misc, BitScan)
 {

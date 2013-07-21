@@ -425,7 +425,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	// hash keys and incremental score
 	key ^= Zobrist::turn;  // update side-to-move
 	key ^= Zobrist::psq[turn][piece][from] ^ Zobrist::psq[turn][piece][to];
-	st->psqScore += pieceSquareTable[turn][piece][to] - pieceSquareTable[turn][piece][from];
+	st->psqScore += PieceSquareTable[turn][piece][to] - PieceSquareTable[turn][piece][from];
 	if (st->epSquare != 0)  // reset epSquare and its hash key
 	{
 		key ^=Zobrist::ep[sq2file(st->epSquare)];
@@ -483,7 +483,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		else
 			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
 		st->materialKey ^= Zobrist::psq[opp][capt][pieceCount[opp][capt]];
-		st->psqScore -= pieceSquareTable[opp][capt][captSq];
+		st->psqScore -= PieceSquareTable[opp][capt][captSq];
 	}
 	else if (piece != PAWN)
 		st->fiftyMove ++;   // endif (capt)
@@ -527,7 +527,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			st->pawnKey ^= Zobrist::psq[turn][PAWN][to];
 			st->materialKey ^= Zobrist::psq[turn][promo][pieceCount[turn][promo]++]
 					^ Zobrist::psq[turn][PAWN][pieceCount[turn][PAWN]];
-			st->psqScore += pieceSquareTable[turn][promo][to] - pieceSquareTable[turn][PAWN][to];
+			st->psqScore += PieceSquareTable[turn][promo][to] - PieceSquareTable[turn][PAWN][to];
 			st->npMaterial[turn] += PIECE_VALUE[MG][promo];
 		}
 		break;
@@ -564,7 +564,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			// update the hash key for the moving rook
 			key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
 			// update incremental score
-			st->psqScore += pieceSquareTable[turn][ROOK][rto] - pieceSquareTable[turn][ROOK][rfrom];
+			st->psqScore += PieceSquareTable[turn][ROOK][rto] - PieceSquareTable[turn][ROOK][rfrom];
 		}
 		break;
 

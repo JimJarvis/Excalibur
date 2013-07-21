@@ -17,7 +17,7 @@ TEST(Misc, Setup)
 	// initialize
 	Utils::init();
 	Board::init_tables();
-	Zobrist::init();
+	Zobrist::init_keys();
 	Endgame::init();
 	Eval::init();
 

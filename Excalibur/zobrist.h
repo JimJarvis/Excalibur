@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-extern Score pieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
+extern Score PieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -82,7 +82,7 @@ namespace Zobrist
 	extern U64 castleOO[COLOR_N], castleOOO[COLOR_N];
 	extern U64 turn;
 	extern U64 exclusion;
-	void init();
+	void init_keys(); // also init PieceSquareTable
 }
 
 #endif // __zobrist_h__
