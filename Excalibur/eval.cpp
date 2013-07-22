@@ -59,7 +59,7 @@ struct EvalInfo
 };
 
 // Evaluation grain size, must be a power of 2
-const int GrainSize = 8;
+const int GrainSize = 4;
 
 // Evaluation weights
 enum EvaluationParams {Mobility, PawnStructure, PassedPawns, Space, Cowardice, Aggressiveness};
@@ -276,8 +276,6 @@ namespace Eval
 			- evaluate_pieces_of_color(B, pos, ei, mobility[B]);
 
 		score += apply_weight(mobility[W] - mobility[B], Weights[Mobility]);
-		DEBUG_MSG("Mobility " << C(B), apply_weight(mobility[B], Weights[Mobility]));
-		DEBUG_MSG("Mobility " << C(W), apply_weight(mobility[W], Weights[Mobility]));
 
 		// Evaluate kings after all other pieces because we need complete attack
 		// information when computing the king safety evaluation.
@@ -302,12 +300,10 @@ namespace Eval
 			int s = evaluate_space(W, pos, ei) - evaluate_space(B, pos, ei);
 			score += apply_weight(s * ei.mi->space_weight(), Weights[Space]);
 		}
-		DEBUG_MSG("space", score);
 
 		// Scale winning side if position is more drawish that what it appears
 		ScaleFactor scalor = eg_value(score) > VALUE_DRAW ? ei.mi->scale_factor(W, pos)
 			: ei.mi->scale_factor(B, pos);
-		DEBUG_MSG("scale factor = " << scalor);
 
 		// If we don't already have an unusual scale factor, check for opposite
 		// colored bishop endgames, and use a lower scale for those.
@@ -331,11 +327,24 @@ namespace Eval
 				// a bit drawish, but not as drawish as with only the two bishops.
 				scalor = 50;
 		}
-		DEBUG_MSG("Revised scale factor = " << scalor);
-		DEBUG_MSG("Margin " << C(B) << margins[B]);
-		DEBUG_MSG("Margin " << C(W) << margins[W]);
+
 		margin = margins[pos.turn];
 		Value v = interpolate(score, ei.mi->game_phase(), scalor);
+
+		// Show a few lines of debugging info
+		DEBUG_MSG("Material", pos.psq_score());
+		DEBUG_MSG("Imbalance", ei.mi->material_score());
+		DEBUG_MSG("Pawnstruct", ei.pi->pawnstruct_score());
+		DEBUG_DO(Score bdbg = ei.mi->space_weight() * evaluate_space(B, pos, ei));
+		DEBUG_DO(Score wdbg = ei.mi->space_weight() * evaluate_space(W, pos, ei));
+		DEBUG_MSG("space B", apply_weight(bdbg, Weights[Space]));
+		DEBUG_MSG("space W", apply_weight(wdbg, Weights[Space]));
+		DEBUG_MSG("Margin " << C(B) << " " << margins[B]);
+		DEBUG_MSG("Margin " << C(W) << " " << margins[W]);
+		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->game_phase() / 128.0 << "% MG, "
+			<< setw(6) << 100.0 * (1.0 - (double)ei.mi->game_phase() / 128.0) << "% * "
+			<< setw(6) << (100.0 * scalor) / SCALE_FACTOR_NORMAL << "% EG.\n");
+		DEBUG_MSG("Total: " << centi_pawn(v));
 
 		return pos.turn == W ? v : -v;
 	}
@@ -364,8 +373,6 @@ void init_eval_info(Color us, const Position& pos, EvalInfo& ei)
 	} 
 	else
 		ei.kingRing[opp] = ei.kingAttackersCount[us] = 0;
-
-	DEBUG_MSG("init_eval_info " << C(us));
 }
 
 // evaluate_outposts() evaluates bishop and knight outposts squares
@@ -514,7 +521,7 @@ Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Scor
 	| ei.attackedBy[us][BISHOP] | ei.attackedBy[us][ROOK]
 	| ei.attackedBy[us][QUEEN]  | ei.attackedBy[us][KING];
 	
-	DEBUG_MSG("Color " << C(us), score);
+	DEBUG_MSG("Mobility " << C(us), apply_weight(mobility, Weights[Mobility]));
 	return score;
 }
 
@@ -717,13 +724,13 @@ Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
 
 				// If there aren't enemy attacks huge bonus, a bit smaller if at
 				// least block square is not attacked, otherwise smallest bonus.
-				int k = !unsafeSquares ? 15 : !(unsafeSquares & blockSq) ? 9 : 3;
+				int k = !unsafeSquares ? 15 : !(unsafeSquares & setbit(blockSq)) ? 9 : 3;
 
 				// Big bonus if the path to queen is fully defended, a bit less
 				// if at least block square is defended.
 				if (defendedSquares == squaresToQueen)
 					k += 6;
-				else if (defendedSquares & blockSq)
+				else if (defendedSquares & setbit(blockSq))
 					k += (unsafeSquares & defendedSquares) == unsafeSquares ? 4 : 2;
 
 				mbonus += k * rr, ebonus += k * rr;
@@ -755,6 +762,7 @@ Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
 		score += make_score(mbonus, ebonus);
 
 	}  // while (bpassed)
+
 
 	DEBUG_MSG("passed pawn " << C(us), 
 					apply_weight(score, Weights[PassedPawns]));

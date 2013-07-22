@@ -298,7 +298,7 @@ U64 Position::calc_pawn_key() const {
 // Used at debugging and initialization. Usually incrementally updated
 Score Position::calc_psq_score() const 
 {
-	Score score = Score(0);
+	Score score = SCORE_ZERO;
 	PieceType pt;
 	for (int sq = 0; sq < SQ_N; sq++)
 		if ((pt = boardPiece[sq]) != NON)

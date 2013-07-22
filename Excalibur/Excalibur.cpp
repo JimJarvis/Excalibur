@@ -18,6 +18,7 @@ int main(int argc, char **argv)
 	Position pos(fen);
 	Value margin = 0;
 	Value value = Eval::evaluate(pos, margin);
+	cout << "~~~~~~~~~~~~~~~~~~~" << endl;
 	cout << "Value = " << centi_pawn(value) << endl;
 	cout << "Margin = " << margin << endl;
 

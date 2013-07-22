@@ -153,6 +153,9 @@ inline Score operator/(Score s, int i)
 #ifdef DEBUG
 #define C(c) (c==W ? "W" : "B") // color name
 #define P(pt) PIECE_FULL_NAME[pt]
+#define DEBUG_DO(command) command
+#else
+#define DEBUG_DO(command) 
 #endif
 
 // concatenate char* arguments into a single string delimited by space
