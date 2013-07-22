@@ -6,15 +6,15 @@
 /* Endgame KP vs K table base -- kpkbase.cpp */
 namespace KPKbase
 {
-	// initialized with Endgame::init()
+	// initialized in Endgame::init()
 	void init();
 	bool probe(Square wksq, Square wpsq, Square bksq, Color us);
 }
 
 // EndgameType lists all supported endgames
 // There're 2 types of EndEvaluator: evalFunc() and scalingFunc()
-enum EndgameType {
-
+enum EndgameType
+{
 	// Evaluation functions
 	KXK,   // Generic "mate lone king" eval
 	KBNK,  // KBN vs K
@@ -69,6 +69,7 @@ namespace Endgame
 	extern Map evalFuncMap; 
 	extern Map scalingFuncMap; 
 
+	// initialized in Eval::init()
 	void init();
 
 	// map[key].get() gets the original pointer from the unique_ptr<>

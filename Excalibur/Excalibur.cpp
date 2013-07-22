@@ -6,7 +6,6 @@ int main(int argc, char **argv)
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init_keys();
-	Endgame::init();
 	Eval::init();
 
 	/*if (argc > 1)
@@ -19,8 +18,9 @@ int main(int argc, char **argv)
 	Value margin = 0;
 	Value value = Eval::evaluate(pos, margin);
 	cout << "~~~~~~~~~~~~~~~~~~~" << endl;
-	cout << "Value = " << centi_pawn(value) << endl;
-	cout << "Margin = " << margin << endl;
+	cout << "Value = " << fixed << setprecision(2) 
+	<< centi_pawn(value) << endl;
+	cout << "Margin = " << centi_pawn(margin) << endl;
 
 	return 0;
 }

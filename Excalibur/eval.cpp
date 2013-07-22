@@ -221,6 +221,9 @@ namespace Eval
 	// initialize KingDanger table
 	void init() 
 	{
+		// Initialize Endgame evalFunc's and scalingFunc's tables
+		Endgame::init();
+
 		const int MaxSlope = 30;
 		const int Peak = 1280;
 
@@ -339,8 +342,8 @@ namespace Eval
 		DEBUG_DO(Score wdbg = ei.mi->space_weight() * evaluate_space(W, pos, ei));
 		DEBUG_MSG("space B", apply_weight(bdbg, Weights[Space]));
 		DEBUG_MSG("space W", apply_weight(wdbg, Weights[Space]));
-		DEBUG_MSG("Margin " << C(B) << " " << margins[B]);
-		DEBUG_MSG("Margin " << C(W) << " " << margins[W]);
+		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
+		DEBUG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
 		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->game_phase() / 128.0 << "% MG, "
 			<< setw(6) << 100.0 * (1.0 - (double)ei.mi->game_phase() / 128.0) << "% * "
 			<< setw(6) << (100.0 * scalor) / SCALE_FACTOR_NORMAL << "% EG.\n");

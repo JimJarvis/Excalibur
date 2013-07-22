@@ -18,7 +18,6 @@ TEST(Misc, Setup)
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init_keys();
-	Endgame::init();
 	Eval::init();
 
 	// Read from FEN.epd

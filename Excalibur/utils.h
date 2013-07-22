@@ -62,8 +62,8 @@ inline int msb(U64 bitmap) {
 inline int pop_lsb(U64& bitmap) { int l= lsb(bitmap); bitmap &= bitmap-1; return l; }
 inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
 
-enum BitCountType { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
-template <BitCountType>  // default count up to 15
+enum { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
+template <int>  // default count up to 15
 inline int bit_count(U64 bitmap); // Count the bits in a bitmap
 // count all the way up to 64. Used less than count to 15
 template <>

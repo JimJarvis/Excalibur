@@ -9,7 +9,9 @@
 /* Main evaluation engine */
 namespace Eval
 {
+	// contains Endgame::init() and KPKbase::init()
 	void init();
+
 	// margin stores the uncertainty estimation of position's evaluation
 	// that typically is used by the search for pruning decisions.
 	Value evaluate(const Position& pos, Value& margin);
