@@ -1,6 +1,23 @@
 #include "evaluators.h"
 using namespace Board;
 
+#ifdef DEBUG
+#define DEBUG_MSG_1(msg) \
+	cout << msg << endl
+#define DEBUG_MSG_2(msg, score) \
+	cout << fixed << setprecision(2) << setw(15) << msg << ": MG = "\
+	<< centi_pawn(mg_value(score)) \
+	<< "  EG = " << centi_pawn(eg_value(score)) << endl
+#define DEBUG_MSG_3(msg, mgscore, egscore) \
+	cout << fixed << setprecision(2) <<setw(15) << msg << ": MG = "\
+	<< centi_pawn(mgscore) \
+	<< "  EG = " << centi_pawn(egscore) <<  endl
+#else // do nothing
+#define DEBUG_MSG_1(x1)
+#define DEBUG_MSG_2(x1, x2)
+#define DEBUG_MSG_3(x1, x2, x3)
+#endif // DEBUG
+
 #define S(mg, eg) make_score(mg, eg)
 
 // EvalInfo contains info computed and shared among various evaluators
@@ -259,6 +276,8 @@ namespace Eval
 			- evaluate_pieces_of_color(B, pos, ei, mobility[B]);
 
 		score += apply_weight(mobility[W] - mobility[B], Weights[Mobility]);
+		DEBUG_MSG("Mobility " << C(B), apply_weight(mobility[B], Weights[Mobility]));
+		DEBUG_MSG("Mobility " << C(W), apply_weight(mobility[W], Weights[Mobility]));
 
 		// Evaluate kings after all other pieces because we need complete attack
 		// information when computing the king safety evaluation.
@@ -283,10 +302,12 @@ namespace Eval
 			int s = evaluate_space(W, pos, ei) - evaluate_space(B, pos, ei);
 			score += apply_weight(s * ei.mi->space_weight(), Weights[Space]);
 		}
+		DEBUG_MSG("space", score);
 
 		// Scale winning side if position is more drawish that what it appears
 		ScaleFactor scalor = eg_value(score) > VALUE_DRAW ? ei.mi->scale_factor(W, pos)
 			: ei.mi->scale_factor(B, pos);
+		DEBUG_MSG("scale factor = " << scalor);
 
 		// If we don't already have an unusual scale factor, check for opposite
 		// colored bishop endgames, and use a lower scale for those.
@@ -310,7 +331,9 @@ namespace Eval
 				// a bit drawish, but not as drawish as with only the two bishops.
 				scalor = 50;
 		}
-
+		DEBUG_MSG("Revised scale factor = " << scalor);
+		DEBUG_MSG("Margin " << C(B) << margins[B]);
+		DEBUG_MSG("Margin " << C(W) << margins[W]);
 		margin = margins[pos.turn];
 		Value v = interpolate(score, ei.mi->game_phase(), scalor);
 
@@ -341,6 +364,8 @@ void init_eval_info(Color us, const Position& pos, EvalInfo& ei)
 	} 
 	else
 		ei.kingRing[opp] = ei.kingAttackersCount[us] = 0;
+
+	DEBUG_MSG("init_eval_info " << C(us));
 }
 
 // evaluate_outposts() evaluates bishop and knight outposts squares
@@ -363,6 +388,8 @@ Score evaluate_outposts(Color us, const Position& pos, EvalInfo& ei, Square sq)
 		else
 			bonus += bonus / 2;
 	}
+
+	DEBUG_MSG("outposts " << C(us), bonus, bonus);
 	return make_score(bonus, bonus);
 }
 
@@ -461,6 +488,7 @@ Score evaluate_pieces(Color us, const Position& pos, EvalInfo& ei, Score& mobili
 
 	} // while iterate through all the square pieceList
 
+	DEBUG_MSG("Piece " << C(us) << setw(7) << P(PT), score);
 	return score;
 }
 
@@ -486,6 +514,7 @@ Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Scor
 	| ei.attackedBy[us][BISHOP] | ei.attackedBy[us][ROOK]
 	| ei.attackedBy[us][QUEEN]  | ei.attackedBy[us][KING];
 	
+	DEBUG_MSG("Color " << C(us), score);
 	return score;
 }
 
@@ -594,6 +623,7 @@ Score evaluate_king(Color us, const Position& pos, EvalInfo& ei, Value margins[]
 		margins[us] += mg_value(KingDanger[us == pos.turn][attackUnits]) / 2;
 	}
 
+	DEBUG_MSG("king " << C(us), score);
 	return score;
 }
 
@@ -632,6 +662,7 @@ Score evaluate_threats(Color us, const Position& pos, EvalInfo& ei)
 						score += Threat[pt1][pt2];
 		}
 
+	DEBUG_MSG("threats " << C(us), score);
 	return score;
 }
 
@@ -725,6 +756,8 @@ Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
 
 	}  // while (bpassed)
 
+	DEBUG_MSG("passed pawn " << C(us), 
+					apply_weight(score, Weights[PassedPawns]));
 	// Add the scores to the middle game and endgame eval
 	return apply_weight(score, Weights[PassedPawns]);
 }
@@ -883,6 +916,8 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 
 	// Winning pawn is unstoppable and will promote as first, return big score
 	Score score = make_score(0, 1280 - 32 * pliesToQueen[winnerSide]);
+	DEBUG_MSG("Unstoppable " << C(winnerSide), 
+					winnerSide == W ? score : -score);
 	return winnerSide == W ? score : -score;
 }
 

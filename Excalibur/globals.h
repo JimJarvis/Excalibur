@@ -1,7 +1,7 @@
 /* engine-wide types and constants */
 
-#ifndef __typeconsts_h__
-#define __typeconsts_h__
+#ifndef __globals_h__
+#define __globals_h__
 
 #include <iostream>
 #include <string>
@@ -196,4 +196,4 @@ private:
 	std::vector<T> data;
 };
 
-#endif // __typeconsts_h__
+#endif // __globals_h__

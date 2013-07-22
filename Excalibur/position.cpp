@@ -117,7 +117,7 @@ void Position::parseFEN(string fenstr)
 			mask = setbit(fr2sq(file, rank));  // r*8 + f
 			Color c = isupper(ch) ? W: B; 
 			ch = tolower(ch);
-			PieceType pt;
+			PieceType pt = NON;
 			switch (ch)
 			{
 			case 'p': pt = PAWN; break;

@@ -58,8 +58,9 @@ namespace Material
 	/// which checks for draws with rook pawns and wrong-colored bishops.
 	inline ScaleFactor Entry::scale_factor( Color c, const Position& pos ) const
 	{
-		return !scalingFunc[c] || (*scalingFunc[c])(pos) == SCALE_FACTOR_NONE
-			? scalor[c] : (*scalingFunc[c])(pos);
+		ScaleFactor sf;
+		return !scalingFunc[c] || (sf = (*scalingFunc[c])(pos)) == SCALE_FACTOR_NONE
+			? scalor[c] : sf;
 	}
 }
 
@@ -95,7 +96,7 @@ namespace Pawnstruct
 		Bit pawnAttackmap[COLOR_N];
 		Square kingSquares[COLOR_N];
 		int minKPdistance[COLOR_N];
-		int castleRights[COLOR_N];
+		byte castleRights[COLOR_N];
 		Score score;
 		int semiopenFiles[COLOR_N]; // 0xFF, 1 bit for each file
 		Score kingSafety[COLOR_N];

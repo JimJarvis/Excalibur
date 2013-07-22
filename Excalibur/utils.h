@@ -3,7 +3,7 @@
 #ifndef __utils_h__
 #define __utils_h__
 
-#include "typeconsts.h"
+#include "globals.h"
 
 // uncomment the following macro to show debug messages
 #define DEBUG 
@@ -87,7 +87,7 @@ inline int bit_count(U64 b) { return bit_count<CNT_MAX15>(b); }
 
 
 // display a bitmap as 8*8. For debugging
-Bit dispbit(Bit, bool = 1);
+Bit dispbit(Bit bitmap);
 // convert a name to its square index. a1 is 0 and h8 is 63
 inline Square str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(Square sq) { return SQ_NAME[sq]; }
@@ -117,10 +117,11 @@ inline Score make_score(int mg, int eg) { return Score((mg << 16) + eg); }
 /* Extracting the signed lower and upper 16 bits it not so trivial because
 * according to the standard a simple cast to short is implementation defined
  and so is a right shift of a signed integer. */
-inline Value mg_value(Score s) { return ((s + 32768) & ~0xffff) / 0x10000; }
-inline Value eg_value(Score s) {
-	return (int)(unsigned(s) & 0x7fffu) - (int)(unsigned(s) & 0x8000u);
-}
+inline Value mg_value(Score s) { return ((s +  0x8000) & ~0xffff) / 0x10000; }
+inline Value eg_value(Score s)
+{ return (int)(unsigned(s) & 0x7fffu) - (int)(unsigned(s) & 0x8000u); }
+// Transform a value to centi pawn.
+inline double centi_pawn(Value v) { return double(v) / double(MG_PAWN); }
 /// Division of a Score must be handled separately for each term
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
@@ -144,5 +145,17 @@ inline Score operator/(Score s, int i)
 #define VARARG_HELPER2(base, count, ...) base##_##count(__VA_ARGS__)
 #define VARARG_HELPER(base, count, ...) VARARG_HELPER2(base, count, __VA_ARGS__)
 #define VARARG(base, ...) VARARG_HELPER(base, VARARG_COUNT(__VA_ARGS__), __VA_ARGS__)
+// Define DEBUG_MSG_1 or _2 or _n to define a debug message printout macro with n args
+// Warning: intelliSense might underline this as syntax error. Ignore it and compile. 
+#define DEBUG_MSG(...) VARARG(DEBUG_MSG,	 __VA_ARGS__)
+
+// More debugging info
+#ifdef DEBUG
+#define C(c) (c==W ? "W" : "B") // color name
+#define P(pt) PIECE_FULL_NAME[pt]
+#endif
+
+// concatenate char* arguments into a single string delimited by space
+string concat_args(int argc, char **argv); 
 
 #endif // __utils_h__

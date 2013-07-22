@@ -1,6 +1,5 @@
 #include "position.h"
 #include "evaluators.h"
-using namespace std; 
 
 int main(int argc, char **argv)
 {
@@ -15,10 +14,11 @@ int main(int argc, char **argv)
 	else
 		perft_epd_verifier("perftsuite.epd");*/
 
-	Position pos("8/8/3kn3/8/3K4/8/8/BB6 w - - 0 1");
+	string fen = concat_args(argc, argv);
+	Position pos(fen);
 	Value margin = 0;
 	Value value = Eval::evaluate(pos, margin);
-	cout << "Value = " << value << endl;
+	cout << "Value = " << centi_pawn(value) << endl;
 	cout << "Margin = " << margin << endl;
 
 	return 0;

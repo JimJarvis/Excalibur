@@ -42,7 +42,7 @@
     <ClInclude Include="evaluators.h" />
     <ClInclude Include="move.h" />
     <ClInclude Include="position.h" />
-    <ClInclude Include="typeconsts.h" />
+    <ClInclude Include="globals.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="zobrist.h" />
   </ItemGroup>

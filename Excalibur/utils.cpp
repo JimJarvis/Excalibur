@@ -87,11 +87,8 @@ namespace Utils
 
 
 // display the bitmap. For testing purposes
-// set flag to 1 to display the board. Default to 1 (default must be declared in header ONLY)
-Bit dispbit(Bit bitmap, bool flag)
+Bit dispbit(Bit bitmap)
 {
-	if (!flag)
-		return bitmap;
 	bitset<64> bs(bitmap);
 	for (int i = 7; i >= 0; i--)
 	{
@@ -109,6 +106,16 @@ Bit dispbit(Bit bitmap, bool flag)
 	return bitmap;
 }
 
+// concatenate char* arguments into a single string delimited by space
+string concat_args(int argc, char **argv)
+{
+	if (argc == 1) return "";
+	string str = "";
+	// the first will be program name. Skip
+	while (--argc)
+		str += *++argv + string(argc==1 ? "" : " ");
+	return str;
+}
 
 /* A few borrowed useless algorithms
 // http://chessprogramming.wikispaces.com/Flipping+Mirroring+and+Rotating
