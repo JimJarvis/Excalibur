@@ -969,6 +969,7 @@ int evaluate_space(Color us, const Position& pos, EvalInfo& ei)
 Value interpolate(const Score& v, Phase ph, ScaleFactor scalor)
 {
 	int ev = (eg_value(v) * scalor) / SCALE_FACTOR_NORMAL;
+	// weighted average with respect to phase
 	int result = (mg_value(v) * int(ph) + ev * int(128 - ph)) / 128;
 	return (result + GrainSize / 2) & ~(GrainSize - 1);
 }

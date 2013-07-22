@@ -189,6 +189,8 @@ extern int moveBufEnds[64];      // this arrays keeps track of which moves belon
 
 // perft verifier, with an epd data file. 
 // You can supply an optional "startID" to skip until the first test that matches the ID. The ID is the part after "id gentest-"
-void perft_epd_verifier(string fileName, string startID = "initial", bool verbose = false);  
+void perft_verifier(string fileName, string startID = "initial", bool verbose = false);
+// Do a perft with speedometer
+void perft_verifier(Position& pos, int depth);
 
 #endif // __position_h__

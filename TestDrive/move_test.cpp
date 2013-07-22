@@ -50,11 +50,10 @@ TEST(Move, Checks)
 TEST(Move, Judgement)
 {
 	Move m;
-
-	srand(time(NULL));
-	Square from = rand() % 64;
+	RKiss::init_seed(107);
+	Square from = RKiss::rand64() % 64;
 	m.set_from(from);
-	Square to = rand() % 64;
+	Square to = RKiss::rand64() % 64;
 	m.set_to(to);
 	PieceType proms[4] = {QUEEN, BISHOP, KNIGHT, ROOK}; // promoted
 	for (PieceType prom : proms)

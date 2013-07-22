@@ -62,7 +62,7 @@ U64 Position::perft(int depth, int ply)
 	The speedometer displays only when depth 5 + depth 6 nodes exceed a certain limit, 
 	otherwise it's meaningless to test the speed because the denominator would be too small.
 */
-void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool verbose /* =false */)
+void perft_verifier(string fileName, string startID /* ="initial" */, bool verbose /* =false */)
 {
 	static const int SPEEDOMETER = 250000000;
 	ifstream fin(fileName.c_str());
@@ -132,4 +132,22 @@ void perft_epd_verifier(string fileName, string startID /* ="initial" */, bool v
 	cout << "CONGRATULATIONS!!!!!! ALL TESTS PASSED" << endl;
 	cout << "TOTAL NODES = " << totalNodes << endl;
 	cout << "AVERAGE SPEED = " << 1.0 * totalNodes / totalTime << endl;
+}
+
+// Do a perft with speedometer
+void perft_verifier(Position& pos, int depth)
+{
+	U64 ans;
+	clock_t start, end, lapse;
+	
+	start = clock();
+	ans = pos.perft(depth);
+	end = clock();
+	
+	cout << setw(10) << "Nodes = " << ans << endl;
+	cout << setw(10) << "Time = " << (lapse = end - start) << " ms" << endl;
+	if (lapse < 500L)
+		cout << "Too few nodes. Speed N/A." << endl;
+	else
+		cout << setw(10) << "Speed = " << 1.0 * ans / lapse << " kn/s" << endl;
 }
