@@ -178,7 +178,7 @@ Entry* probe(const Position& pos)
 	
 	if (is_endgame<KBPsK>(W, pos))
 		ent->scalingFunc[W] = &ScalingFuncKBPsK[W];
-	if (is_endgame<KBPsK>(B, pos))
+	else if (is_endgame<KBPsK>(B, pos))
 		ent->scalingFunc[B] = &ScalingFuncKBPsK[B];
 
 	if (is_endgame<KQKRPs>(W, pos))

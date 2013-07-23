@@ -8,6 +8,7 @@ namespace KPKbase
 {
 	// initialized in Endgame::init()
 	void init();
+	// true = WIN, false = DRAW
 	bool probe(Square wksq, Square wpsq, Square bksq, Color us);
 }
 

@@ -16,28 +16,27 @@ uint KPKBitbase[INDEX_MAX / 32];
 // bit    12: side to move (WHITE or BLACK)
 // bit 13-14: white pawn file (from FILE_A to FILE_D)
 // bit 15-17: white pawn 6 - rank (from 6 - RANK_7 to 6 - RANK_2)
-uint index(Color us, Square bksq, Square wksq, Square psq) {
-	return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((6 - sq2rank(psq)) << 15);
-}
+uint index(Color us, Square bksq, Square wksq, Square psq)
+{ return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((6 - sq2rank(psq)) << 15); }
 
-namespace Result {
-const int INVALID = 0,
-		UNKNOWN = 1,
-		DRAW = 2,
-		WIN = 4;
-}
-using namespace Result;
+enum // possible results
+{
+	INVALID = 0,
+	UNKNOWN = 1,
+	DRAW = 2,
+	WIN = 4
+};
 
 class KPKPosition 
 {
 public:
 	int classify_leaf(uint idx);
 	int classify(const std::vector<KPKPosition>& db);
-	operator const int() const { return res; }
+	operator int() const { return res; }
 
 private:
 	Color us;
-	Square bksq, wksq, psq;
+	Square bksq, wksq, psq; // white pawn sq
 	int res;
 };
 
@@ -46,7 +45,6 @@ private:
 #define KingAtk(color) king_attack(color##ksq)
 int KPKPosition::classify_leaf(uint idx) // from white's perspective
 {
-
 	wksq = idx & 0x3F;
 	bksq = (idx >> 6) & 0x3F;
 	us   = Color((idx >> 12) & 0x01);
@@ -61,10 +59,10 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 	if (us == W)
 	{
 		// Immediate win if pawn can be promoted without getting captured
-		if (   sq2rank(psq) == 6
-			&& wksq != psq + 8
-			&& (  square_distance(bksq, psq + 8) > 1
-			|| (KingAtk(w) & setbit(psq + 8)) )  )
+		if (   sq2rank(psq) == RANK_7
+			&& wksq != psq + DELTA_N
+			&& (  square_distance(bksq, psq + DELTA_N) > 1
+			|| (KingAtk(w) & setbit(psq + DELTA_N)) )  )
 			return res = WIN;
 	}
 	// Immediate draw if is stalemate or king captures undefended pawn
@@ -75,8 +73,8 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 	return res = UNKNOWN;
 }
 
-int KPKPosition::classify(const std::vector<KPKPosition>& db) {
-
+int KPKPosition::classify(const std::vector<KPKPosition>& db)
+{
 	// White to Move: If one move leads to a position classified as WIN, the result
 	// of the current position is WIN. If all moves lead to positions classified
 	// as DRAW, the current position is classified DRAW otherwise the current
@@ -90,17 +88,18 @@ int KPKPosition::classify(const std::vector<KPKPosition>& db) {
 	int r = INVALID;
 	Bit atk = king_attack(us == W ? wksq : bksq);
 
-	while (atk)
+	while (atk) // generate W king moves
 		r |= (us == W ? db[index(~us, bksq, pop_lsb(atk), psq)]
 			: db[index(~us, pop_lsb(atk), wksq, psq)]  );
 
-	if (us == W && sq2rank(psq) < 6) // no promotion
+	// generate W pawn moves
+	if (us == W && sq2rank(psq) < RANK_7) // no promotion
 	{
-		Square s = psq + 8;
-		r |= db[index(B, bksq, wksq, s)]; // Single push
+		Square s = psq + DELTA_N;
+		r |= db[index(B, bksq, wksq, s)]; // single push
 
-		if (sq2rank(s) == 2 && s != wksq && s != bksq)
-			r |= db[index(B, bksq, wksq, s + 8)]; // Double push
+		if (sq2rank(s) == RANK_3 && s != wksq && s != bksq)
+			r |= db[index(B, bksq, wksq, s + DELTA_N)]; // double push
 	}
 
 	if (us == W)
@@ -120,8 +119,8 @@ namespace KPKbase
 		return (  KPKBitbase[idx / 32] & (1 << (idx & 0x1F))  ) != 0;
 	}
 
-	void init() {
-
+	void init()
+	{
 		uint idx, repeat = 1;
 		std::vector<KPKPosition> db(INDEX_MAX);
 
