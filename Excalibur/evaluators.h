@@ -15,6 +15,13 @@ namespace Eval
 	// margin stores the uncertainty estimation of position's evaluation
 	// that typically is used by the search for pruning decisions.
 	Value evaluate(const Position& pos, Value& margin);
+
+	// static exchange evaluator
+	/// Parameter 'asymmThreshold' takes
+	/// tempo into account. If the side who initiated the capturing sequence does the
+	/// last capture, it loses a tempo and if the result is below 'asymmetric threshold'
+	/// the capturing sequence is considered bad.
+	Value see(const Position& pos, Move& m, Value asymmThresh = 0);
 }
 
 /* Material evaluation */

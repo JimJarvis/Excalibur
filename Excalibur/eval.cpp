@@ -352,6 +352,99 @@ namespace Eval
 		return pos.turn == W ? v : -v;
 	}
 
+
+
+	/* Static Exchange Evaluator */
+	Value see(const Position& pos, Move& m, Value asymmThresh /* =0 */ )
+	{
+		// ignore castling
+		if (m.is_castle()) return 0;
+
+		Bit occ, attackers, usAttackers;
+		Value swapList[32], idx = 1;
+		Square from = m.get_from();
+		Square to = m.get_to();
+		swapList[0] = PIECE_VALUE[MG][pos.boardPiece[to]];
+		Color us = pos.boardColor[from];
+		occ = pos.Occupied ^ setbit(from);
+
+		if (m.is_ep())
+		{
+			occ ^= pawn_push(~us, to); // remove the captured pawn
+			swapList[0] = PIECE_VALUE[MG][PAWN];
+		}
+
+		// Find all attackers to the destination square, with the moving piece
+		// removed, but possibly an X-ray attacker added behind it.
+		attackers = pos.attackers_to(to, occ) & occ;
+		
+		// if the opp has no attackers we are done
+		us = ~us;
+		usAttackers = attackers & pos.piece_union(us);
+		if (!usAttackers)
+			return swapList[0];
+
+		// The destination square is defended, which makes things rather more
+		// difficult to compute. We proceed by building up a "swap list" containing
+		// the material gain or loss at each stop in a sequence of captures to the
+		// destination square, where the sides alternately capture, and always
+		// capture with the least valuable piece. After each capture, we look for
+		// new X-ray attacks from behind the capturing piece.
+		PieceType capt = pos.boardPiece[from];
+
+		do
+		{
+			// Add the new entry to the swap list
+			swapList[idx] = -swapList[idx - 1] + PIECE_VALUE[MG][capt];
+			idx++;
+
+			// locate the next valuable attacker piece
+			// remove the attacker we just found and scan for new rays behind it
+			capt = PAWN;
+			Bit minAttackers;  // temp
+			while (capt < KING && (minAttackers = usAttackers & pos.piece_union(capt)) == 0)
+				capt += 1;
+			if (capt != KING)
+			{
+				occ ^= minAttackers & ~(minAttackers - 1);
+				if (capt == PAWN || capt == BISHOP || capt == QUEEN)
+					attackers |= bishop_attack(to, occ) & pos.piece_union(BISHOP, QUEEN);
+				if (capt == ROOK || capt == QUEEN)
+					attackers |= rook_attack(to, occ) & pos.piece_union(ROOK, QUEEN);
+
+				attackers &= occ;
+			}
+			DEBUG_MSG((us ? "B" : "W") << " " << PIECE_FULL_NAME[capt]);
+
+			us = ~us;
+			usAttackers = attackers & pos.piece_union(us);
+
+			// Stop before processing a king capture
+			if (capt == KING && usAttackers)
+			{
+				swapList[idx++] = MG_QUEEN * 16;
+				break;
+			}
+
+		} while (usAttackers);
+
+		// If we are doing asymmetric SEE evaluation and the same side does the first
+		// and the last capture, he loses a tempo and gain must be at least worth
+		// 'asymmThreshold', otherwise we replace the score with a very low value,
+		// before negamaxing.
+		if (asymmThresh)
+			for (int i = 0; i < idx; i += 2)
+				if (swapList[i] < asymmThresh)
+					swapList[i] = - MG_QUEEN * 16;
+
+		// Having built the swap list, we negamax through it to find the best
+		// achievable score from the point of view of the side to move.
+		while (--idx)
+			swapList[idx-1] = std::min(-swapList[idx], swapList[idx-1]);
+
+		return swapList[0];
+	}
+
 }  // namespace Eval
 
 

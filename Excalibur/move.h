@@ -26,11 +26,11 @@ public:
 	operator string(); // convert to algebraic chess notation string
 
 	// bits 0 to 5
-	void set_from(ushort from) 	{ mov &= 0xffc0; mov |= (from & 0x3f); }
-	ushort get_from() {  return mov & 0x3f;  }
+	void set_from(Square from) 	{ mov &= 0xffc0; mov |= (from & 0x3f); }
+	Square get_from() {  return mov & 0x3f;  }
 	// bits 6 to 11
-	void set_to(ushort to) 	{ mov &= 0xf03f; mov |= (to & 0x3f)<< 6; }
-	ushort get_to() { return (mov >> 6) & 0x3f; }
+	void set_to(Square to) 	{ mov &= 0xf03f; mov |= (to & 0x3f)<< 6; }
+	Square get_to() { return (mov >> 6) & 0x3f; }
 	// bits 12 to 13, 2 bits 00 to 11 for promoted pieces, if any: N-00, B-01, R-10, Q-11
 	void set_promo(PieceType piece) { clear_special(); mov |= (0xc000 |  PROMO_MASK[piece]); }
 	PieceType get_promo() { return PIECE_PROMO[(mov >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo

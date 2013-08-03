@@ -69,7 +69,8 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 			if (attack_map<PAWN>(from) & setbit(st->epSquare))
 			{
 				// final check to avoid same color capture
-				if (Pawnmap[opp] & setbit(backward_sq(turn, st->epSquare)) & Target)
+				// Board::pawn_push(~turn, st->epSquare) === setbit(backward_sq(turn, st->epSquare))
+				if (Pawnmap[opp] & Board::pawn_push(~turn, st->epSquare) & Target)
 				{
 					mv.set_ep();
 					mv.set_to(st->epSquare);
@@ -178,7 +179,7 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			if (attack_map<PAWN>(from) & setbit(ep))
 			{
 				// final check to avoid same color capture
-				Bit EPattack =  setbit(backward_sq(turn, ep));
+				Bit EPattack =  Board::pawn_push(~turn, ep);
 				if (Pawnmap[opp] & EPattack & Target)  // we'll immediately check legality
 				{
 					// Occupied ^ (From | ToEP | Capt)
@@ -323,7 +324,7 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 		Square kSq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | setbit(backward_sq(turn, to)) );
+		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | Board::pawn_push(~turn, to) );
 		// only slider "pins" are possible
 		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
 			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp]));

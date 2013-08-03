@@ -4,7 +4,12 @@
 
 TEST(Misc, Other)
 {
-
+	Position pp("8/5n2/8/2K1pk2/5P2/6Q1/4R3/8 w - - 0 1");
+	Move mv;
+	mv.set_from(str2sq("f4"));
+	mv.set_to(str2sq("e5"));
+	Value v = Eval::see(pp, mv);
+	cout << "Value = " << v << endl;
 }
 
 // Test lsb, msb and bit_count

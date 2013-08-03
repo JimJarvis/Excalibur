@@ -95,7 +95,10 @@ public:
 	bool is_sq_attacked(Square sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
 	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), ~turn); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(~turn), turn); }
-	Bit attackers_to(Square sq, Color attacker) const;  // inlined
+	Bit attackers_to(Square sq, Color attacker, Bit occ) const;  // inlined
+	Bit attackers_to(Square sq, Color attacker) const { return attackers_to(sq, attacker, Occupied); };
+	Bit attackers_to(Square sq, Bit occ) const;  // regardless of color: records all attackers and defenders
+	Bit attackers_to(Square sq) const { return attackers_to(sq, Occupied); };  // regardless of color: records all attackers and defenders
 	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
@@ -134,6 +137,8 @@ public:
 	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
 	Bit piece_union(Color c) const { return Colormap[c]; }
 	Bit piece_union(Color c, PieceType pt1, PieceType pt2) const { return Pieces[pt1][c] | Pieces[pt2][c]; }
+	Bit piece_union(PieceType pt1, PieceType pt2) const 
+		{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
 private:
 	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
@@ -175,13 +180,23 @@ inline bool Position::is_sq_attacked(Square sq, Color attacker) const
 }
 
 // Bitmap of attackers to a specific square
-inline Bit Position::attackers_to(Square sq, Color attacker) const
+inline Bit Position::attackers_to(Square sq, Color attacker, Bit occ) const
 {
 	return (Pawnmap[attacker] & Board::pawn_attack(~attacker, sq))
 		| (Knightmap[attacker] & Board::knight_attack(sq))
 		| (Kingmap[attacker] & Board::king_attack(sq))
-		| ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq))
-		| ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq));
+		| (piece_union(attacker, ROOK, QUEEN) & Board::rook_attack(sq, occ))
+		| (piece_union(attacker, BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
+}
+// Attackers to a square regardless of color: record all attackers and defenders
+inline Bit Position::attackers_to(Square sq, Bit occ) const
+{
+	return (Pawnmap[W] & Board::pawn_attack(B, sq))
+		| (Pawnmap[B] & Board::pawn_attack(W, sq))
+		| (piece_union(KNIGHT) & Board::knight_attack(sq))
+		| (piece_union(KING) & Board::king_attack(sq))
+		| (piece_union(ROOK, QUEEN) & Board::rook_attack(sq, occ))
+		| (piece_union(BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
 
 extern Move moveBuffer[8192]; // all generated moves of the current search tree are stored in this array.
