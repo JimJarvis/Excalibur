@@ -171,6 +171,15 @@ const Value EG_BISHOP = PIECE_VALUE[EG][BISHOP];
 const Value EG_ROOK = PIECE_VALUE[EG][ROOK];
 const Value EG_QUEEN = PIECE_VALUE[EG][QUEEN];
 
+// for transposition table bound type
+enum BoundType : byte
+{
+	BOUND_NON,
+	BOUND_UPPER,
+	BOUND_LOWER,
+	BOUND_EXACT // = UPPER | LOWER
+};
+
 #define DEF_OPERATOR(T)                                         \
 	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \
 	inline T operator+(const T d, int i) { return T(int(d) + i); } \

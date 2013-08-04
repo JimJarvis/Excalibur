@@ -154,8 +154,10 @@ inline Score operator/(Score s, int i)
 #define C(c) (c==W ? "W" : "B") // color name
 #define P(pt) PIECE_FULL_NAME[pt]
 #define DEBUG_DO(command) command
+#define DEBUG_DISP(msg) cout << msg << endl
 #else
 #define DEBUG_DO(command) 
+#define DEBUG_DISP(msg)
 #endif
 
 // concatenate char* arguments into a single string delimited by space

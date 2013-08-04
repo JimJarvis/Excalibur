@@ -65,6 +65,9 @@
     <ClCompile Include="..\Excalibur\pawnstruct.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Excalibur\transposition.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tests.h">

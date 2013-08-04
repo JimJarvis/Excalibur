@@ -2,8 +2,7 @@
 using namespace Board;
 
 #ifdef DEBUG
-#define DEBUG_MSG_1(msg) \
-	cout << msg << endl
+#define DEBUG_MSG_1(msg) DEBUG_DISP(msg)
 #define DEBUG_MSG_2(msg, score) \
 	cout << fixed << setprecision(2) << setw(15) << msg << ": MG = "\
 	<< centi_pawn(mg_value(score)) \
@@ -355,6 +354,8 @@ namespace Eval
 
 
 	/* Static Exchange Evaluator */
+	/// A good position for testing:
+	/// q2r2q1/1B2nb2/2prpn2/1rkP1QRR/2P1Pn2/4Nb2/B2R4/3R1K2 b - - 0 1
 	Value see(const Position& pos, Move& m, Value asymmThresh /* =0 */ )
 	{
 		// ignore castling
