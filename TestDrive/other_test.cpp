@@ -4,18 +4,7 @@
 
 TEST(Misc, Other)
 {
-	cout << 14 << endl;
-	TT.set_size(14);
-	cout << 16 << endl;
-	TT.set_size(16);
-	cout << 31 << endl;
-	TT.set_size(31);
-	cout << 32 << endl;
-	TT.set_size(32);
-	cout << 63 << endl;
-	TT.set_size(63);
-	cout << 64 << endl;
-	TT.set_size(64);
+	
 }
 
 // Test lsb, msb and bit_count

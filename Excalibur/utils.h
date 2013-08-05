@@ -126,6 +126,14 @@ inline double centi_pawn(Value v) { return double(v) / double(MG_PAWN); }
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
 
+// Get system time
+inline U64 now()
+{
+	sys_time_t t;
+	system_time(&t);
+	return time_to_ms(t);
+}
+
 /*
  *	Variadic MACRO utilities. Used mainly for debugging
  * Usage:
