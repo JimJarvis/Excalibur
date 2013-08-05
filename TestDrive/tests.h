@@ -15,8 +15,7 @@ using namespace std;
 
 // include headers in Excalibur
 #include "position.h"
-#include "eval.h"
-#include "ttable.h"
+#include "search.h"
 using namespace Board;
 
 const int TEST_SIZE = 200;

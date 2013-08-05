@@ -4,7 +4,6 @@
 #define __eval_h__
 
 #include "position.h"
-/* Main evaluation engine */
 
 #include "material.h"
 #include "pawnstruct.h"

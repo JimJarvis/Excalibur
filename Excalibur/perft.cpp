@@ -10,19 +10,19 @@ extern int divideDepth;
 U64 Position::perft(int depth, int ply)
 {
 	int currentBuf, nextBuf; 
-	currentBuf = moveBufEnds[ply];
+	currentBuf = MoveBufEnds[ply];
 
 	if (depth == 1) 
 		return gen_legal(currentBuf) - currentBuf; 
 
 	U64 nodeCount = 0;
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = gen_legal(currentBuf);
+	nextBuf = MoveBufEnds[ply + 1] = gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
-		m = moveBuffer[i];
+		m = MoveBuffer[i];
 		make_move(m, si);
 			//U64 count = perft(depth - 1, ply + 1);
 			//if (depth == divideDepth)
@@ -87,7 +87,7 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 			getline(fin, str, ' ');  // consume the "epd" that precedes the FEN string
 			getline(fin, str); // the FEN string
 			FEN = str;
-			ptest.parseFEN(FEN);
+			ptest.parse_fen(FEN);
 			if (verbose)	cout << "FEN parsed: " << str << endl;
 			for (int depth = 1; depth <= 6; depth++)  // the epd file always counts up to 6 plies
 			{

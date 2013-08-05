@@ -18,7 +18,7 @@ TEST(Misc, BitScan)
 	Position p;
 	for (int i = 0; i < TEST_SIZE; i++)
 	{
-		p.parseFEN(fenList[i]);
+		p.parse_fen(fenList[i]);
 		for (Color c : COLORS)
 			for (PieceType pt : PIECE_TYPES)
 			{

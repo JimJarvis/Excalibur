@@ -4,10 +4,10 @@
 /*
 TEST(Move, Generator)
 {
-	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
-	pos.parseFEN("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
-	pos.parseFEN("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
-	pos.parseFEN("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
+	pos.parse_fen("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal game 
+	pos.parse_fen("1r2k3/pbPpnprp/1bn2P2/8/Q6q/B1PB1N2/P4PPP/3RR1K1 w - - 2 19");
+	pos.parse_fen("r3k2r/p1p1p3/8/1pP5/3pP2P/5b2/PP1P2PP/R3K2R w KQkq b6 2 32");  // en-passant and castling
+	pos.parse_fen("r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"); // 2 en-passant captures
 
 	//Generate the assertion results
 	int end = pos.genPseudoLegal(0);
@@ -16,12 +16,12 @@ TEST(Move, Generator)
 	fout << "static const Move generator_assertion[" << end << "] = {";
 	for (int i = 0; i < end; i++)
 	{
-		fout <<  (uint) moveBuffer[i] << "U" << (i==end-1 ? "};\n" : ", ");
+		fout <<  (uint) MoveBuffer[i] << "U" << (i==end-1 ? "};\n" : ", ");
 	}
 
 	static const Move generator_assertion[37] = {38497U, 39667U, 39927U, 46696U, 47272U, 48296U, 48744U, 46893U, 112557U, 243949U, 113133U, 48941U, 49069U, 54086U, 54214U, 54534U, 54982U, 55430U, 55878U, 56442U, 61048U, 61247U, 61311U, 61375U, 61504U, 61568U, 61632U, 61696U, 61760U, 127488U, 62016U, 62592U, 63168U, 129280U, 44219U, 372027U, 44859U};
 	for (int i = 0; i < end; i++)
-		ASSERT_EQ(generator_assertion[i], moveBuffer[i]);
+		ASSERT_EQ(generator_assertion[i], MoveBuffer[i]);
 }
 */
 
@@ -29,13 +29,13 @@ TEST(Move, Checks)
 {
 	bool verbose = false;
 	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
-	pos.parseFEN("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
+	pos.parse_fen("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
 	int end = pos.gen_non_evasions(0);
 	int check = 0, quiet = 0; // count checking moves
 	StateInfo si; 
 	for (int i = 0; i < end; i++)
 	{
-		Move m = moveBuffer[i];
+		Move m = MoveBuffer[i];
 		pos.make_move(m, si);
 		if (pos.is_own_king_attacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
@@ -87,11 +87,11 @@ TEST(Move, Judgement)
 
 TEST(Move, Mates)
 {
-	pos.parseFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
+	pos.parse_fen("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
 	ASSERT_EQ(pos.mate_status(), CHECKMATE);
-	pos.parseFEN("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
+	pos.parse_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
 	ASSERT_EQ(pos.mate_status(), STALEMATE);
-	pos.parseFEN("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
+	pos.parse_fen("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
 	ASSERT_EQ(pos.mate_status(), CHECKMATE);
 }
 
@@ -141,7 +141,7 @@ TEST(Move, MakeUnmake)
 		StateInfo si;
 		for (int i = 0; i < end; i++) // testing all possible moves
 		{
-			Move m = moveBuffer[i];
+			Move m = MoveBuffer[i];
 			pos.make_move(m, si);
 
 			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << string(m) << "\n" << fenList[i];
@@ -173,15 +173,15 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 	if (depth == 0)  return;
 
 	int currentBuf, nextBuf; 
-	currentBuf = moveBufEnds[ply];
+	currentBuf = MoveBufEnds[ply];
 
 	// generate from this ply
-	nextBuf = moveBufEnds[ply + 1] = pos.gen_legal(currentBuf);
+	nextBuf = MoveBufEnds[ply + 1] = pos.gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
-		moveTrace[ply] = m = moveBuffer[i];
+		moveTrace[ply] = m = MoveBuffer[i];
 		pos.make_move(m, si);
 		
 		ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg; 
@@ -236,7 +236,7 @@ TEST(Move, KeyInvariant2)
 		StateInfo si;
 		for (int i = 0; i < end; i++) // testing all possible moves
 		{
-			Move m = moveBuffer[i];
+			Move m = MoveBuffer[i];
 			pos.makeMove(m, si);
 
 			if (false)   // turn verbose on/off
@@ -253,7 +253,7 @@ TEST(Move, KeyInvariant2)
 			StateInfo si2;
 			for (int i2 = end; i2 < end2; i2++)
 			{
-				Move m2 = moveBuffer[i2];
+				Move m2 = MoveBuffer[i2];
 				pos.makeMove(m2, si2);
 				INVARIANT(2);
 
@@ -261,7 +261,7 @@ TEST(Move, KeyInvariant2)
 				StateInfo si3;
 				for (int i3 = end2; i3 < end3; i3++)
 				{
-					Move m3 = moveBuffer[i3];
+					Move m3 = MoveBuffer[i3];
 					pos.makeMove(m3, si3);
 					INVARIANT(3);
 					pos.unmakeMove(m3);

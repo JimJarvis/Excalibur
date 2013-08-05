@@ -1,14 +1,14 @@
 #include "position.h"
 using namespace Board;
 
-#define update moveBuffer[index++] = mv // add an entry to the buffer
+#define update MoveBuffer[index++] = mv // add an entry to the buffer
 
-Move moveBuffer[8192];
-int moveBufEnds[64];
+Move MoveBuffer[8192];
+int MoveBufEnds[64];
 
 /*
  * generate a pseudo-legal move and store it into a board buffer
- * The first free location in moveBuffer[] is given in parameter index
+ * The first free location in MoveBuffer[] is given in parameter index
  * the new first location is returned.
  */
 // Define a macro to facilitate the update of each piece
@@ -104,13 +104,13 @@ int Position::gen_helper( int index, Bit Target, bool isNonEvasion) const
 		{
 			if (!(CastleMask[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
 				if (!is_bit_attacked(CastleMask[turn][CASTLE_EG], opp))
-					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
+					MoveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
 		}
 		if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 		{
 			if (!(CastleMask[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
 				if (!is_bit_attacked(CastleMask[turn][CASTLE_CE], opp))
-					moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
+					MoveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
 		}
 	}
 
@@ -222,13 +222,13 @@ int Position::gen_legal_helper( int index, Bit Target, bool isNonEvasion, Bit& p
 			{
 				if (!(CastleMask[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
 					if (!is_bit_attacked(CastleMask[turn][CASTLE_EG], opp))
-						moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
+						MoveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OO];  // pre-stored king's castling move
 			}
 			if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 			{
 				if (!(CastleMask[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
 					if (!is_bit_attacked(CastleMask[turn][CASTLE_CE], opp))
-						moveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
+						MoveBuffer[index ++] = MOVE_CASTLING[turn][CASTLE_OOO];  // pre-stored king's castling move
 			}
 
 	}  // isNonEvasion option.
@@ -318,17 +318,19 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 	Square to = mv.get_to();
 	if (boardPiece[from] == KING)  // we already checked castling legality
 		return mv.is_castle() || !is_sq_attacked(to, ~turn);
+
 	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
 	if (mv.is_ep()) // we do it by testing if the king is attacked after the move s made
 	{
-		Square kSq = king_sq(turn);
+		Square ksq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
 		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | Board::pawn_push(~turn, to) );
 		// only slider "pins" are possible
-		return !(Board::rook_attack(kSq, newOccup) & (Queenmap[opp] | Rookmap[opp]))
-			&& !(Board::bishop_attack(kSq, newOccup) & (Queenmap[opp] | Bishopmap[opp]));
+		return !(Board::rook_attack(ksq, newOccup) & piece_union(opp, QUEEN, ROOK))
+			&& !(Board::bishop_attack(ksq, newOccup) & piece_union(opp, QUEEN, BISHOP));
 	}
+
 	// A non-king move is legal iff :
 	return !pinned ||		// it isn't pinned at all
 		!(pinned & setbit(from)) ||    // pinned but doesn't move
@@ -348,10 +350,10 @@ int Position::genLegal(int index) const
 		// only possible illegal moves: (1) when there're pins, 
 		// (2) when the king makes a non-castling move,
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
-		Move& mv = moveBuffer[index];
+		Move& mv = MoveBuffer[index];
 		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
 			&& !is_legal(mv, pinned) )
-			mv = moveBuffer[--end];  // throw the last moves to the first, because the first is checked to be illegal
+			mv = MoveBuffer[--end];  // throw the last moves to the first, because the first is checked to be illegal
 		else
 			index ++;
 	}
@@ -692,7 +694,7 @@ void Position::unmake_move(Move& mv)
 /* Very similar to genLegal() */
 GameStatus Position::mate_status() const
 {
-	// we use the last 218 places in the moveBuffer to ensure we don't override any previous moves
+	// we use the last 218 places in the MoveBuffer to ensure we don't override any previous moves
 	// 8192 - 218 = 7974, 218 is the most move a legal position can ever make
 	Bit pinned = pinned_map();
 	int start = 7974;
@@ -703,7 +705,7 @@ GameStatus Position::mate_status() const
 		// only possible illegal moves: (1) when there're pins, 
 		// (2) when the king makes a non-castling move,
 		// (3) when it's EP - EP pin can't be detected by pinnedMap()
-		Move& mv = moveBuffer[start];
+		Move& mv = MoveBuffer[start];
 		if ( (pinned || mv.get_from()==kSq || mv.is_ep())
 			&& !is_legal(mv, pinned) )  // illegal! 
 			start ++;

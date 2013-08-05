@@ -69,7 +69,7 @@ void Position::init_default()
 	for (Color c : COLORS)
 		st->npMaterial[c] = calc_non_pawn_material(c);
 	turn = W;  // white goes first
-	moveBufEnds[0] = 0;
+	MoveBufEnds[0] = 0;
 }
 */
 
@@ -78,7 +78,7 @@ void Position::init_default()
  * FEN format:
  * positions active_color castle_status en_passant halfMoves fullMoves
  */
-void Position::parseFEN(string fenstr)
+void Position::parse_fen(string fenstr)
 {
 	st = &startState;
 	for (Color c : COLORS)
@@ -190,11 +190,11 @@ void Position::parseFEN(string fenstr)
 	for (Color c : COLORS)
 		st->npMaterial[c] = calc_non_pawn_material(c);
 
-	moveBufEnds[0] = 0;
+	MoveBufEnds[0] = 0;
 }
 
-// Convert the current position to an FEN
-string Position::toFEN() const
+// Convert the current position to an FEN expression
+string Position::to_fen() const
 {
 	ostringstream fen;
 	int space;

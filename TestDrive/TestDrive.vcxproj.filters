@@ -65,10 +65,10 @@
     <ClCompile Include="..\Excalibur\pawnstruct.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\transposition.cpp">
+    <ClCompile Include="..\Excalibur\search.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\search.cpp">
+    <ClCompile Include="..\Excalibur\ttable.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -33,7 +33,7 @@
     <ClCompile Include="..\Excalibur\perft.cpp" />
     <ClCompile Include="..\Excalibur\position.cpp" />
     <ClCompile Include="..\Excalibur\search.cpp" />
-    <ClCompile Include="..\Excalibur\transposition.cpp" />
+    <ClCompile Include="..\Excalibur\ttable.cpp" />
     <ClCompile Include="..\Excalibur\utils.cpp" />
     <ClCompile Include="..\Excalibur\zobrist.cpp" />
     <ClCompile Include="board_test.cpp" />

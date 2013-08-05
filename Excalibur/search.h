@@ -79,12 +79,33 @@ namespace Search
 	struct SignalListener
 	{ bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; };
 
+	/// RootMove struct is used for moves at the root of the tree. For each root
+	/// move we store a score, and a PV (really a refutation in the
+	/// case of moves which fail low). Score is normally set at -VALUE_INFINITE for
+	/// all non-pv moves.
+	struct RootMove
+	{
+		RootMove(Move m) : score(-VALUE_INFINITE), prevScore(-VALUE_INFINITE)
+			{ pv.push_back(m); pv.push_back(MOVE_NONE); }
+
+		bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
+		bool operator==(const Move& m) const { return pv[0] == m; }
+
+		void get_pv_ttable(Position& pos);
+		void store_pv_ttable(Position& pos);
+
+		Value score;
+		Value prevScore;
+		vector<Move> pv;
+	};
+
 	extern LimitListener Limit;
 	// the program will re-read the value every time 
 	// instead of using a backup copy in the register
 	extern volatile SignalListener Signal;
 	extern Position RootPos;
 	extern Color RootColor;
+	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime;
 
 	extern void init();

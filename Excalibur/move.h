@@ -48,7 +48,9 @@ inline ostream& operator<<(ostream& os, Move& m)
 	return os;
 }
 
-/* Constants for castling */
+const Move MOVE_NONE = Move(0);
+
+// Constants for castling
 const Move MOVE_CASTLING[COLOR_N][CASTLE_TYPES_N] = {{0x4184U, 0x4084U}, {0x4fbcU, 0x4ebcU}};
 
 // Castling right query

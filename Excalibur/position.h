@@ -42,8 +42,8 @@ class Position
 public:
 
 	    // Default constructor: initial position
-	Position() { parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); } 
-	Position(string fen) { parseFEN(fen); } // construct by FEN
+	Position() { parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); } 
+	Position(string fen) { parse_fen(fen); } // construct by FEN
 	Position(const Position& another) { *this = another; }; // copy ctor
 	const Position& operator=(const Position& another);  // assignment
 	friend bool operator==(const Position& pos1, const Position& pos2);
@@ -65,11 +65,11 @@ public:
 	StateInfo startState;  // allocate on the stack, for initializing the state pointer
 	StateInfo *st; // state pointer
 
-	void parseFEN(string fen); // parse a FEN position
+	void parse_fen(string fen); // parse a FEN position
 	void display(); // display the full board with letters
 	friend ostream& operator<<(ostream&, Position); // inlined later. Display as a command line graphical board
-	operator string() const { return toFEN(); }  // convert the current board state to an FEN string
-	string toFEN() const;
+	operator string() const { return to_fen(); }  // convert the current board state to an FEN string
+	string to_fen() const;
 	
 	Square king_sq(Color c) const { return pieceList[c][KING][0]; }
 
@@ -199,8 +199,8 @@ inline Bit Position::attackers_to(Square sq, Bit occ) const
 		| (piece_union(BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
 
-extern Move moveBuffer[8192]; // all generated moves of the current search tree are stored in this array.
-extern int moveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
+extern Move MoveBuffer[8192]; // all generated moves of the current search tree are stored in this array.
+extern int MoveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 // perft verifier, with an epd data file. 
 // You can supply an optional "startID" to skip until the first test that matches the ID. The ID is the part after "id gentest-"
