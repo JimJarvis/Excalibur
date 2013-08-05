@@ -30,11 +30,6 @@ typedef unsigned int Square;
 typedef int Value;
 typedef int ScaleFactor;
 
-/// Score enum keeps a midgame and an endgame value in a single integer, first
-/// LSB 16 bits are used to store endgame value, while upper bits are used for
-/// midgame value.
-enum Score { SCORE_ZERO = 0 };
-
 #define SQ_N 64
 #define FILE_N 8
 #define RANK_N 8
@@ -55,6 +50,18 @@ enum : uint
 	SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
 	SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
 	SQ_NONE // a non-existent square
+};
+
+// square index to algebraic notation
+static const char* SQ_NAME[SQ_N] = {
+	"a1", "b1",  "c1", "d1", "e1", "f1", "g1", "h1",
+	"a2", "b2",  "c2", "d2", "e2", "f2", "g2", "h2",
+	"a3", "b3",  "c3", "d3", "e3", "f3", "g3", "h3",
+	"a4", "b4",  "c4", "d4", "e4", "f4", "g4", "h4",
+	"a5", "b5",  "c5", "d5", "e5", "f5", "g5", "h5",
+	"a6", "b6",  "c6", "d6", "e6", "f6", "g6", "h6",
+	"a7", "b7",  "c7", "d7", "e7", "f7", "g7", "h7",
+	"a8", "b8",  "c8", "d8", "e8", "f8", "g8", "h8",
 };
 
 // Square shift in 6 directions
@@ -113,12 +120,12 @@ enum CastleType: byte
 	// the CASTLE_MASK is filled out in Board::init_tables()
 };
 
-enum GameStatus : byte
-{
-	NORMAL = 0,
-	CHECKMATE = 1,
-	STALEMATE = 2
-};
+static const char* FEN_START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+/// Score enum keeps a midgame and an endgame value in a single integer, first
+/// LSB 16 bits are used to store endgame value, while upper bits are used for
+/// midgame value.
+enum Score { SCORE_ZERO = 0 };
 
 #define PHASE_N 2
 enum Phase // endgame or midgame
@@ -126,18 +133,6 @@ enum Phase // endgame or midgame
 	PHASE_EG = 0,
 	PHASE_MG = 128,
 	MG = 0, EG = 1
-};
-
-// square index to algebraic notation
-static const char* SQ_NAME[SQ_N] = {
-	"a1", "b1",  "c1", "d1", "e1", "f1", "g1", "h1",
-	"a2", "b2",  "c2", "d2", "e2", "f2", "g2", "h2",
-	"a3", "b3",  "c3", "d3", "e3", "f3", "g3", "h3",
-	"a4", "b4",  "c4", "d4", "e4", "f4", "g4", "h4",
-	"a5", "b5",  "c5", "d5", "e5", "f5", "g5", "h5",
-	"a6", "b6",  "c6", "d6", "e6", "f6", "g6", "h6",
-	"a7", "b7",  "c7", "d7", "e7", "f7", "g7", "h7",
-	"a8", "b8",  "c8", "d8", "e8", "f8", "g8", "h8",
 };
 
 // Scale factors used in endgames

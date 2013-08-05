@@ -691,7 +691,8 @@ void Position::unmake_move(Move& mv)
 }
 
 
-/* Very similar to genLegal() */
+/*
+// Very similar to genLegal()
 GameStatus Position::mate_status() const
 {
 	// we use the last 218 places in the MoveBuffer to ensure we don't override any previous moves
@@ -715,3 +716,4 @@ GameStatus Position::mate_status() const
 	// no move is legal
 	return st->CheckerMap ? CHECKMATE : STALEMATE;
 }
+*/

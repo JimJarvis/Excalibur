@@ -85,17 +85,6 @@ TEST(Move, Judgement)
 	ASSERT_TRUE(m.is_ep());
 }
 
-TEST(Move, Mates)
-{
-	pos.parse_fen("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); // Immortal Game
-	ASSERT_EQ(pos.mate_status(), CHECKMATE);
-	pos.parse_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1");
-	ASSERT_EQ(pos.mate_status(), STALEMATE);
-	pos.parse_fen("1r3kr1/pbpBBp1p/1b3P2/8/8/2P2q2/P4PPP/3R2K1 b - - 0 24"); // Evergreen Game
-	ASSERT_EQ(pos.mate_status(), CHECKMATE);
-}
-
-
 // Test pieceList[][][] consistency
 bool is_piece_list_invariant(Position& pos)
 {

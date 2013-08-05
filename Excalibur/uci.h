@@ -38,8 +38,11 @@ namespace UCI
 
 	class Option
 	{
+
 	 // a function that changes the engine state on demand
-	typedef void (*ChangeListener)(); 
+	 // The ChangeListener will be applied on 'this'
+	typedef void (*ChangeListener)(const Option&); 
+
 	public:
 		// ctors for different types of options. Currently supports button, check and spin
 		Option(ChangeListener c = nullptr) : 
@@ -59,7 +62,9 @@ namespace UCI
 		operator string() const { return currentVal; }
 
 		Option& operator=(const string& val);  // assign a new value
-		friend ostream& operator<<(ostream& os, const Option& op);
+
+		// all the available UCI options (in the global OptMap) sent to the GUI
+		friend string option2str();
 
 	private:
 		// for checkbox, the values are string "true" or "false"
@@ -68,10 +73,11 @@ namespace UCI
 		// check, spin, combo, button, string
 		string type;
 		int min, max;
-		ChangeListener changer; 
+		ChangeListener changer; // a function pointer
 	};
 
 	void init(); // init default options
+	void process(const string& cmd);  // main stdin processor
 }
 
 // global UCI option map

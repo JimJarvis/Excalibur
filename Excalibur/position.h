@@ -99,7 +99,6 @@ public:
 	Bit attackers_to(Square sq, Color attacker) const { return attackers_to(sq, attacker, Occupied); };
 	Bit attackers_to(Square sq, Bit occ) const;  // regardless of color: records all attackers and defenders
 	Bit attackers_to(Square sq) const { return attackers_to(sq, Occupied); };  // regardless of color: records all attackers and defenders
-	GameStatus mate_status() const; // use the genLegal implementation to see if there's any legal move left
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.

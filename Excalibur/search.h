@@ -108,8 +108,8 @@ namespace Search
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime;
 
-	extern void init();
-	extern void think(); // external main interface
+	void init();
+	void think(); // external main interface
 }
 
 #endif // __search_h__
