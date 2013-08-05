@@ -1,6 +1,6 @@
 // Implementation of the transposition table
 
-#include "transposition.h"
+#include "ttable.h"
 
 Transposition::Table TT; // global transposition table
 

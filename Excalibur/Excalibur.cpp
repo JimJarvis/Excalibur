@@ -1,5 +1,5 @@
 #include "position.h"
-#include "evaluators.h"
+#include "eval.h"
 
 int main(int argc, char **argv)
 {

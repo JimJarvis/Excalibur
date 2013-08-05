@@ -30,7 +30,7 @@
     <ClCompile Include="pawnstruct.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="search.cpp" />
-    <ClCompile Include="transposition.cpp" />
+    <ClCompile Include="ttable.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="Excalibur.cpp" />
@@ -41,12 +41,14 @@
   <ItemGroup>
     <ClInclude Include="board.h" />
     <ClInclude Include="endgame.h" />
-    <ClInclude Include="evaluators.h" />
+    <ClInclude Include="eval.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="move.h" />
+    <ClInclude Include="pawnstruct.h" />
     <ClInclude Include="position.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="search.h" />
-    <ClInclude Include="transposition.h" />
+    <ClInclude Include="ttable.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="zobrist.h" />
   </ItemGroup>

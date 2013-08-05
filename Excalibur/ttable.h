@@ -1,5 +1,5 @@
-#ifndef __transposition_h__
-#define __transposition_h__
+#ifndef __ttable_h__
+#define __ttable_h__
 
 #include "position.h"
 /// The Transposition Entry is the 128 bit (16 bytes) transposition table entry, defined as below:
@@ -82,4 +82,4 @@ namespace Transposition
 
 extern Transposition::Table TT;  // will be instantiated in transposition.cpp
 
-#endif // __transposition_h__
+#endif // __ttable_h__

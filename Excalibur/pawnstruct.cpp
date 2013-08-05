@@ -1,5 +1,6 @@
 /* Pawn structure evaluator */
-#include "evaluators.h"
+#include "pawnstruct.h"
+
 using namespace Board;
 
 #define S(mg, eg) make_score(mg, eg)

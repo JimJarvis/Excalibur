@@ -57,10 +57,10 @@
     <ClCompile Include="pawnstruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="transposition.cpp">
+    <ClCompile Include="search.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="search.cpp">
+    <ClCompile Include="ttable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,19 +80,25 @@
     <ClInclude Include="zobrist.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="evaluators.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="endgame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="transposition.h">
+    <ClInclude Include="search.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="search.h">
+    <ClInclude Include="material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pawnstruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="eval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ttable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

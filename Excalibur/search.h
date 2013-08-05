@@ -2,8 +2,8 @@
 #define __search_h__
 
 #include "position.h"
-#include "evaluators.h"
-#include "transposition.h"
+#include "eval.h"
+#include "ttable.h"
 
 namespace Search
 {
@@ -85,6 +85,7 @@ namespace Search
 	extern volatile SignalListener Signal;
 	extern Position RootPos;
 	extern Color RootColor;
+	extern U64 SearchTime;
 
 	extern void init();
 	extern void think(); // external main interface

@@ -1,4 +1,5 @@
-#include "evaluators.h"
+#include "eval.h"
+
 using namespace Board;
 
 #ifdef DEBUG
