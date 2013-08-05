@@ -68,7 +68,7 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 	ifstream fin(fileName.c_str());
 	if (!fin.is_open())
 	{
-		cout << "Error opening the EPD file" << endl;
+		cout << "Error when opening " << fileName << endl;
 		return;
 	}
 	Position ptest;

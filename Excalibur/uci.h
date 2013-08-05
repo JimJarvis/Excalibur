@@ -8,12 +8,13 @@
 
 // Try to display the copyright (c) unicode symbol
 #ifdef _WIN32  // Windows
-
+// we must awkwardly set the stdout mode to wchar first, then restore. 
 #include <fcntl.h>
 #include <io.h>
 #define display_copyright_symbol \
 	_setmode(_fileno(stdout), _O_U16TEXT); \
-	wcout << L"\u00A9"
+	wcout << L"\u00A9"; \
+	_setmode(_fileno(stdout), _O_TEXT)
 
 #else  // Linux
 #define display_copyright_symbol \
@@ -23,11 +24,12 @@
 // Display the engine info at program startup
 #define display_info \
 	cout << "Excalibur v1.0" << endl; \
-	display_copyright_symbol << "2013 Jim Fan - jimfanspire@gmail.com\n\n" \
-	<< "The silent war on the enchanted board\n" \
-		"The lonely warrior wields the sacred sword\n" \
-		"The odyssey has begun, the glorious test\n" \
-		"Let Excalibur guide you on your lofty quest\n" << endl
+	display_copyright_symbol; \
+	cout << "2013 Jim Fan - jimfanspire@gmail.com\n\n" \
+		<< "The silent war on the enchanted board\n" \
+			"The lonely warrior wields the sacred sword\n" \
+			"The odyssey has begun, the glorious test\n" \
+			"Let Excalibur guide you on your lofty quest\n" << endl
 
 
 namespace UCI
@@ -77,7 +79,7 @@ namespace UCI
 	};
 
 	void init(); // init default options
-	void process(const string& cmd);  // main stdin processor
+	void process();  // main stdin processor (infinite loop)
 }
 
 // global UCI option map

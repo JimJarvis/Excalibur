@@ -4,14 +4,20 @@
 #include "uci.h"
 
 /* Excalibur engine entry point */
-int main(int argc, char **argv)
+int main()
 {
 	display_info;
 
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init_keys();
+	UCI::init();
 	Eval::init();
+
+	// set transposition table size
+	TT.set_size((int) OptMap["Hash"]);
+
+	UCI::process();
 
 	/*if (argc == 1)
 		perft_verifier("perftsuite.epd");

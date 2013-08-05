@@ -106,7 +106,7 @@ Bit dispbit(Bit bitmap)
 	return bitmap;
 }
 
-// concatenate char* arguments into a single string delimited by space
+// concatenate command line args into a single string delimited by space
 string concat_args(int argc, char **argv)
 {
 	if (argc == 1) return "";

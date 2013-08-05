@@ -36,13 +36,13 @@ const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, key) / sizeof(U64) + 1;
 #define Rookmap Pieces[ROOK]
 #define Queenmap Pieces[QUEEN]
 
+static const char* FEN_START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 // for the bitboard, a1 is considered the LEAST significant bit and h8 the MOST
 class Position
 {
 public:
-
-	    // Default constructor: initial position
-	Position() { parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); } 
+	Position() { parse_fen(FEN_START); } // Default constructor: initial position
 	Position(string fen) { parse_fen(fen); } // construct by FEN
 	Position(const Position& another) { *this = another; }; // copy ctor
 	const Position& operator=(const Position& another);  // assignment

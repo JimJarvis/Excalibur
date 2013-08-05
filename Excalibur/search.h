@@ -69,13 +69,15 @@ namespace Search
 	struct LimitListener
 	{
 		// clear everything
-		LimitListener() { std::memset(this, 0, sizeof(LimitListener)); }
+		LimitListener() { memset(this, 0, sizeof(LimitListener)); }
 		bool use_time_management() const { return (mate | movetime | depth | nodes | infinite) == 0; }
 		int time[COLOR_N], inc[COLOR_N], movestogo, depth, nodes, movetime, mate, infinite, ponder;
 	};
 
 	/// The struct stores volatile flags updated during the search
 	/// for instance to stop the search by the GUI.
+	/// The flag stopOnPonderhit is defined because
+	/// normally we should continue searching on ponderhit unless we're out of time.
 	struct SignalListener
 	{ bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; };
 
