@@ -4,7 +4,8 @@
 
 TEST(Misc, Other)
 {
-	
+	string str = "568";
+	cout << str2int(str) << endl;
 }
 
 // Test lsb, msb and bit_count

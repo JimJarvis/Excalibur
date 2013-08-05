@@ -291,7 +291,7 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 	return legal ? gen_legal_helper(index, Target, false, pinned) : gen_helper(index, Target, false);
 }
 
-/* Get a bitmap of all pinned pieces */
+// Get a bitmap of all pinned pieces
 Bit Position::pinned_map() const
 {
 	Bit middle, ans = 0;
@@ -299,8 +299,8 @@ Bit Position::pinned_map() const
 	Bit pinners = Colormap[opp];
 	Square kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= ((Rookmap[opp] | Queenmap[opp]) & RayMask[ROOK][kSq])
-		| ((Bishopmap[opp] | Queenmap[opp]) & RayMask[BISHOP][kSq]);
+	pinners &= (piece_union(opp, QUEEN, ROOK) & RayMask[ROOK][kSq])
+		| (piece_union(opp, QUEEN, BISHOP) & RayMask[BISHOP][kSq]);
 	while (pinners)
 	{
 		middle = between(kSq, pop_lsb(pinners)) & Occupied;

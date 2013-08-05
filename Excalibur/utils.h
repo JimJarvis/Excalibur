@@ -91,7 +91,20 @@ Bit dispbit(Bit bitmap);
 // convert a name to its square index. a1 is 0 and h8 is 63
 inline Square str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
 inline string sq2str(Square sq) { return SQ_NAME[sq]; }
-inline string int2str(int i) { stringstream ss; string ans; ss << i; ss >> ans; return ans; }
+
+// string and integer conversion
+inline string int2str(int i) 
+{ 
+	stringstream ss; string str; 
+	ss << i; ss >> str; 
+	return str; 
+}
+inline int str2int(string str)
+{ 
+	stringstream ss(str); int i; 
+	ss >> i; 
+	return i; 
+}
 
 // file/rank and square conversion
 inline int sq2file(Square sq) { return sq & 7; }

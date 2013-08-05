@@ -212,18 +212,19 @@ private:
 
 
 // Platform-specific system time
-#ifndef _WIN32  // Linux
-#  include <sys/time.h>
-typedef timeval sys_time_t;
-inline void system_time(sys_time_t* t) { gettimeofday(t, NULL); }
-inline long long time_to_ms(const sys_time_t& t) { return t.tv_sec * 1000LL + t.tv_usec / 1000; }
-
-#else  // windows
+#ifdef _WIN32  // Windows
 
 #  include <sys/timeb.h>
 typedef _timeb sys_time_t;
 inline void system_time(sys_time_t* t) { _ftime_s(t); }
 inline U64 time_to_ms(const sys_time_t& t) { return t.time * 1000LL + t.millitm; }
+
+#else   // Linux
+
+#  include <sys/time.h>
+typedef timeval sys_time_t;
+inline void system_time(sys_time_t* t) { gettimeofday(t, NULL); }
+inline long long time_to_ms(const sys_time_t& t) { return t.tv_sec * 1000LL + t.tv_usec / 1000; }
 
 #endif // !_WIN32
 

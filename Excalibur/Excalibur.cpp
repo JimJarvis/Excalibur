@@ -1,14 +1,19 @@
+#include "utils.h"
 #include "position.h"
 #include "search.h"
+#include "uci.h"
 
+/* Excalibur engine entry point */
 int main(int argc, char **argv)
 {
+	display_info;
+
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init_keys();
 	Eval::init();
 
-	if (argc == 1)
+	/*if (argc == 1)
 		perft_verifier("perftsuite.epd");
 	// Do perft starting from a specific test suite
 	else if (argc == 2)
@@ -32,7 +37,7 @@ int main(int argc, char **argv)
 			if (!isspace(response))
 				again = false;
 		}
-	}
+	}*/
 
 	/*string fen = concat_args(argc, argv);
 	Position pos(fen);

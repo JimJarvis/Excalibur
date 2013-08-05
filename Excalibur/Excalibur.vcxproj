@@ -31,6 +31,7 @@
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="search.cpp" />
     <ClCompile Include="ttable.cpp" />
+    <ClCompile Include="uci.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="Excalibur.cpp" />
@@ -49,6 +50,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="search.h" />
     <ClInclude Include="ttable.h" />
+    <ClInclude Include="uci.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="zobrist.h" />
   </ItemGroup>
