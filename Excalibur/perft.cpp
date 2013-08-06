@@ -1,5 +1,5 @@
 #include "position.h"
-#include <cassert>
+#include "search.h"
 
 // variables that might be used for debugging
 // uncomment some code to show more detailed debugging info
@@ -9,6 +9,9 @@ extern int divideDepth;
 /* Classical performance test. Return raw node count */
 U64 Position::perft(int depth, int ply)
 {
+	if (Search::Signal.stop)  // force stop by the user
+		throw exception("perft aborted");
+
 	int currentBuf, nextBuf; 
 	currentBuf = MoveBufEnds[ply];
 

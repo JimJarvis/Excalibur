@@ -40,6 +40,7 @@
     <ClCompile Include="board_test.cpp" />
     <ClCompile Include="move_test.cpp" />
     <ClCompile Include="other_test.cpp" />
+    <ClCompile Include="thread_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">

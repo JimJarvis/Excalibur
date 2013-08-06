@@ -2,25 +2,9 @@
 
 #include "tests.h"
 
-class GoodThread : public Thread
-{
-public:
-	GoodThread() : Thread() {};
-	void execute();
-};
-
-void GoodThread::execute()
-{
-	for (int i = 0; i < 20; i++)
-	{
-		cout << "goody almighty" << endl;
-	}
-}
-
 TEST(Misc, Other)
 {
-	auto th = new_thread<GoodThread>();
-	del_thread(th);
+	
 }
 
 // Test lsb, msb and bit_count

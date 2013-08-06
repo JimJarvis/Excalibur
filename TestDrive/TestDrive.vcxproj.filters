@@ -71,6 +71,9 @@
     <ClCompile Include="..\Excalibur\thread.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="thread_test.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tests.h">
