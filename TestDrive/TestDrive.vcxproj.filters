@@ -12,9 +12,6 @@
     <Filter Include="Test Files">
       <UniqueIdentifier>{c9eff7c2-a2d0-4bb0-bc25-60fade5e4684}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{1e958262-c8a7-4405-a6ec-520c5f376675}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Excalibur\board.cpp">

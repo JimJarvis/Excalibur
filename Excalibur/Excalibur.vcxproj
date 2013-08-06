@@ -56,6 +56,9 @@
     <ClInclude Include="utils.h" />
     <ClInclude Include="zobrist.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{142FD761-661D-4930-A1FA-95606474D3C0}</ProjectGuid>
     <RootNamespace>Excalibur</RootNamespace>

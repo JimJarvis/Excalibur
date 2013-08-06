@@ -62,19 +62,15 @@ U64 Position::perft(int depth, int ply)
 	The speedometer displays only when depth 5 + depth 6 nodes exceed a certain limit, 
 	otherwise it's meaningless to test the speed because the denominator would be too small.
 */
-void perft_verifier(string fileName, string startID /* ="initial" */, bool verbose /* =false */)
+void perft_verifier(string filePath, string startID /* ="initial" */, bool verbose /* =false */)
 {
 	static const int SPEEDOMETER = 250000000;
-	ifstream fin(fileName.c_str());
-	if (!fin.is_open())
-	{
-		cout << "Error when opening " << fileName << endl;
-		return;
-	}
+	ifstream fin(filePath.c_str());
+	if (!fin.is_open())  // MUST new and throw an exception pointer
+		throw new FileNotFoundException(filePath);
 	Position ptest;
 	string str, FEN;
-	U64 ans, actual, roundTime, roundNodes, totalTime = 0, totalNodes = 0;
-	clock_t start, end;
+	U64 ans, actual, roundTime, roundNodes, start, end, totalTime = 0, totalNodes = 0;
 	bool pass = true;
 	while (getline(fin, str))
 	{
@@ -93,7 +89,7 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 			{
 				fin >> str >> str;  // read off "perft X"
 				fin >> ans;  // The answer
-				start = clock();
+				start = now();
 				if (Search::Signal.stop)  // force stop by the user
 				{
 					cout << "perft aborted!" << endl;
@@ -101,7 +97,7 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 				}
 				else
 					actual = ptest.perft(depth); 
-				end = clock();
+				end = now();
 
 				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)
 				{
@@ -143,12 +139,11 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 // Do a perft with speedometer
 void perft_verifier(Position& pos, int depth)
 {
-	U64 ans;
-	clock_t start, end, lapse;
+	U64 ans, start, end, lapse;
 	
-	start = clock();
+	start = now();
 	ans = pos.perft(depth);
-	end = clock();
+	end = now();
 	
 	cout << setw(10) << "Nodes = " << ans << endl;
 	cout << setw(10) << "Time = " << (lapse = end - start) << " ms" << endl;

@@ -14,7 +14,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <ctime>
 #include <map>
 #include <unordered_set>
 #include <memory>
@@ -198,6 +197,22 @@ DEF_OPERATOR(PieceType);
 #else
 #  define INLINE  inline
 #endif
+
+// thrown when requested file can't be opened
+class FileNotFoundException : public std::exception
+{
+public:
+	FileNotFoundException(string fp)
+	{
+		errmsg = new string("Error when opening ");
+		*errmsg += fp;
+	};
+	~FileNotFoundException() { delete errmsg; }
+	virtual const char* what() const throw()
+	{ return errmsg->c_str(); }
+private:
+	string *errmsg;
+};
 
 #include <vector>
 // Hashtable implementation. For pawn and material table

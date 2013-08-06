@@ -137,7 +137,9 @@ void process()
 	else if (cmd == "perft")
 	{
 		if (exists(pth)) // never run 2 perfts at the same time
-			{ cout << "perft is running" << endl; continue; }
+			if (!Signal.stop) { cout << "perft is running" << endl; continue; }
+			else { del_thread(pth); }
+
 		vector<string> args;
 		while (iss >> str)
 			args.push_back(str);
@@ -153,7 +155,7 @@ void process()
 		// perft file XXXX[epd file location]
 		else
 		{
-			string opt = str_lower(args[0]);
+			string opt = str2lower(args[0]);
 			if (opt == "fen")
 			{
 				string fen = "";
@@ -191,12 +193,16 @@ void process()
 void PerftThread::execute()
 {
 	Signal.stop = false;
-	switch (PH.type)
+	try
 	{
-	case 0: perft_verifier(PH.epdFile); break;
-	case 1: perft_verifier(PH.epdFile, PH.epdId); break;
-	case 2: perft_verifier(PH.posperft, PH.depth); break;
+		switch (PH.type)
+		{
+		case 0: perft_verifier(PH.epdFile); break;
+		case 1: perft_verifier(PH.epdFile, PH.epdId); break;
+		case 2: perft_verifier(PH.posperft, PH.depth); break;
 	}
+	} catch (FileNotFoundException* e) // must be an exception pointer
+	{ cout << e->what() << endl; delete e; Signal.stop = true; }
 	Signal.stop = true;
 }
 

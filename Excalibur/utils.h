@@ -167,8 +167,10 @@ inline int str2int(string str)
 	ss >> i; 
 	return i; 
 }
-inline string str_lower(string str)  // lower case transformation
-	{ transform(str.begin(), str.end(), str.begin(), tolower); return str; }
+// ugly workaround wrapper for gcc
+typedef int (*UnaryFn)(int);
+inline string str2lower(string str)  // lower case transformation
+	{ transform(str.begin(), str.end(), str.begin(), static_cast<UnaryFn>(tolower)); return str; }
 
 // file/rank and square conversion
 inline int sq2file(Square sq) { return sq & 7; }
