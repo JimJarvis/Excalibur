@@ -190,6 +190,15 @@ DEF_OPERATOR(Score);  // operators enabled
 DEF_OPERATOR(Phase);
 DEF_OPERATOR(PieceType);
 
+// force inline
+#ifdef _MSC_VER
+#  define INLINE  __forceinline
+#elif defined(__GNUC__)
+#  define INLINE  inline __attribute__((always_inline))
+#else
+#  define INLINE  inline
+#endif
+
 #include <vector>
 // Hashtable implementation. For pawn and material table
 template<class T, int Size>

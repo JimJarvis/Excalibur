@@ -127,13 +127,17 @@ void process()
 		else
 			Limit.ponder = false;
 		if (exists(pth))
+		{
+			cout << "aborting perft ..." << endl;
 			del_thread(pth);
+		}
 	}
 
 	// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
-		if (exists(pth))  continue;  // never run 2 perfts at the same time
+		if (exists(pth)) // never run 2 perfts at the same time
+			{ cout << "perft is running" << endl; continue; }
 		vector<string> args;
 		while (iss >> str)
 			args.push_back(str);

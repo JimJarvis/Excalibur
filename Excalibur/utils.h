@@ -7,6 +7,10 @@
 
 // uncomment the following macro to show debug messages
 #define DEBUG 
+// Huge performance gain when _MSC_VER is enabled
+// comment out the following lines to disable using assembly
+#define USE_BITSCAN 
+#define USE_BITCOUNT
 
 // initialize utility arrays/tools and RKiss random generator
 namespace Utils
@@ -22,6 +26,7 @@ namespace RKiss
 
 #define setbit(n) (1ULL << (n))
 
+/* Bit Scan */
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
  * bitmap = 0 would be undefined for this func */
@@ -29,21 +34,52 @@ const U64 LSB_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
 extern int LSB_TABLE[64]; // initialized in Utils::init()
 extern int MSB_TABLE[256]; // initialized in Utils::init() 
 
-// Huge performance gain when _MSC_VER is enabled
-// comment out the following line to disable
-#define ENABLE_MSC_VER 0
-#if defined(ENABLE_MSC_VER) && defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-inline int lsb(U64 bitmap) {
+// Use built-in bit scan? 
+#ifdef USE_BITSCAN
+
+#if defined(_MSC_VER)
+INLINE int lsb(U64 bitmap)
+{
 	unsigned long index;
 	_BitScanForward64(&index, bitmap);
 	return index;
 }
-inline int msb(U64 bitmap) {
+INLINE int msb(U64 bitmap)
+{
 	unsigned long index;
 	_BitScanReverse64(&index, bitmap);
 	return index;
 }
-#else
+
+#  elif defined(__arm__)
+
+INLINE int lsb32(uint v)
+{
+	__asm__("rbit %0, %1" : "=r"(v) : "r"(v));
+	return __builtin_clz(v);
+}
+INLINE int msb(U64 b)
+{ return 63 - __builtin_clzll(b); }
+INLINE int lsb(U64 b) 
+{ return uint(b) ? lsb32(uint(b)) : 32 + lsb32(uint(b >> 32)); }
+
+#  else // Assembly code by Heinz van Saanen
+INLINE int lsb(U64 b)
+{ 
+	U64 index;
+	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
+	return index;
+}
+INLINE int msb(U64 b)
+{
+	U64 index;
+	__asm__("bsrq %1, %0": "=r"(index): "rm"(b) );
+	return index;
+}
+
+#endif // use built-in bit scan
+
+#else  // use algorithm implementation instead of assembly
 inline int lsb(U64 bitmap)
 { return LSB_TABLE[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58]; }
 inline int msb(U64 bitmap) {
@@ -57,17 +93,31 @@ inline int msb(U64 bitmap) {
 	{ b32 >>= 8; result += 8; }
 	return result + MSB_TABLE[b32];
 }
-#endif
+#endif // !USE_BITSCAN
  // return LSB and set LSB to 0
-inline int pop_lsb(U64& bitmap) { int l= lsb(bitmap); bitmap &= bitmap-1; return l; }
-inline bool more_than_one_bit(U64 bitmap) { return (bitmap & (bitmap - 1)) != 0; }
+inline int pop_lsb(U64& bitmap)
+	{ int l= lsb(bitmap); bitmap &= bitmap-1; return l; }
+inline bool more_than_one_bit(U64 bitmap)
+	{ return (bitmap & (bitmap - 1)) != 0; }
 
-enum { CNT_FULL,  CNT_MAX15};  // bit_count maximum 15 or all the way up to 64
+/* Bit Count */
+enum { CNT_FULL_ALGORITHM,  CNT_MAX15_ALGORITHM, CNT_BUILT_IN};
+// use built-in bit count?
+#ifdef USE_BITCOUNT
+  // bit_count maximum 15 or all the way up to 64
+const int CNT_FULL = CNT_BUILT_IN;
+const int CNT_MAX15 = CNT_BUILT_IN;
+#else
+ // use algorithm instead of assembly
+const int CNT_FULL = CNT_FULL_ALGORITHM;
+const int CNT_MAX15 = CNT_MAX15_ALGORITHM;
+#endif // USE_BITCOUNT
+
 template <int>  // default count up to 15
 inline int bit_count(U64 bitmap); // Count the bits in a bitmap
 // count all the way up to 64. Used less than count to 15
 template <>
-inline int bit_count<CNT_FULL>(U64 b)
+inline int bit_count<CNT_FULL_ALGORITHM>(U64 b)
 {
 	b -=  (b >> 1) & 0x5555555555555555ULL;
 	b  = ((b >> 2) & 0x3333333333333333ULL) + (b & 0x3333333333333333ULL);
@@ -76,14 +126,26 @@ inline int bit_count<CNT_FULL>(U64 b)
 }
 // Count up to 15 bits. Suitable for most bitboards
 template<>
-inline int bit_count<CNT_MAX15>(U64 b)
+inline int bit_count<CNT_MAX15_ALGORITHM>(U64 b)
 {
 	b -=  (b >> 1) & 0x5555555555555555ULL;
 	b  = ((b >> 2) & 0x3333333333333333ULL) + (b & 0x3333333333333333ULL);
 	return (b * 0x1111111111111111ULL) >> 60;
 }
+// Assembly code that works for both FULL and MAX15
+template<>
+INLINE int bit_count<CNT_BUILT_IN>(U64 b)
+{
+#if defined(_MSC_VER)
+	return (int)__popcnt64(b);
+#else
+	__asm__("popcnt %1, %0" : "=r" (b) : "r" (b));
+	return b;
+#endif
+}
 // default overload: up to 15
-inline int bit_count(U64 b) { return bit_count<CNT_MAX15>(b); }
+INLINE int bit_count(U64 b)
+	{ return bit_count<CNT_MAX15>(b); }
 
 
 // display a bitmap as 8*8. For debugging

@@ -9,9 +9,6 @@ extern int divideDepth;
 /* Classical performance test. Return raw node count */
 U64 Position::perft(int depth, int ply)
 {
-	if (Search::Signal.stop)  // force stop by the user
-		throw exception("perft aborted");
-
 	int currentBuf, nextBuf; 
 	currentBuf = MoveBufEnds[ply];
 
@@ -97,10 +94,13 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 				fin >> str >> str;  // read off "perft X"
 				fin >> ans;  // The answer
 				start = clock();
-				try  // abortion handling
-				{ actual = ptest.perft(depth); }
-				catch (exception e)
-				{ cout << e.what() << endl; Search::Signal.stop = true; return; }
+				if (Search::Signal.stop)  // force stop by the user
+				{
+					cout << "perft aborted!" << endl;
+					return;
+				}
+				else
+					actual = ptest.perft(depth); 
 				end = clock();
 
 				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)
