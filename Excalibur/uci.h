@@ -15,7 +15,6 @@
 	_setmode(_fileno(stdout), _O_U16TEXT); \
 	wcout << L"\u00A9"; \
 	_setmode(_fileno(stdout), _O_TEXT)
-
 #else  // Linux
 #define display_copyright_symbol \
 	cout << "\u00A9"

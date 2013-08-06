@@ -56,9 +56,6 @@
     <ClCompile Include="..\Excalibur\material.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="eval_test.cpp">
-      <Filter>Test Files</Filter>
-    </ClCompile>
     <ClCompile Include="board_test.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
@@ -69,6 +66,9 @@
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="..\Excalibur\ttable.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Excalibur\thread.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -30,6 +30,7 @@
     <ClCompile Include="pawnstruct.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="search.cpp" />
+    <ClCompile Include="thread.cpp" />
     <ClCompile Include="ttable.cpp" />
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="utils.cpp" />
@@ -49,6 +50,7 @@
     <ClInclude Include="position.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="search.h" />
+    <ClInclude Include="thread.h" />
     <ClInclude Include="ttable.h" />
     <ClInclude Include="uci.h" />
     <ClInclude Include="utils.h" />
