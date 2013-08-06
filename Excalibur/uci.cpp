@@ -1,4 +1,6 @@
 #include "uci.h"
+#include "thread.h"
+using namespace Search;
 
 // instantiate global option map
 map<string, UCI::Option> OptMap;
@@ -57,7 +59,24 @@ string option2str()
 }
 
 
-/* UCI command main processor */
+// an ugly helper for perft thread
+struct PerftHelper 
+{	PerftHelper() : epdFile("perftsuite.epd") {}; // perft test suite file location
+	int type;  // which version of perft_verifer() will be used?
+	string epdFile, epdId;
+	int depth; Position posperft;
+} PH;
+// A thread for the debug cmd 'perft' that enables perft abortion without system exit
+class PerftThread : public Thread
+{ public: void execute(); };
+// handy macro for 'perft' command
+#define start_perft(typ) \
+	PH.type = typ; \
+	pth = new_thread<PerftThread>()
+
+/*
+ *	UCI protocol main processor
+ */
 /**
 Ponderhit example:
 GUI -> engine: position p1 [initial position]
@@ -88,7 +107,7 @@ void process()
 {
 	Position pos;
 	string str, cmd;
-	string epdFile = "perftsuite.epd";  // perft test suite file location
+	PerftThread *pth = nullptr;
 
 	do {
 	if (!getline(cin, str))  // waiting for input. EOF means quit
@@ -103,24 +122,27 @@ void process()
 		// waiting for 'ponderhit' to stop the search (for instance because we
 		// already ran out of time), otherwise we should continue searching but
 		// switching from pondering to normal search.
-		if (cmd != "ponderhit" || Search::Signal.stopOnPonderhit)
-			Search::Signal.stop = true;
+		if (cmd != "ponderhit" || Signal.stopOnPonderhit)
+			Signal.stop = true;
 		else
-			Search::Limit.ponder = false;
+			Limit.ponder = false;
+		if (exists(pth))
+			del_thread(pth);
 	}
 
 	// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
+		if (exists(pth))  continue;  // never run 2 perfts at the same time
 		vector<string> args;
 		while (iss >> str)
 			args.push_back(str);
 		size_t size = args.size();
-		if (size <= 1)  cout << "Reading " << epdFile << endl;
+		if (size <= 1)  cout << "Reading " << PH.epdFile << endl;
 		if (size == 0)
-			perft_verifier(epdFile);
+			{ start_perft(0); }
 		else if (size == 1) // starting from a specific id-gentest
-			perft_verifier(epdFile, args[0]);
+			{ PH.epdId = args[0]; start_perft(1); }
 		// more than 1 args: either set epdFile location or do perft with an FEN
 		// syntax: 
 		// perft fen XXXX[fen string]
@@ -132,17 +154,17 @@ void process()
 			{
 				string fen = "";
 				for (int i = 1; i < size; i++)  fen += args[i] + " ";
-				Position pperft(fen);
+				PH.posperft.parse_fen(fen);
 				string response;
 				cout << "Enter any non-number to quit perft." << endl;
-				int depth;
 				bool again = true, first = true;
 				while (again)
 				{
 					cout << "depth: ";
 					getline(cin, response);
-					if ( (!first && response.empty()) || istringstream(response) >> depth)
-						perft_verifier(pperft, depth);
+					if ( !exists(pth) && 
+						((!first && response.empty()) || istringstream(response) >> PH.depth) )
+						{ start_perft(2); del_thread(pth); } // blocks here
 					else
 						again = false;
 					if (first)  first = false;
@@ -151,7 +173,7 @@ void process()
 			else if (opt == "file")  // set epd file location
 			{
 				if (size > 1)
-				{ epdFile = ""; for (int i = 1; i < size; i++)  epdFile += args[i] + " "; }
+				{ PH.epdFile = ""; for (int i = 1; i < size; i++)  PH.epdFile += args[i] + " "; }
 			}
 		}
 	}  // command 'perft'
@@ -159,5 +181,20 @@ void process()
 
 	} while (cmd != "quit");  // infinite stdin loop
 } // process()
+
+
+// uses the global helper struct PerftHelper
+void PerftThread::execute()
+{
+	Signal.stop = false;
+	switch (PH.type)
+	{
+	case 0: perft_verifier(PH.epdFile); break;
+	case 1: perft_verifier(PH.epdFile, PH.epdId); break;
+	case 2: perft_verifier(PH.posperft, PH.depth); break;
+	}
+	Signal.stop = true;
+}
+
 
 } // namespace UCI

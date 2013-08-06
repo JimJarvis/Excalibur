@@ -97,7 +97,10 @@ void perft_verifier(string fileName, string startID /* ="initial" */, bool verbo
 				fin >> str >> str;  // read off "perft X"
 				fin >> ans;  // The answer
 				start = clock();
-				actual = ptest.perft(depth);
+				try  // abortion handling
+				{ actual = ptest.perft(depth); }
+				catch (exception e)
+				{ cout << e.what() << endl; Search::Signal.stop = true; return; }
 				end = clock();
 
 				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)

@@ -30,7 +30,6 @@ void GoodThread::execute()
 class BadThread : public Thread
 {
 public:
-	BadThread() : Thread() {};
 	void execute();
 };
 

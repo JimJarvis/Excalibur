@@ -10,8 +10,8 @@
 // unfortunatly cond_wait() is racy between lock_release() and WaitForSingleObject()
 // but apart from this they have the same speed performance of SRW locks.
 typedef CRITICAL_SECTION Lock;
-typedef HANDLE WaitCondition;
-typedef HANDLE NativeHandle;
+typedef HANDLE ConditionSignal;
+typedef HANDLE ThreadHandle;
 
 #  define thread_create(x, f, args) (x = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)f, args, 0, NULL))
 #  define thread_join(x) { WaitForSingleObject(x, INFINITE); CloseHandle(x); }
@@ -29,8 +29,8 @@ typedef HANDLE NativeHandle;
 
 #  include <pthread.h>
 typedef pthread_mutex_t Lock;
-typedef pthread_cond_t WaitCondition;
-typedef pthread_t NativeHandle;
+typedef pthread_cond_t ConditionSignal;
+typedef pthread_t ThreadHandle;
 typedef void*(*pt_start_fn)(void*);
 
 #  define thread_create(x, f, args) pthread_create(&(x), NULL, (pt_start_fn)f, args)
@@ -57,40 +57,41 @@ public:
 	void lock() { lock_grab(lk); }
 	void unlock() { lock_release(lk); }
 
-	friend class ConditionVariable;
+	friend class ConditionVar;
 
 private:
 	Lock lk;
 };
 
-// thread condition
-class ConditionVariable
+// thread condition variable
+class ConditionVar
 {
 public:
-	ConditionVariable() { cond_init(c); }
-	~ConditionVariable() { cond_destroy(c); }
+	ConditionVar() { cond_init(c); }
+	~ConditionVar() { cond_destroy(c); }
 
 	void wait(Mutex& m) { cond_wait(c, m.lk); }
 	//void wait_for(Mutex& m, int ms) { timed_wait(c, m.l, ms); }
-	void notify_one() { cond_signal(c); }
+	// restarts one of the threads waiting for signal c
+	void notify() { cond_signal(c); }
 
 private:
-	WaitCondition c;
+	ConditionSignal c;
 };
 
 // thread wrapper
 class Thread
 {
 public:
-	Thread() : exit(false) {};
+	Thread() : exist(false) {};
 	virtual void execute() = 0;
-	void notify_one();
-	void wait_for(volatile const bool& cond);
+	void notify();
+	void wait(volatile bool cond);
 
 	Mutex mutex;
-	ConditionVariable sleepCondition;
-	NativeHandle handle;
-	volatile bool exit;  // monitor if the thread is already dead
+	ConditionVar sleepCond;
+	ThreadHandle handle;
+	volatile bool exist;  // monitor if the thread is already dead
 };
 
 // A necessary wrapper for the thread execution function
@@ -100,6 +101,7 @@ template<typename ThreadType>
 ThreadType* new_thread()
 {
 	ThreadType* th = new ThreadType();
+	th->exist = true;
 	thread_create(th->handle, launch_helper, th); // Will go to sleep
 	return th;
 }
@@ -107,9 +109,14 @@ ThreadType* new_thread()
 // external thread dtor
 inline void del_thread(Thread* th)
 {
-	th->exit = true;
+	th->exist = false;
+	th->notify();
 	thread_join(th->handle);
 	delete th;
 }
+
+// test if a thread exists
+inline bool exists(Thread* th)
+{ return th && th->exist; }
 
 #endif // __thread_h__
