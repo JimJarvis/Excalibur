@@ -25,10 +25,12 @@
 	cout << "Excalibur v1.0" << endl; \
 	display_copyright_symbol; \
 	cout << "2013 Jim Fan - jimfanspire@gmail.com\n\n" \
-		<< "The silent war on the enchanted board\n" \
+		<< "The silent war storms the enchanted board\n" \
 			"The lonely warrior wields the sacred sword\n" \
-			"The odyssey has begun, the glorious test\n" \
-			"Let Excalibur guide you on your lofty quest\n" << endl
+			"Behold! A symphony of black and white\n" \
+			"Echoing a millennium of masters' might\n" \
+			"Let wisdom inspire us in the glorious test\n" \
+			"May Excalibur bless us on the lofty quest\n" << endl
 
 
 namespace UCI

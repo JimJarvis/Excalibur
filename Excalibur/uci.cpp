@@ -179,7 +179,7 @@ void process()
 			else if (opt == "file")  // set epd file location
 			{
 				if (size > 1)
-				{ PH.epdFile = ""; for (int i = 1; i < size; i++)  PH.epdFile += args[i] + " "; }
+				{ PH.epdFile = ""; for (int i = 1; i < size; i++)  PH.epdFile += args[i] + (i==size-1 ? "" : " "); }
 			}
 		}
 	}  // command 'perft'
