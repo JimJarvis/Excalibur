@@ -5,9 +5,6 @@
 
 #include "position.h"
 
-#include "material.h"
-#include "pawnstruct.h"
-
 namespace Eval
 {
 	// contains Endgame::init() and KPKbase::init()

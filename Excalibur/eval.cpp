@@ -1,4 +1,6 @@
 #include "eval.h"
+#include "material.h"
+#include "pawnstruct.h"
 #include "uci.h"
 
 using namespace Board;

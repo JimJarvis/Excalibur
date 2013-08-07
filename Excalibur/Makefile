@@ -74,9 +74,9 @@ material.o: material.h
 
 pawnstruct.o: pawnstruct.h
 
-kpkbase.o: position.h
+kpkbase.o: endgame.h
 
-eval.o: eval.h
+eval.o: eval.h material.h pawnstruct.h
 
 search.o: search.h
 
