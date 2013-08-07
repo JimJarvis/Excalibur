@@ -28,7 +28,7 @@
 		<< "The silent war storms the enchanted board\n" \
 			"The lonely warrior wields the sacred sword\n" \
 			"Behold! A symphony of black and white\n" \
-			"Echoing a millennium of masters' might\n" \
+			"Echoes a millennium of masters' might\n" \
 			"Let wisdom inspire us in the glorious test\n" \
 			"May Excalibur bless us on the lofty quest\n" << endl
 
@@ -36,8 +36,7 @@
 namespace UCI
 {
 	// Reports engine id to UCI
-	inline string id()
-	{ return "id name Excalibur v1.0\nid author Jim Fan\n"; }
+	const string engine_id = "id name Excalibur v1.0\nid author Jim Fan\n";
 
 	class Option
 	{

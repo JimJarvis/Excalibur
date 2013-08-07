@@ -115,6 +115,7 @@ void process()
 	istringstream iss(str);
 
 	iss >> cmd;
+	cmd = str2lower(cmd);  // case insensitive parsing
 
 	if (cmd == "quit" || cmd == "stop" || cmd == "ponderhit")
 	{
@@ -128,23 +129,35 @@ void process()
 			Limit.ponder = false;
 		if (exists(pth))
 		{
-			cout << "aborting perft ..." << endl;
+			sync_cout << "aborting perft ..." << sync_endl;
 			del_thread(pth);
 		}
 	}
+
+	// Indicate our support of UCI protocol
+	else if (cmd == "uci")
+		sync_cout << engine_id << option2str()
+			<< "uciok" << sync_endl;
+
+	// new game
+	else if (cmd == "ucinewgame")
+		TT.clear();
+
+	else if (cmd == "isready")
+		sync_cout << "readyok" << sync_endl;
 
 	// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
 		if (exists(pth)) // never run 2 perfts at the same time
-			if (!Signal.stop) { cout << "perft is running" << endl; continue; }
+			if (!Signal.stop) { sync_cout << "perft is running" << sync_endl; continue; }
 			else { del_thread(pth); }
 
 		vector<string> args;
 		while (iss >> str)
 			args.push_back(str);
 		size_t size = args.size();
-		if (size <= 1)  cout << "Reading " << PH.epdFile << endl;
+		if (size <= 1)  sync_cout << "Reading " << PH.epdFile << sync_endl;
 		if (size == 0)
 			{ start_perft(0); }
 		else if (size == 1) // starting from a specific id-gentest
@@ -162,7 +175,7 @@ void process()
 				for (int i = 1; i < size; i++)  fen += args[i] + " ";
 				PH.posperft.parse_fen(fen);
 				string response;
-				cout << "Enter any non-number to quit perft." << endl;
+				sync_cout << "Enter any non-number to quit perft." << sync_endl;
 				bool again = true, first = true;
 				while (again)
 				{
@@ -182,11 +195,24 @@ void process()
 				{ PH.epdFile = ""; for (int i = 1; i < size; i++)  PH.epdFile += args[i] + (i==size-1 ? "" : " "); }
 			}
 		}
-	}  // command 'perft'
+	}  // cmd 'perft'
+
+	// Sets the position. Syntax: position [startpos | fen] XXX
+	else if (cmd == "position")
+	{
+
+	}  // cmd 'position'
+
+
+	// Display the board as an ASCII graph
+	else if (cmd == "d" || cmd == "disp")  // full display
+		sync_cout << pos.print<true>() << sync_endl;
+	else if (cmd == "md" || cmd == "mdisp") // minimum display
+		sync_cout << pos.print<false>() << sync_endl;
 
 
 	} while (cmd != "quit");  // infinite stdin loop
-} // process()
+} // main UCI::process()
 
 
 // uses the global helper struct PerftHelper

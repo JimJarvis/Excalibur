@@ -1,7 +1,7 @@
 /* Multithreading utilities */
 #ifndef __thread_h__
 #define __thread_h__
-#include "utils.h"
+#include "globals.h"
 
 #ifdef _WIN32  // windows
 
@@ -116,7 +116,13 @@ inline void del_thread(Thread* th)
 }
 
 // test if a thread exists
-inline bool exists(Thread* th)
-{ return th && th->exist; }
+inline bool exists(Thread* th) { return th && th->exist; }
+
+/* Synchronized IO */
+enum SyncIO { io_lock, io_unlock };
+std::ostream& operator<<(std::ostream&, SyncIO);
+
+#define sync_cout cout << io_lock
+#define sync_endl endl << io_unlock
 
 #endif // __thread_h__

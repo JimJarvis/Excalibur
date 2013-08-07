@@ -66,7 +66,7 @@ public:
 	StateInfo *st; // state pointer
 
 	void parse_fen(string fen); // parse a FEN position
-	void display(); // display the full board with letters
+	template<bool full> string print() const; // ASCII string graph representation of the board
 	friend ostream& operator<<(ostream&, Position); // inlined later. Display as a command line graphical board
 	operator string() const { return to_fen(); }  // convert the current board state to an FEN string
 	string to_fen() const;
@@ -147,6 +147,7 @@ private:
 	U64 perft(int depth, int ply);  // will be called with ply = 0
 };
 
+
 // Explicit attack mask template instantiation. Attack from a specific square.
 // non-sliding pieces
 template<>
@@ -165,7 +166,7 @@ inline Bit Position::attack_map<QUEEN>(Square sq) const { return Board::rook_att
 
 
 inline ostream& operator<<(ostream& os, Position pos)
-{ pos.display(); return os; }
+{ os << pos.print<true>(); return os; }
 
 // Check if a single square is attacked. For check detection
 inline bool Position::is_sq_attacked(Square sq, Color attacker) const

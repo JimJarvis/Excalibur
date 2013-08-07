@@ -15,3 +15,14 @@ void Thread::wait(volatile bool cond)
 	while (!cond) sleepCond.wait(mutex);
 	mutex.unlock();
 }
+
+// Synchronized IO
+ostream& operator<<(std::ostream& os, SyncIO sync)
+{
+	static Mutex m;
+	if (sync == io_lock)
+		m.lock();
+	else
+		m.unlock();
+	return os;
+}

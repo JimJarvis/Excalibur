@@ -309,24 +309,58 @@ bool operator==(const Position& pos1, const Position& pos2)
 }
 
 // Display the full board with letters
-void Position::display()
+template <bool full>
+string Position::print() const
 {
-	for (int i = 7; i >= 0; i--)
+	ostringstream oss;
+	oss << to_fen() << endl;
+	// full display
+	if (full)
 	{
-		cout << i+1 << "  ";
-		for (int j = 0; j < 8; j++)
+		const string separator = "+---+---+---+---+---+---+---+---+\n";
+		oss << "  " << separator;
+		for (int rk = RANK_8; rk >= RANK_1; rk--)
 		{
-			int sq = fr2sq(j, i);
-			string str;
-			if (boardPiece[sq] == NON)
-				str = ".";
-			else
-				str = PIECE_FEN[boardColor[sq]][boardPiece[sq]];
-			cout << str << " ";
+			oss << rk+1 << " ";
+			for (int fl = FILE_A; fl <= FILE_H; fl++)
+			{
+				int sq = fr2sq(fl, rk);
+				string str;
+				if (boardPiece[sq] == NON)  // checkered pattern
+					str = ((rk + fl) % 2 == 1) ? " " : ".";
+				else
+					str = PIECE_FEN[boardColor[sq]][boardPiece[sq]];
+				oss << "| " << str << " ";
+				if ( fl == FILE_H) oss << "|";
+			}
+			oss << "\n  " << separator;
 		}
-		cout << endl;
+		oss << "    a   b   c   d   e   f   g   h";
 	}
-	cout << "   ----------------" << endl;
-	cout << "   a b c d e f g h" << endl;
-	cout << "************************" << endl;
+	else // minimal display
+	{
+		for (int rk = RANK_8; rk >= RANK_1; rk--)
+		{
+			oss << rk+1 << "  ";
+			for (int fl = FILE_A; fl <= FILE_H; fl++)
+			{
+				int sq = fr2sq(fl, rk);
+				string str;
+				if (boardPiece[sq] == NON)
+					str = ".";
+				else
+					str = PIECE_FEN[boardColor[sq]][boardPiece[sq]];
+				oss << str << " ";
+			}
+			oss << endl;
+		}
+		oss << "   ----------------" << endl;
+		oss << "   a b c d e f g h";
+	}
+
+	return oss.str();
 }
+
+// explicit template instantiation. Otherwise won't compile
+template string Position::print<true>() const; // glorious board
+template string Position::print<false>() const; // simplified board
