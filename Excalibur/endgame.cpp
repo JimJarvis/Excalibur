@@ -64,29 +64,32 @@ namespace Endgame
 {
 	// key and evaluator function collection.
 	// Initialized at program startup. 
-	Map EvalFuncMap;
-	Map ScalingFuncMap;
+	EgMap EvalFuncMap;
+	EgMap ScalingFuncMap;
 
 	// add entries to the maps using the endgame type-code
-	template<EndgameType E>
+	template<EndgameType Eg>
 	void add_eval_func(const string& code)
 	{
 		for (Color c : COLORS)
-		EvalFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
+		EvalFuncMap[code2key(code, c)] = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c));
 	}
-	template<EndgameType E>
+	template<EndgameType Eg>
 	void add_scaling_func(const string& code)
 	{
 		for (Color c : COLORS)
-		ScalingFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
+		ScalingFuncMap[code2key(code, c)] = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c));
 	}
 
 	void init()
 	{
 		KPKbase::init();  // initialize KP vs K bitbase
 
-		add_eval_func<KBNK>("KBNK");
+		add_eval_func<KK>("KK");
 		add_eval_func<KPK>("KPK");
+		add_eval_func<KBK>("KBK");
+		add_eval_func<KNK>("KNK");
+		add_eval_func<KBNK>("KBNK");
 		add_eval_func<KRKP>("KRKP");
 		add_eval_func<KRKB>("KRKB");
 		add_eval_func<KRKN>("KRKN");
@@ -358,13 +361,17 @@ Value EndEvaluator<KBBKN>::operator()(const Position& pos) const
 	return strongerSide == pos.turn ? result : -result;
 }
 
-/// K and two minors vs K and one or two minors or K and two knights against
-/// king alone are always draw.
+/// Trivial draws
 template<>
-Value EndEvaluator<KmmKm>::operator()(const Position&) const { DEBUG_MSG(KmmKm); return VALUE_DRAW; }
-
+Value EndEvaluator<KK>::operator()(const Position&) const { DEBUG_MSG(KK); return VALUE_DRAW; }
+template<>
+Value EndEvaluator<KBK>::operator()(const Position&) const { DEBUG_MSG(KBK); return VALUE_DRAW; }
+template<>
+Value EndEvaluator<KNK>::operator()(const Position&) const { DEBUG_MSG(KNK); return VALUE_DRAW; }
 template<>
 Value EndEvaluator<KNNK>::operator()(const Position&) const { DEBUG_MSG(KNNK); return VALUE_DRAW; }
+template<>
+Value EndEvaluator<KmmKm>::operator()(const Position&) const { DEBUG_MSG(KmmKm); return VALUE_DRAW; }
 
 
 /* 

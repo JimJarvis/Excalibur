@@ -362,9 +362,9 @@ namespace Eval
 		// Show a few lines of debugging info
 		DEBUG_MSG("Material", pos.psq_score());
 		DEBUG_MSG("Imbalance", ei.mi->material_score());
-		DEBUG_MSG("Pawnstruct", ei.pi->pawnshield_score());
-		DEBUG_MSG("space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
-		DEBUG_MSG("space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DEBUG_MSG("Pawnshield", ei.pi->pawnshield_score());
+		DEBUG_MSG("Space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DEBUG_MSG("Space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
 		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
 		DEBUG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
 		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->gamePhase / 128.0 << "% MG, "
@@ -520,7 +520,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 			bonus += bonus / 2;
 	}
 
-	DEBUG_MSG("outposts " << C(us), bonus, bonus);
+	DEBUG_MSG("Outposts " << C(us), bonus, bonus);
 	return make_score(bonus, bonus);
 }
 
@@ -755,7 +755,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		margins[us] += mg_value(KingDanger[us == pos.turn][attackUnits]) / 2;
 	}
 
-	DEBUG_MSG("king " << C(us), score);
+	DEBUG_MSG("King " << C(us), score);
 	return score;
 }
 
@@ -795,7 +795,7 @@ Score evaluate_threats(const Position& pos, EvalInfo& ei)
 						score += Threat[pt1][pt2];
 		}
 
-	DEBUG_MSG("threats " << C(us), score);
+	DEBUG_MSG("Threats " << C(us), score);
 	return score;
 }
 
@@ -891,7 +891,7 @@ Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
 	}  // while (bpassed)
 
 
-	DEBUG_MSG("passed pawn " << C(us), 
+	DEBUG_MSG("Passed pawn " << C(us), 
 					apply_weight(score, make_score(221, 273)));
 	// Add the scores to the middle game and endgame eval
 	return apply_weight(score,  make_score(221, 273));

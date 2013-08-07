@@ -37,46 +37,43 @@ const int QuadraticCoefficientsOppositeColor[][PIECE_TYPE_N] =
 };
 
 // The following 5 configurations are accessed explicitly because they correspond to more than 
-// one material configuration, thus are not added to evalFuncMap or scalingFuncMap collection
-EndEvaluator<KmmKm> EvalFuncKmmKm[] = { EndEvaluator<KmmKm>(W), EndEvaluator<KmmKm>(B) };
-EndEvaluator<KXK>   EvalFuncKXK[]   = { EndEvaluator<KXK>(W),   EndEvaluator<KXK>(B) };
-
-EndEvaluator<KBPsK>  ScalingFuncKBPsK[]  = { EndEvaluator<KBPsK>(W),  EndEvaluator<KBPsK>(B) };
-EndEvaluator<KQKRPs> ScalingFuncKQKRPs[] = { EndEvaluator<KQKRPs>(W), EndEvaluator<KQKRPs>(B) };
-EndEvaluator<KPsK>   ScalingFuncKPsK[]   = { EndEvaluator<KPsK>(W),   EndEvaluator<KPsK>(B) };
-EndEvaluator<KPKP>   ScalingFuncKPKP[]   = { EndEvaluator<KPKP>(W),   EndEvaluator<KPKP>(B) };
+// one material configuration, thus are not added to EvalFuncMap or ScalingFuncMap collection:
+// (KPKP is special because no 'strongerSide' can be determined)
+// KmmKm, KXK    KBPsK, KQKRPs, KPsK, KPKP
+unique_ptr<EndEvaluatorBase> tmp_eg; // global unique_ptr preserver
+template<EndgameType Eg, Color c>
+EndEvaluatorBase* create_eg() 
+	{ tmp_eg = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c)); return tmp_eg.get(); }
 
 // Handy macro for template<Color us> and defines opp color
 #define opp_us const Color opp = (us == W ? B : W)
 
-// Helper templates used to detect a specific material distribution
-template <EndgameType egType> bool is_endgame(Color us, const Position& pos);
-// explicit instantiation
-template<> bool is_endgame<KXK>(Color us, const Position& pos) 
+// Helper template function used to detect a specific material distribution
+// that corresponds to more than 1 material key
+template<EndgameType Eg, Color us>
+bool is_endgame(const Position& pos) 
 {
-	Color opp = ~us;
-	return  pos.pieceCount[opp][PAWN] == 0 
+	opp_us;
+	return  Eg == KXK ?
+		pos.pieceCount[opp][PAWN] == 0 
 		&& pos.non_pawn_material(opp) == VALUE_ZERO
-		&& pos.non_pawn_material(us) >= MG_ROOK;
-}
+		&& pos.non_pawn_material(us) >= MG_ROOK
 
-template<> bool is_endgame<KBPsK>(Color us, const Position& pos)
-{
-	// we don't check pieceCount[opp][PAWN] because we want draws to 
-	// be detected even if the weaker side has a few pawns
-	return pos.non_pawn_material(us) == MG_BISHOP
+		: Eg == KBPsK ?
+		// we don't check pieceCount[opp][PAWN] because we want draws to 
+		// be detected even if the weaker side has a few pawns
+		pos.non_pawn_material(us) == MG_BISHOP
 		&& pos.pieceCount[us][BISHOP] == 1
-		&& pos.pieceCount[us][PAWN]   >= 1;
-}
+		&& pos.pieceCount[us][PAWN]   >= 1
 
-template<> bool is_endgame<KQKRPs>(Color us, const Position& pos)
-{
-	Color opp = ~us;
-	return   pos.pieceCount[us][PAWN] == 0
+		: Eg == KQKRPs ?
+		pos.pieceCount[us][PAWN] == 0
 		&& pos.non_pawn_material(us)  == MG_QUEEN
 		&& pos.pieceCount[us][QUEEN]  == 1
 		&& pos.pieceCount[opp][ROOK]  == 1
-		&& pos.pieceCount[opp][PAWN]  >= 1;
+		&& pos.pieceCount[opp][PAWN]  >= 1
+
+		: false;
 }
 
 /// imbalance() calculates imbalance comparing piece count of each
@@ -141,13 +138,13 @@ Entry* probe(const Position& pos)
 	// Let's look if we have a specialized evaluation function for this
 	// particular material configuration. First we look for a fixed
 	// configuration one, then a generic one if previous search failed.
-	if (Endgame::probe_eval_func(key, &ent->evalFunc))
+	if ((ent->evalFunc = Endgame::probe_eval_func(key)) != nullptr)
 		return ent;
 
-	if (is_endgame<KXK>(W, pos))
-	{ ent->evalFunc = &EvalFuncKXK[W]; return ent; }
-	if (is_endgame<KXK>(B, pos))
-	{ ent->evalFunc = &EvalFuncKXK[B]; return ent; }
+	if (is_endgame<KXK, W>(pos))
+	{ ent->evalFunc = create_eg<KXK, W>(); return ent; }
+	else if (is_endgame<KXK, B>(pos))
+	{ ent->evalFunc = create_eg<KXK, B>(); return ent; }
 
 	if (!pos.piece_union(PAWN) && !pos.piece_union(ROOK) && !pos.piece_union(QUEEN))
 	{
@@ -156,7 +153,8 @@ Entry* probe(const Position& pos)
 		if (   pos.pieceCount[W][BISHOP] + pos.pieceCount[W][KNIGHT] <= 2
 			&& pos.pieceCount[B][BISHOP] + pos.pieceCount[B][KNIGHT] <= 2)
 		{
-			ent->evalFunc = &EvalFuncKmmKm[pos.turn];
+			 // always DRAW, regardless of color
+			ent->evalFunc = create_eg<KmmKm, W>();
 			return ent;
 		}
 	}
@@ -168,7 +166,7 @@ Entry* probe(const Position& pos)
 	// scaling functions and we need to decide which one to use.
 	EndEvaluatorBase* sf;
 
-	if (Endgame::probe_scaling_func(key, &sf))
+	if ((sf = Endgame::probe_scaling_func(key)) != nullptr)
 	{
 		ent->scalingFunc[sf->strong_color()] = sf;
 		return ent;
@@ -178,15 +176,15 @@ Entry* probe(const Position& pos)
 	// distribution. Should be probed after the specialized ones.
 	// Note that these ones don't return after setting the function.
 	
-	if (is_endgame<KBPsK>(W, pos))
-		ent->scalingFunc[W] = &ScalingFuncKBPsK[W];
-	else if (is_endgame<KBPsK>(B, pos))
-		ent->scalingFunc[B] = &ScalingFuncKBPsK[B];
+	if (is_endgame<KBPsK, W>(pos))
+		ent->scalingFunc[W] = create_eg<KBPsK, W>();
+	else if (is_endgame<KBPsK, B>(pos))
+		ent->scalingFunc[B] = create_eg<KBPsK, B>();
 
-	if (is_endgame<KQKRPs>(W, pos))
-		ent->scalingFunc[W] = &ScalingFuncKQKRPs[W];
-	else if (is_endgame<KQKRPs>(B, pos))
-		ent->scalingFunc[B] = &ScalingFuncKQKRPs[B];
+	if (is_endgame<KQKRPs, W>(pos))
+		ent->scalingFunc[W] = create_eg<KQKRPs, W>();
+	else if (is_endgame<KQKRPs, B>(pos))
+		ent->scalingFunc[B] = create_eg<KQKRPs, B>();
 
 	Value npm_w = pos.non_pawn_material(W);
 	Value npm_b = pos.non_pawn_material(B);
@@ -194,15 +192,15 @@ Entry* probe(const Position& pos)
 	if (npm_w + npm_b == VALUE_ZERO)
 	{
 		if (pos.pieceCount[B][PAWN] == 0)
-			ent->scalingFunc[W] = &ScalingFuncKPsK[W];
+			ent->scalingFunc[W] = create_eg<KPsK, W>();
 		else if (pos.pieceCount[W][PAWN] == 0)
-			ent->scalingFunc[B] = &ScalingFuncKPsK[B];
+			ent->scalingFunc[B] = create_eg<KPsK, B>();
 		else if (pos.pieceCount[W][PAWN] == 1 && pos.pieceCount[B][PAWN] == 1)
 		{
 			// This is a special case because we set scaling functions
 			// for both colors instead of only one.
-			ent->scalingFunc[W] = &ScalingFuncKPKP[W];
-			ent->scalingFunc[B] = &ScalingFuncKPKP[B];
+			ent->scalingFunc[W] = create_eg<KPKP, W>();
+			ent->scalingFunc[B] = create_eg<KPKP, B>();
 		}
 	}
 

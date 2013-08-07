@@ -18,6 +18,10 @@ enum EndgameType
 {
 	// Evaluation functions
 	KXK,   // Generic "mate lone king" eval
+	KK,		// K vs K
+	KNK,		// KN vs K
+	KNNK,  // KNN vs K
+	KBK,		// KB vs K
 	KBNK,  // KBN vs K
 	KPK,   // KP vs K
 	KRKP,  // KR vs KP
@@ -26,7 +30,6 @@ enum EndgameType
 	KQKP,  // KQ vs KP
 	KQKR,  // KQ vs KR
 	KBBKN, // KBB vs KN
-	KNNK,  // KNN vs K
 	KmmKm, // K and two minors vs K and one or two minors
 
 	// Scaling functions
@@ -34,7 +37,7 @@ enum EndgameType
 	KQKRPs,  // KQ vs KR+pawns
 	KRPKR,   // KRP vs KR
 	KRPPKRP, // KRPP vs KRP
-	KPsK,    // King and pawns vs king
+	KPsK,    // K+pawns vs K
 	KBPKB,   // KBP vs KB
 	KBPPKB,  // KBPP vs KB
 	KBPKN,   // KBP vs KN
@@ -47,12 +50,11 @@ enum EndgameType
 class EndEvaluatorBase
 {
 public:
-	virtual ~EndEvaluatorBase() {}
 	virtual Color strong_color() const = 0;  // get the stronger side
 	virtual int operator()(const Position&) const = 0; // return either Value or ScaleFactor
 };
 
-template<EndgameType E>
+template<EndgameType Eg>
 class EndEvaluator : public EndEvaluatorBase
 {
 public:
@@ -65,20 +67,20 @@ private:
 
 namespace Endgame
 {
-	typedef std::map<U64, std::unique_ptr<EndEvaluatorBase>> Map;
+	typedef std::map<U64, unique_ptr<EndEvaluatorBase>> EgMap;
 	// key and evaluator function collection. Init at program startup.
-	extern Map EvalFuncMap; 
-	extern Map ScalingFuncMap; 
+	extern EgMap EvalFuncMap; 
+	extern EgMap ScalingFuncMap; 
 
 	// initialized in Eval::init()
 	void init();
 
 	// map[key].get() gets the original pointer from the unique_ptr<>
-	inline EndEvaluatorBase* probe_eval_func(U64 key, EndEvaluatorBase** eeb)
-	{  return *eeb= (EvalFuncMap.count(key) ? EvalFuncMap[key].get() : nullptr ); }
+	inline EndEvaluatorBase* probe_eval_func(U64 key)
+	{  return EvalFuncMap.count(key) ? EvalFuncMap[key].get() : nullptr; }
 
-	inline EndEvaluatorBase* probe_scaling_func(U64 key, EndEvaluatorBase** eeb)
-	{  return *eeb= (ScalingFuncMap.count(key) ? ScalingFuncMap[key].get() : nullptr ); }
+	inline EndEvaluatorBase* probe_scaling_func(U64 key)
+	{  return ScalingFuncMap.count(key) ? ScalingFuncMap[key].get() : nullptr; }
 }
 
 #endif // __endgame_h__
