@@ -4,7 +4,7 @@
 #include "uci.h"
 
 /* Excalibur engine entry point */
-int main()
+int main(int argc, char **argv)
 {
 	display_info;
 
@@ -45,6 +45,7 @@ int main()
 		}
 	}*/
 
+	// Static evaluation debugging
 	/*string fen = concat_args(argc, argv);
 	Position pos(fen);
 	Value margin = 0;

@@ -223,7 +223,7 @@ Entry* probe(const Position& pos)
 		int minorPieceCount =  pos.pieceCount[W][KNIGHT] + pos.pieceCount[W][BISHOP]
 			+ pos.pieceCount[B][KNIGHT] + pos.pieceCount[B][BISHOP];
 
-		ent->spaceWeight = make_score(minorPieceCount * minorPieceCount, 0);
+		ent->spaceWeight = minorPieceCount * minorPieceCount;
 	}
 
 	ent->score = (short)((imbalance(W, pos) - imbalance(B, pos)) / 16);

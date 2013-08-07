@@ -1,4 +1,5 @@
 #include "eval.h"
+#include "uci.h"
 
 using namespace Board;
 
@@ -61,10 +62,6 @@ struct EvalInfo
 // Evaluation grain size, must be a power of 2
 const int GrainSize = 4;
 
-// Evaluation weights
-enum EvaluationParams {Mobility, PawnStructure, PassedPawns, Space, Cowardice, Aggressiveness};
-const Score Weights[] = 
-{ S(289, 344), S(233, 201), S(221, 273), S(46, 0), S(271, 0), S(307, 0) };
 
 /* Bonus arrays */
 
@@ -141,8 +138,6 @@ const Score BishopPawns      = S( 8, 12);
 const Score UndefendedMinor  = S(25, 10);
 const Score TrappedRook      = S(90,  0);
 
-#undef S
-
 // The SpaceMask[Color] contains the area of the board which is considered
 // by the space evaluation. In the middle game, each side is given a bonus
 // based on how many squares inside this area are safe and available for
@@ -187,10 +182,31 @@ const int KingExposed[SQ_N] =
 	15, 15, 15, 15, 15, 15, 15, 15
 };
 
+// Weight score v by score w trying to prevent overflow
+Score apply_weight(Score v, Score w)
+{
+	return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
+		(int(eg_value(v)) * eg_value(w)) / 0x100);
+}
 
-/* Function prototypes 
-* direct helpers that will be used by the main evaluate()
-*/
+/* Evaluation weights that can be adjusted by UCI option */
+enum EvalOptionType {Mobility, PawnStructure, KingSafety, Aggressiveness};
+const Score WeightsDefault[] = 
+{ S(289, 344), S(233, 201), S(271, 0), S(307, 0) };
+Score Weights[4]; // will be determined by UCI option.
+
+// Options will be read from the global OptMap
+void set_weight_option(EvalOptionType opt, const string& name)
+{
+	int val = OptMap[name] * 256 / 100;
+	Weights[opt] = apply_weight(make_score(val, val), WeightsDefault[opt]);
+}
+
+#undef S
+
+
+/* evaluate_XXX direct helpers that will be used by the main evaluate() */
+// Init the EvalInfo struct that will be shared across the evaluator functions
 void init_eval_info(Color us, const Position& pos, EvalInfo& ei);
 
 Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Score& mobility);
@@ -205,10 +221,8 @@ int evaluate_space(Color us, const Position& pos, EvalInfo& ei);
 
 Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei);
 
-// Interpolate between the MG and EG part of Score
-Value interpolate(const Score& v, Phase ph, ScaleFactor sf);
-
-Score apply_weight(Score v, Score w);
+// Interpolates the final evaluation result by MG and EG parts of 'Score'
+Value interpolate(const Score& v, Phase ph, ScaleFactor scalor);
 
 
 // KingDanger[Color][attackUnits] contains the actual king danger
@@ -224,6 +238,13 @@ namespace Eval
 		// Initialize Endgame evalFunc's and scalingFunc's tables
 		Endgame::init();
 
+		// Read UCI options from the global OptMap that sets the evaluation weights
+		set_weight_option(Mobility, "Mobility");
+		set_weight_option(PawnStructure, "Pawn Structure");
+		set_weight_option(KingSafety, "King Safety");
+		set_weight_option(Aggressiveness, "Aggressiveness");
+
+		// Init KingDanger table
 		const int MaxSlope = 30;
 		const int Peak = 1280;
 
@@ -231,7 +252,7 @@ namespace Eval
 		{
 			t = min(Peak, min(int(0.4 * i * i), t + MaxSlope));
 
-			KingDanger[1][i] = apply_weight(make_score(t, 0), Weights[Cowardice]);
+			KingDanger[1][i] = apply_weight(make_score(t, 0), Weights[KingSafety]);
 			KingDanger[0][i] = apply_weight(make_score(t, 0), Weights[Aggressiveness]);
 		}
 	}
@@ -298,10 +319,10 @@ namespace Eval
 			score += evaluate_unstoppable_pawns(pos, ei);
 
 		// Evaluate space for both sides, only in middle-game.
-		if (ei.mi->space_weight())
+		if (ei.mi->spaceWeight)
 		{
-			int s = evaluate_space(W, pos, ei) - evaluate_space(B, pos, ei);
-			score += apply_weight(s * ei.mi->space_weight(), Weights[Space]);
+			int sval = evaluate_space(W, pos, ei) - evaluate_space(B, pos, ei);
+			score += make_score(sval * ei.mi->spaceWeight *46/0x100, 0);
 		}
 
 		// Scale winning side if position is more drawish that what it appears
@@ -310,7 +331,7 @@ namespace Eval
 
 		// If we don't already have an unusual scale factor, check for opposite
 		// colored bishop endgames, and use a lower scale for those.
-		if (   ei.mi->game_phase() < PHASE_MG
+		if (   ei.mi->gamePhase < PHASE_MG
 			&& (pos.pieceCount[W][BISHOP]==1 &&  // opposite color bishops?
 					pos.pieceCount[B][BISHOP]==1 &&
 					opp_color_sq(pos.pieceList[W][BISHOP][0], pos.pieceList[B][BISHOP][0]))
@@ -332,20 +353,18 @@ namespace Eval
 		}
 
 		margin = margins[pos.turn];
-		Value v = interpolate(score, ei.mi->game_phase(), scalor);
+		Value v = interpolate(score, ei.mi->gamePhase, scalor);
 
 		// Show a few lines of debugging info
 		DEBUG_MSG("Material", pos.psq_score());
 		DEBUG_MSG("Imbalance", ei.mi->material_score());
 		DEBUG_MSG("Pawnstruct", ei.pi->pawnstruct_score());
-		DEBUG_DO(Score bdbg = ei.mi->space_weight() * evaluate_space(B, pos, ei));
-		DEBUG_DO(Score wdbg = ei.mi->space_weight() * evaluate_space(W, pos, ei));
-		DEBUG_MSG("space B", apply_weight(bdbg, Weights[Space]));
-		DEBUG_MSG("space W", apply_weight(wdbg, Weights[Space]));
+		DEBUG_MSG("space B", make_score(evaluate_space(B, pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DEBUG_MSG("space W", make_score(evaluate_space(W, pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
 		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
 		DEBUG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
-		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->game_phase() / 128.0 << "% MG, "
-			<< setw(6) << 100.0 * (1.0 - (double)ei.mi->game_phase() / 128.0) << "% * "
+		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->gamePhase / 128.0 << "% MG, "
+			<< setw(6) << 100.0 * (1.0 - (double)ei.mi->gamePhase / 128.0) << "% * "
 			<< setw(6) << (100.0 * scalor) / SCALE_FACTOR_NORMAL << "% EG.\n");
 		DEBUG_MSG("Total: " << centi_pawn(v));
 
@@ -353,8 +372,9 @@ namespace Eval
 	}
 
 
-
-	/* Static Exchange Evaluator */
+	/*
+	 *	Static Exchange Evaluator
+	 */
 	/// A good position for testing:
 	/// q2r2q1/1B2nb2/2prpn2/1rkP1QRR/2P1Pn2/4Nb2/B2R4/3R1K2 b - - 0 1
 	Value see(const Position& pos, Move& m, Value asymmThresh /* =0 */ )
@@ -863,9 +883,9 @@ Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
 
 
 	DEBUG_MSG("passed pawn " << C(us), 
-					apply_weight(score, Weights[PassedPawns]));
+					apply_weight(score, make_score(221, 273)));
 	// Add the scores to the middle game and endgame eval
-	return apply_weight(score, Weights[PassedPawns]);
+	return apply_weight(score,  make_score(221, 273));
 }
 
 
@@ -1067,11 +1087,4 @@ Value interpolate(const Score& v, Phase ph, ScaleFactor scalor)
 	// weighted average with respect to phase
 	int result = (mg_value(v) * int(ph) + ev * int(128 - ph)) / 128;
 	return (result + GrainSize / 2) & ~(GrainSize - 1);
-}
-
-// Weight score v by score w trying to prevent overflow
-Score apply_weight(Score v, Score w)
-{
-	return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
-		(int(eg_value(v)) * eg_value(w)) / 0x100);
 }

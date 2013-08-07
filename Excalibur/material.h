@@ -22,15 +22,13 @@ namespace Material
 		bool has_endgame_evalfunc() const { return evalFunc != nullptr; }
 		Value eval_func(const Position& p) const { return (*evalFunc)(p); }
 		ScaleFactor scale_factor(Color c, const Position& pos) const;
-		Score space_weight() const { return spaceWeight; }  // getter 
-		Phase game_phase() const { return gamePhase; }  // getter
+		int spaceWeight;  // used in evaluate_space
+		Phase gamePhase;
 
 		// privates: 
 		U64 key;
 		short score; // computed by imbalance()
 		byte scalor[COLOR_N]; // used when no scalingFunc() is available
-		Score spaceWeight;
-		Phase gamePhase;
 		EndEvaluatorBase* evalFunc;
 		EndEvaluatorBase* scalingFunc[COLOR_N];
 	};

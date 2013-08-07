@@ -22,7 +22,7 @@
 
 // Display the engine info at program startup
 #define display_info \
-	cout << "Excalibur v1.0" << endl; \
+	cout << "Excalibur 1.0" << endl; \
 	display_copyright_symbol; \
 	cout << "2013 Jim Fan - jimfanspire@gmail.com\n\n" \
 		<< "The silent war storms the enchanted board\n" \
@@ -36,11 +36,10 @@
 namespace UCI
 {
 	// Reports engine id to UCI
-	const string engine_id = "id name Excalibur v1.0\nid author Jim Fan\n";
+	const string engine_id = "id name Excalibur 1.0\nid author Jim Fan\n";
 
 	class Option
 	{
-
 	 // a function that changes the engine state on demand
 	 // The ChangeListener will be applied on 'this'
 	typedef void (*ChangeListener)(const Option&); 
@@ -66,7 +65,8 @@ namespace UCI
 		Option& operator=(const string& val);  // assign a new value
 
 		// all the available UCI options (in the global OptMap) sent to the GUI
-		friend string option2str();
+		// <true> shows all default values. <false> shows all current values.
+		template<bool> friend string options2str();
 
 	private:
 		// for checkbox, the values are string "true" or "false"

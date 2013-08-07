@@ -35,6 +35,7 @@
     <ClCompile Include="..\Excalibur\search.cpp" />
     <ClCompile Include="..\Excalibur\thread.cpp" />
     <ClCompile Include="..\Excalibur\ttable.cpp" />
+    <ClCompile Include="..\Excalibur\uci.cpp" />
     <ClCompile Include="..\Excalibur\utils.cpp" />
     <ClCompile Include="..\Excalibur\zobrist.cpp" />
     <ClCompile Include="board_test.cpp" />

@@ -11,15 +11,21 @@ namespace UCI
 // on-demand ChangeListeners
 void changer_hash_size(const Option& opt) { TT.set_size(int(opt));  }
 void changer_clear_hash(const Option& opt) { TT.clear(); }
+void changer_eval_weights(const Option& opt) { Eval::init(); } // refresh weights
 
 // initialize default UCI options
 void init()
 {
 	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner
-	OptMap["Ponder"] = Option(true); // checkbox
 	OptMap["Clear Hash"] = Option(changer_clear_hash); // button
+	OptMap["Ponder"] = Option(true); // checkbox
 	OptMap["Contempt Factor"] = Option(0, -50, 50); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
+	// Evaluation weights 
+	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
+	OptMap["Pawn Structure"] = Option(100, 0, 200, changer_eval_weights);
+	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
+	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
 }
 
 // Assigns a new value to an Option
@@ -41,23 +47,31 @@ Option& Option::operator=(const string& newval)
 }
 
 // print all the default option values (in the global OptMap) to the GUI
-string option2str()
+template<bool Default>
+string options2str()
 {
 	ostringstream oss;
+	oss << std::left;  // iomanip left alignment
 	for (auto iter = OptMap.begin(); iter != OptMap.end(); ++ iter)
 	{
-		oss << "option name " << iter->first;
+		oss << (Default ? "option name " : "") << setw(17) << iter->first;
 		Option opt = iter->second;
-		oss << " type " << opt.type;
+		oss << " type " << setw(6) <<  opt.type;
 		if (opt.type != "button")
-			oss << " default " << opt.defaultVal;
+		{
+			if (Default)  oss << " default " << setw(4) << opt.defaultVal;
+			else  oss << " current " << setw(4) << opt.currentVal;
+		}
 		if (opt.type == "spin")
-			oss << " min " << opt.min << " max " << opt.max; 
+			oss << " min " << setw(3) << opt.min 
+				 << " max " << setw(3) << opt.max; 
 		oss << endl;
 	}
 	return oss.str();
 }
-
+// explicit instantiation
+template string options2str<true>();  // default values
+template string options2str<false>(); // current values
 
 // an ugly helper for perft thread
 struct PerftHelper 
@@ -117,6 +131,7 @@ void process()
 	iss >> cmd;
 	cmd = str2lower(cmd);  // case insensitive parsing
 
+	/////// stop signals
 	if (cmd == "quit" || cmd == "stop" || cmd == "ponderhit")
 	{
 		// In case Signal.stopOnPonderhit is set we are
@@ -134,19 +149,23 @@ void process()
 		}
 	}
 
-	// Indicate our support of UCI protocol
+	/////// Indicate our support of UCI protocol
 	else if (cmd == "uci")
-		sync_cout << engine_id << option2str()
+		sync_cout << engine_id << options2str<true>()
 			<< "uciok" << sync_endl;
 
-	// new game
+	/////// shows all option current value
+	else if (cmd == "option")
+		sync_cout << options2str<false>() << sync_endl;
+
+	/////// new game
 	else if (cmd == "ucinewgame")
 		TT.clear();
 
 	else if (cmd == "isready")
 		sync_cout << "readyok" << sync_endl;
 
-	// Debug command perft (interactive)
+	/////// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
 		if (exists(pth)) // never run 2 perfts at the same time
@@ -192,24 +211,47 @@ void process()
 			else if (opt == "file")  // set epd file location
 			{
 				if (size > 1)
-				{ PH.epdFile = ""; for (int i = 1; i < size; i++)  PH.epdFile += args[i] + (i==size-1 ? "" : " "); }
+				{ 
+					PH.epdFile = args[1]; 
+					int i = 2; 
+					while (i < size)  PH.epdFile += " " + args[i++]; 
+				}
 			}
 		}
 	}  // cmd 'perft'
 
-	// Sets the position. Syntax: position [startpos | fen] XXX
+	/////// Sets the position. Syntax: position [startpos | fen] XXX
 	else if (cmd == "position")
 	{
 
 	}  // cmd 'position'
 
+	/////// Updates UCI options 
+	else if (cmd == "setoption")
+	{
+		string optname, optval;
+		iss >> str; // should be "name"
+		while (iss >> str && str != "value") // name contains space
+			optname += (optname.empty() ? "" : " ") + str;
+		
+		while (iss >> str) // read value
+			optval += (optval.empty() ? "" : " ") + str;
+		// see if we support the option in the predefined global map
+		if (OptMap.count(optname))
+			OptMap[optname] = optval;
+		else
+			sync_cout << "Option not supported: " << optname << sync_endl;
+	} // cmd 'setoption'
 
-	// Display the board as an ASCII graph
+	/////// Display the board as an ASCII graph
 	else if (cmd == "d" || cmd == "disp")  // full display
 		sync_cout << pos.print<true>() << sync_endl;
 	else if (cmd == "md" || cmd == "mdisp") // minimum display
 		sync_cout << pos.print<false>() << sync_endl;
 
+	//// politely rejects the command
+	else
+		sync_cout << "Command not supported: " << cmd << sync_endl;
 
 	} while (cmd != "quit");  // infinite stdin loop
 } // main UCI::process()
