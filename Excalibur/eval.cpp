@@ -1,6 +1,6 @@
 #include "eval.h"
 #include "material.h"
-#include "pawnstruct.h"
+#include "pawnshield.h"
 #include "uci.h"
 
 using namespace Board;
@@ -28,7 +28,7 @@ struct EvalInfo
 {
 	// Pointers to material and pawn hash table entries
 	Material::Entry* mi;
-	Pawnstruct::Entry* pi;
+	Pawnshield::Entry* pi;
 
 	// attackedBy[color][piece type] is a bitboard representing all squares
 	// attacked by a given color and piece type, attackedBy[color][ALL_PT]
@@ -292,8 +292,8 @@ namespace Eval
 		}
 
 		// Probe the pawn hash table
-		ei.pi = Pawnstruct::probe(pos);
-		score += apply_weight(ei.pi->pawnstruct_score(), Weights[PawnShield]);
+		ei.pi = Pawnshield::probe(pos);
+		score += apply_weight(ei.pi->pawnshield_score(), Weights[PawnShield]);
 
 		// Initialize attack and king safety bitboards
 		init_eval_info<W>(pos, ei);
@@ -362,7 +362,7 @@ namespace Eval
 		// Show a few lines of debugging info
 		DEBUG_MSG("Material", pos.psq_score());
 		DEBUG_MSG("Imbalance", ei.mi->material_score());
-		DEBUG_MSG("Pawnstruct", ei.pi->pawnstruct_score());
+		DEBUG_MSG("Pawnstruct", ei.pi->pawnshield_score());
 		DEBUG_MSG("space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
 		DEBUG_MSG("space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
 		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
@@ -570,7 +570,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 		// Otherwise give a bonus if we are a bishop and can pin a piece or can
 		// give a discovered check through an x-ray attack.
 		else if ( PT == BISHOP
-			&& (RayMask[PT][pos.king_sq(opp)] & setbit(sq))
+			&& (ray_mask(PT, pos.king_sq(opp)) & setbit(sq))
 			&& !more_than_one_bit(between(sq, pos.king_sq(opp)) & pos.Occupied))
 			score += BishopPin;
 
@@ -592,7 +592,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 				score += PT == ROOK ? RookOn7th : QueenOn7th;
 
 			// Major piece attacking enemy pawns on the same rank/file
-			Bit pawns = pos.Pawnmap[opp] & RayMask[ROOK][sq];
+			Bit pawns = pos.Pawnmap[opp] & ray_mask(ROOK, sq);
 			if (pawns)
 				score += bit_count(pawns) * (PT == ROOK ? RookOnPawn : QueenOnPawn);
 		}
@@ -704,7 +704,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		battack = undefended & ei.attackedBy[opp][ROOK] & ~pos.piece_union(opp);
 
 		// Consider only squares where the enemy rook gives check
-		battack &= RayMask[ROOK][ksq];
+		battack &= ray_mask(ROOK, ksq);
 
 		if (battack)
 		{

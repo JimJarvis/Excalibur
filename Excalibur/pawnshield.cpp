@@ -1,5 +1,5 @@
 /* Pawn structure evaluator */
-#include "pawnstruct.h"
+#include "pawnshield.h"
 
 using namespace Board;
 
@@ -66,7 +66,7 @@ const Value MaxSafetyBonus = 263;
 #define opp_us const Color opp = (us == W ? B : W)
 
 template<Color us>
-Score evaluate_pawns(const Position& pos, Pawnstruct::Entry* ent) 
+Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent) 
 {
 	opp_us;
 	const int UP    = (us == W ? DELTA_N  : DELTA_S);
@@ -163,7 +163,7 @@ Score evaluate_pawns(const Position& pos, Pawnstruct::Entry* ent)
 }
 
 
-namespace Pawnstruct 
+namespace Pawnshield 
 {
 	HashTable<Entry, 16384> pawnsTable;
 

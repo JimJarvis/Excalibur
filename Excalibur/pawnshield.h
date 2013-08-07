@@ -1,11 +1,11 @@
 /* Pawn structure evaluation */
 
-#ifndef __pawnstruct_h__
-#define __pawnstruct_h__
+#ifndef __pawnshield_h__
+#define __pawnshield_h__
 
 #include "position.h"
 
-namespace Pawnstruct
+namespace Pawnshield
 {
 	/// Pawns::Entry contains various information about a pawn structure. Currently,
 	/// it only includes a middle game and end game pawn structure evaluation, and a
@@ -14,7 +14,7 @@ namespace Pawnstruct
 	/// returns a pointer to an Entry object.
 	struct Entry
 	{
-		Score pawnstruct_score() const { return score; }
+		Score pawnshield_score() const { return score; }
 		Bit pawn_attack_map(Color c) const { return pawnAttackmap[c]; }
 		Bit passed_pawns(Color c) const { return passedPawns[c]; }
 		int pawns_on_same_color_sq(Color c, Square sq) const { return pawnsOnSquares[c][!!(B_SQUARES & setbit(sq))]; }
@@ -52,6 +52,6 @@ namespace Pawnstruct
 
 	Entry* probe(const Position& pos);
 
-}  // namespace Pawnstruct
+}  // namespace Pawnshield
 
-#endif // __pawnstruct_h__
+#endif // __pawnshield_h__

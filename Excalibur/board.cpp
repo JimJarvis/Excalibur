@@ -56,14 +56,13 @@ Bit Board::CastleMask[COLOR_N][4];
 Bit Board::RookCastleMask[COLOR_N][CASTLE_TYPES_N];
 
 // Other tables
-Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
 Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
 Square squareDistanceTbl[SQ_N][SQ_N]; // max(fileDistance, rankDistance)
 Bit distanceRingMask[SQ_N][8]; // all the squares that are d-unit square-distance away from a particular sq
 Bit fileMask[FILE_N], rankMask[RANK_N], fileAdjacentMask[FILE_N]; // entire row or column
 Bit inFrontMask[COLOR_N][RANK_N]; // Everything in front of a rank, with respect to a color
-
-Bit Board::RayMask[PIECE_TYPE_N][SQ_N];  // Sliding pieces pseudo attacks on an unoccupied board
+Bit forwardMask[COLOR_N][SQ_N]; // represent all squares ahead of the square on its file
+Bit rayMask[PIECE_TYPE_N][SQ_N];  // Sliding pieces pseudo attacks on an unoccupied board
 
 namespace Board
 {
@@ -90,6 +89,7 @@ namespace Board
 	inline Bit file_adjacent_mask(int file) { return fileAdjacentMask[file]; }
 	inline Bit in_front_mask(Color c, Square sq) { return inFrontMask[c][sq2rank(sq)]; }
 	inline Bit forward_mask(Color c, Square sq) { return forwardMask[c][sq]; }
+	inline Bit ray_mask(PieceType pt, Square sq) { return rayMask[pt][sq]; };
 
 } // namespace Board
 
@@ -329,9 +329,9 @@ void init_bishop_mask(Square sq, int fl, int rk)
 // rook, bishop and queen attackmap on an unoccupied board
 void init_ray_mask(Square sq)
 {
-	RayMask[ROOK][sq] = rook_attack(sq, 0);
-	RayMask[BISHOP][sq] = bishop_attack(sq, 0);
-	RayMask[QUEEN][sq] = RayMask[ROOK][sq] | RayMask[BISHOP][sq];
+	rayMask[ROOK][sq] = rook_attack(sq, 0);
+	rayMask[BISHOP][sq] = bishop_attack(sq, 0);
+	rayMask[QUEEN][sq] = rayMask[ROOK][sq] | rayMask[BISHOP][sq];
 }
 
 // knight attack table

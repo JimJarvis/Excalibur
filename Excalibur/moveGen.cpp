@@ -255,17 +255,17 @@ int Position::gen_evasions( int index, bool legal /*= false*/, Bit pinned /*= 0*
 		switch (boardPiece[checkSq])  // who's checking me?
 		{
 		// pseudo attack maps that don't concern about occupancy
-		case ROOK: SliderAttack |= RayMask[ROOK][checkSq]; break;
-		case BISHOP: SliderAttack |= RayMask[BISHOP][checkSq]; break;
+		case ROOK: SliderAttack |= ray_mask(ROOK, checkSq); break;
+		case BISHOP: SliderAttack |= ray_mask(BISHOP, checkSq); break;
 		case QUEEN:
 			// If queen and king are far or not on a diagonal line we can safely
 			// remove all the squares attacked in the other direction because the king can't get there anyway.
-			if (between(kSq, checkSq) || !(RayMask[BISHOP][checkSq] & Kingmap[turn]))
-				SliderAttack |= RayMask[QUEEN][checkSq];
+			if (between(kSq, checkSq) || !(ray_mask(BISHOP, checkSq) & Kingmap[turn]))
+				SliderAttack |= ray_mask(QUEEN, checkSq);
 			// Otherwise we need to use real rook attacks to check if king is safe
 			// to move in the other direction. e.g. king C2, queen B1, friendly bishop in C1, and we can safely move to D1.
 			else
-				SliderAttack |= RayMask[BISHOP][checkSq] | attack_map<ROOK>(checkSq);
+				SliderAttack |= ray_mask(BISHOP, checkSq) | attack_map<ROOK>(checkSq);
 		default:
 			break;
 		}
@@ -299,8 +299,8 @@ Bit Position::pinned_map() const
 	Bit pinners = Colormap[opp];
 	Square kSq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= (piece_union(opp, QUEEN, ROOK) & RayMask[ROOK][kSq])
-		| (piece_union(opp, QUEEN, BISHOP) & RayMask[BISHOP][kSq]);
+	pinners &= (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, kSq))
+		| (piece_union(opp, QUEEN, BISHOP) & ray_mask(BISHOP, kSq));
 	while (pinners)
 	{
 		middle = between(kSq, pop_lsb(pinners)) & Occupied;

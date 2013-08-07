@@ -20,8 +20,6 @@ namespace Board
 	// Rook from-to map
 	extern Bit RookCastleMask[COLOR_N][CASTLE_TYPES_N];
 
-	extern Bit RayMask[PIECE_TYPE_N][SQ_N];  // Sliding pieces pseudo attacks on an unoccupied board
-
 	/* Functions that would be used to answer queries */
 	extern INLINE Bit rook_attack(Square sq, Bit occup);
 	extern INLINE Bit bishop_attack(Square sq, Bit occup);
@@ -46,6 +44,7 @@ namespace Board
 	extern inline Bit file_adjacent_mask(int file);
 	extern inline Bit in_front_mask(Color c, Square sq);
 	extern inline Bit forward_mask(Color c, Square sq);
+	extern inline Bit ray_mask(PieceType pt, Square sq);
 	inline Bit same_color_sq_mask(Square sq) // return a bitmap of all squares same color as sq
 	{ return (W_SQUARES & setbit(sq)) ? W_SQUARES : B_SQUARES; }
 
@@ -61,13 +60,6 @@ namespace Board
 	// Shift the bitboard by a DELTA
 	template<int delta>
 	inline Bit shift_board(Bit b) // template version
-	{ return  delta == DELTA_N  ?  b << 8 
-				: delta == DELTA_S  ?  b >> 8
-				: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 
-				: delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
-				: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 
-				: delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9 : 0; }
-	inline Bit shift_board(Bit b, int delta) // non-template version
 	{ return  delta == DELTA_N  ?  b << 8 
 				: delta == DELTA_S  ?  b >> 8
 				: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 

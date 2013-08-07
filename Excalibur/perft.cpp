@@ -91,10 +91,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 				fin >> ans;  // The answer
 				start = now();
 				if (Search::Signal.stop)  // force stop by the user
-				{
-					cout << "perft aborted!" << endl;
-					return;
-				}
+					{ cout << "perft aborted!" << endl; return; }
 				else
 					actual = ptest.perft(depth); 
 				end = now();
@@ -104,7 +101,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 					cout << "FATAL ERROR at depth " << depth << endl;
 					cout << FEN << endl;
 					cout << "Expected = " << ans << "    Actual = " << actual << endl;
-					exit(1);
+					throw exception("perft death");
 				}
 
 				if (5 <= depth && depth <=6)

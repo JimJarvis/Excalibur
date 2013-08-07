@@ -56,9 +56,6 @@
     <ClCompile Include="board_test.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\pawnstruct.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Excalibur\search.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
@@ -72,6 +69,9 @@
       <Filter>Test Files</Filter>
     </ClCompile>
     <ClCompile Include="..\Excalibur\uci.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Excalibur\pawnshield.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

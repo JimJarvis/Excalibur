@@ -117,12 +117,16 @@ GUI -> engine: go...
 void process()
 {
 	Position pos;
-	string str, cmd;
+	string str, cmd, strlast;
 	PerftThread *pth = nullptr;
 
-	do {
+do
+{
 	if (!getline(cin, str))  // waiting for input. EOF means quit
 		str = "quit";
+	if (str == ".") // repeat the last command
+	{	sync_cout << strlast << sync_endl; str = strlast; }
+	 strlast = str;  // holds the last command line
 	istringstream iss(str);
 
 	iss >> cmd;
@@ -257,8 +261,9 @@ void process()
 	else
 		sync_cout << "Command not supported: " << cmd << sync_endl;
 
-	} while (cmd != "quit");  // infinite stdin loop
-} // main UCI::process()
+} while (cmd != "quit"); // infinite stdin loop
+
+} // main UCI::process() function
 
 
 // uses the global helper struct PerftHelper
