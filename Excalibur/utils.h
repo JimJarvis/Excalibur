@@ -181,7 +181,8 @@ inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2
 inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
 inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
 
-inline Square flip_vert(Square sq) { return sq ^ 56; }  // vertical flip a square
+inline void flip_vert(Square& sq) { sq ^= 56; }  // vertical flip a square. Modifies the parameter.
+inline Square flip_vert(Square&& sq) { return sq ^ 56; }  // C++11 rvalue overload. 
 inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
 
 inline bool opp_color_sq(Square sq1, Square sq2) {

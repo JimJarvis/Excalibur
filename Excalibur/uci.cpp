@@ -23,7 +23,7 @@ void init()
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
 	// Evaluation weights 
 	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
-	OptMap["Pawn Structure"] = Option(100, 0, 200, changer_eval_weights);
+	OptMap["Pawn Shield"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
 }
@@ -69,9 +69,6 @@ string options2str()
 	}
 	return oss.str();
 }
-// explicit instantiation
-template string options2str<true>();  // default values
-template string options2str<false>(); // current values
 
 // an ugly helper for perft thread
 struct PerftHelper 
@@ -249,7 +246,14 @@ void process()
 	else if (cmd == "md" || cmd == "mdisp") // minimum display
 		sync_cout << pos.print<false>() << sync_endl;
 
-	//// politely rejects the command
+	/////// Generate Rook/Bishop magic bitboard hash keys
+	else if (cmd == "magics")
+	{
+		sync_cout << Board::magicU64_generate<ROOK>() << sync_endl;
+		sync_cout << Board::magicU64_generate<BISHOP>() << sync_endl;
+	}
+
+	/////// politely rejects the command
 	else
 		sync_cout << "Command not supported: " << cmd << sync_endl;
 

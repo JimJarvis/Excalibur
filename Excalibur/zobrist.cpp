@@ -114,7 +114,9 @@ namespace Zobrist
 			for (int sq = 0; sq < SQ_N; sq++)
 			{
 				PieceSquareTable[W][pt][sq] =  v + PSQT[pt][sq];
-				PieceSquareTable[B][pt][flip_vert(sq)] = -(v + PSQT[pt][sq]); // vertical flip
+				// to use the version of flip_vert() that returns a value and doesn't modify the 
+				// parameter, we must make the parameter a C++11 rvalue
+				PieceSquareTable[B][pt][flip_vert(sq+0)] = -(v + PSQT[pt][sq]); // vertical flip
 			}
 		}
 	}

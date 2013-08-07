@@ -192,7 +192,7 @@ Score apply_weight(Score v, Score w)
 }
 
 /* Evaluation weights that can be adjusted by UCI option */
-enum EvalOptionType {Mobility, PawnStructure, KingSafety, Aggressiveness};
+enum EvalOptionType {Mobility, PawnShield, KingSafety, Aggressiveness};
 const Score WeightsDefault[] = 
 { S(289, 344), S(233, 201), S(271, 0), S(307, 0) };
 Score Weights[4]; // will be determined by UCI option.
@@ -209,17 +209,19 @@ void set_weight_option(EvalOptionType opt, const string& name)
 
 /* evaluate_XXX direct helpers that will be used by the main evaluate() */
 // Init the EvalInfo struct that will be shared across the evaluator functions
-void init_eval_info(Color us, const Position& pos, EvalInfo& ei);
+template<Color>
+void init_eval_info(const Position& pos, EvalInfo& ei);
 
-Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Score& mobility);
-
-Score evaluate_king(Color us, const Position& pos, EvalInfo& ei, Value margins[]);
-
-Score evaluate_threats(Color us, const Position& pos, EvalInfo& ei);
-
-Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei);
-
-int evaluate_space(Color us, const Position& pos, EvalInfo& ei);
+template<Color>
+Score evaluate_pieces_of_color(const Position& pos, EvalInfo& ei, Score& mobility);
+template<Color>
+Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[]);
+template<Color>
+Score evaluate_threats(const Position& pos, EvalInfo& ei);
+template<Color>
+Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei);
+template<Color>
+int evaluate_space(const Position& pos, EvalInfo& ei);
 
 Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei);
 
@@ -242,7 +244,7 @@ namespace Eval
 
 		// Read UCI options from the global OptMap that sets the evaluation weights
 		set_weight_option(Mobility, "Mobility");
-		set_weight_option(PawnStructure, "Pawn Structure");
+		set_weight_option(PawnShield, "Pawn Shield");
 		set_weight_option(KingSafety, "King Safety");
 		set_weight_option(Aggressiveness, "Aggressiveness");
 
@@ -291,30 +293,30 @@ namespace Eval
 
 		// Probe the pawn hash table
 		ei.pi = Pawnstruct::probe(pos);
-		score += apply_weight(ei.pi->pawnstruct_score(), Weights[PawnStructure]);
+		score += apply_weight(ei.pi->pawnstruct_score(), Weights[PawnShield]);
 
 		// Initialize attack and king safety bitboards
-		init_eval_info(W, pos, ei);
-		init_eval_info(B, pos, ei);
+		init_eval_info<W>(pos, ei);
+		init_eval_info<B>(pos, ei);
 
 		// Evaluate pieces and mobility
-		score +=  evaluate_pieces_of_color(W, pos, ei, mobility[W])
-			- evaluate_pieces_of_color(B, pos, ei, mobility[B]);
+		score +=  evaluate_pieces_of_color<W>(pos, ei, mobility[W])
+			- evaluate_pieces_of_color<B>(pos, ei, mobility[B]);
 
 		score += apply_weight(mobility[W] - mobility[B], Weights[Mobility]);
 
 		// Evaluate kings after all other pieces because we need complete attack
 		// information when computing the king safety evaluation.
-		score +=  evaluate_king(W, pos, ei, margins)
-			- evaluate_king(B, pos, ei, margins);
+		score +=  evaluate_king<W>(pos, ei, margins)
+			- evaluate_king<B>(pos, ei, margins);
 
 		// Evaluate tactical threats, we need full attack information including king
-		score +=  evaluate_threats(W, pos, ei)
-			- evaluate_threats(B, pos, ei);
+		score +=  evaluate_threats<W>(pos, ei)
+			- evaluate_threats<B>(pos, ei);
 
 		// Evaluate passed pawns, we need full attack information including king
-		score +=  evaluate_passed_pawns(W, pos, ei)
-			- evaluate_passed_pawns(B, pos, ei);
+		score +=  evaluate_passed_pawns<W>(pos, ei)
+			- evaluate_passed_pawns<B>(pos, ei);
 
 		// If one side has only a king, check whether exists any unstoppable passed pawn
 		if (!pos.non_pawn_material(W) || !pos.non_pawn_material(B))
@@ -323,13 +325,13 @@ namespace Eval
 		// Evaluate space for both sides, only in middle-game.
 		if (ei.mi->spaceWeight)
 		{
-			int sval = evaluate_space(W, pos, ei) - evaluate_space(B, pos, ei);
+			int sval = evaluate_space<W>(pos, ei) - evaluate_space<B>(pos, ei);
 			score += make_score(sval * ei.mi->spaceWeight *46/0x100, 0);
 		}
 
 		// Scale winning side if position is more drawish that what it appears
-		ScaleFactor scalor = eg_value(score) > VALUE_DRAW ? ei.mi->scale_factor(W, pos)
-			: ei.mi->scale_factor(B, pos);
+		ScaleFactor scalor = (eg_value(score) > VALUE_DRAW) ? 
+			ei.mi->scale_factor<W>(pos) : ei.mi->scale_factor<B>(pos);
 
 		// If we don't already have an unusual scale factor, check for opposite
 		// colored bishop endgames, and use a lower scale for those.
@@ -361,8 +363,8 @@ namespace Eval
 		DEBUG_MSG("Material", pos.psq_score());
 		DEBUG_MSG("Imbalance", ei.mi->material_score());
 		DEBUG_MSG("Pawnstruct", ei.pi->pawnstruct_score());
-		DEBUG_MSG("space B", make_score(evaluate_space(B, pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
-		DEBUG_MSG("space W", make_score(evaluate_space(W, pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DEBUG_MSG("space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DEBUG_MSG("space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
 		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
 		DEBUG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
 		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->gamePhase / 128.0 << "% MG, "
@@ -473,20 +475,23 @@ namespace Eval
 
 
 /* Helper and sub-helper functions used in the main evaluation engine */
+// Handy macro for template<Color us> and defines opp color
+#define opp_us const Color opp = (us == W ? B : W)
 
-// init_eval_info() initializes king bitboards for given color adding
-// pawn attacks. To be done at the beginning of the evaluation.
-void init_eval_info(Color us, const Position& pos, EvalInfo& ei)
+// Init king bitboards for given color adding pawn attacks. 
+// Done at the beginning of the main evaluation function.
+template<Color us>
+void init_eval_info(const Position& pos, EvalInfo& ei)
 {
-	Color opp = ~us;
-	
+	opp_us;
+	const int DOWN = (us == W ? DELTA_S : DELTA_N);
 	Bit battack = ei.attackedBy[opp][KING] = king_attack(pos.king_sq(opp));
 	ei.attackedBy[us][PAWN] = ei.pi->pawn_attack_map(us);
 
 	// Init king safety tables only if we are going to use them
 	if (pos.pieceCount[us][QUEEN] && pos.non_pawn_material(us) > MG_QUEEN + MG_PAWN)
 	{
-		ei.kingRing[opp] = battack | shift_board(battack, us == W ? DELTA_S : DELTA_N);
+		ei.kingRing[opp] = battack | shift_board<DOWN>(battack);
 		battack &= ei.attackedBy[us][PAWN];
 		ei.kingAttackersCount[us] = battack ? bit_count(battack) / 2 : 0;
 		ei.kingAdjacentAttacksCount[us] = ei.kingAttackersWeight[us] = 0;
@@ -495,13 +500,12 @@ void init_eval_info(Color us, const Position& pos, EvalInfo& ei)
 		ei.kingRing[opp] = ei.kingAttackersCount[us] = 0;
 }
 
-// evaluate_outposts() evaluates bishop and knight outposts squares
+// evaluates bishop and knight outposts squares
 // A sub-helper used in another sub-helper evaluate_pieces()
-template<PieceType PT>  // BISHOP or KNIGHT
-Score evaluate_outposts(Color us, const Position& pos, EvalInfo& ei, Square sq)
+template<PieceType PT, Color us>  // BISHOP or KNIGHT
+Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 {
-	Color opp = ~us;
-
+	opp_us;
 	// Initial bonus based on square
 	Value bonus = Outpost[PT == BISHOP][relative_square(us, sq)];
 
@@ -521,16 +525,16 @@ Score evaluate_outposts(Color us, const Position& pos, EvalInfo& ei, Square sq)
 }
 
 
-// evaluate_pieces<>() assigns bonuses and penalties to the pieces of a given color
+// assigns bonuses and penalties to the pieces of a given color
 // sub-helper used in the helper evaluate_pieces_of_color()
-template<PieceType PT>
-Score evaluate_pieces(Color us, const Position& pos, EvalInfo& ei, Score& mobility, Bit mobilityArea)
+template<PieceType PT, Color us>
+Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mobilityArea)
 {
+	opp_us;
 	Bit battack;
 	Square sq;
 	Score score = SCORE_ZERO;
 
-	Color opp = ~us; 
 	const Square* plist = pos.pieceList[us][PT];
 
 	ei.attackedBy[us][PT] = 0;
@@ -577,7 +581,7 @@ Score evaluate_pieces(Color us, const Position& pos, EvalInfo& ei, Score& mobili
 		// Bishop and knight outposts squares
 		if ( (PT == BISHOP || PT == KNIGHT)
 			&& !(pos.Pawnmap[opp] & pawn_attack_span(us, sq)))
-			score += evaluate_outposts<PT>(us, pos, ei, sq);
+			score += evaluate_outposts<PT, us>(pos, ei, sq);
 
 		if (  (PT == ROOK || PT == QUEEN)
 			&& relative_rank(us, sq) >= RANK_5)
@@ -619,21 +623,21 @@ Score evaluate_pieces(Color us, const Position& pos, EvalInfo& ei, Score& mobili
 	return score;
 }
 
-// evaluate_pieces_of_color() assigns bonuses and penalties to all the
-// pieces of a given color.
+// assigns bonuses and penalties to all the pieces of a given color.
 // main helper, used directly in evaluate()
-Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Score& mobility)
+template<Color us>
+Score evaluate_pieces_of_color(const Position& pos, EvalInfo& ei, Score& mobility)
 {
-	Color opp = ~us;
+	opp_us;
 	Score score = mobility = SCORE_ZERO;
 
 	// Do not include in mobility squares protected by enemy pawns or occupied by our pieces
 	const Bit mobilityArea = ~( ei.attackedBy[opp][PAWN] | pos.piece_union(us, PAWN, KING) );
 
-	score += evaluate_pieces<KNIGHT>(us, pos, ei, mobility, mobilityArea);
-	score += evaluate_pieces<BISHOP>(us, pos, ei, mobility, mobilityArea);
-	score += evaluate_pieces<ROOK>(us, pos, ei, mobility, mobilityArea);
-	score += evaluate_pieces<QUEEN>(us, pos, ei, mobility, mobilityArea);
+	score += evaluate_pieces<KNIGHT, us>(pos, ei, mobility, mobilityArea);
+	score += evaluate_pieces<BISHOP, us>(pos, ei, mobility, mobilityArea);
+	score += evaluate_pieces<ROOK, us>(pos, ei, mobility, mobilityArea);
+	score += evaluate_pieces<QUEEN, us>(pos, ei, mobility, mobilityArea);
 
 	// Sum up all attacked squares in ALL_PT
 	ei.attackedBy[us][ALL_PT] =  
@@ -646,17 +650,18 @@ Score evaluate_pieces_of_color(Color us, const Position& pos, EvalInfo& ei, Scor
 }
 
 
-// evaluate_king() assigns bonuses and penalties to a king of a given color
+// assigns bonuses and penalties to a king of a given color
 // main helper, used directly in evaluate()
-Score evaluate_king(Color us, const Position& pos, EvalInfo& ei, Value margins[])
+template<Color us>
+Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 {
-	Color opp = ~us;
+	opp_us;
 	Bit undefended, battack, b1, b2, safe;
 	int attackUnits;
 	const Square ksq = pos.king_sq(us);
 
 	// King shelter and enemy pawns storm
-	Score score = ei.pi->king_safety(us, pos, ksq);
+	Score score = ei.pi->king_safety<us>(pos, ksq);
 
 	// King safety. This is quite complicated, and is almost certainly far
 	// from optimally tuned.
@@ -755,12 +760,13 @@ Score evaluate_king(Color us, const Position& pos, EvalInfo& ei, Value margins[]
 }
 
 
-// evaluate_threats<>() assigns bonuses according to the type of attacking piece
+// assigns bonuses according to the type of attacking piece
 // and the type of attacked one.
 // main helper, used directly in evaluate()
-Score evaluate_threats(Color us, const Position& pos, EvalInfo& ei)
+template<Color us>
+Score evaluate_threats(const Position& pos, EvalInfo& ei)
 {
-	Color opp = ~us;
+	opp_us;
 	Bit battack, undefendedMinors, weakEnemies;
 	Score score = SCORE_ZERO;
 
@@ -794,11 +800,12 @@ Score evaluate_threats(Color us, const Position& pos, EvalInfo& ei)
 }
 
 
-// evaluate_passed_pawns<>() evaluates the passed pawns of the given color
+// evaluates the passed pawns of the given color
 // main helper, used directly in evaluate()
-Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
+template<Color us>
+Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
 {
-	Color opp = ~us;
+	opp_us;
 	Bit bpassed, squaresToQueen, defendedSquares, unsafeSquares, supportingPawns;
 	Score score = SCORE_ZERO;
 
@@ -891,7 +898,7 @@ Score evaluate_passed_pawns(Color us, const Position& pos, EvalInfo& ei)
 }
 
 
-// evaluate_unstoppable_pawns() evaluates the unstoppable passed pawns for both sides, this is quite
+// evaluates the unstoppable passed pawns for both sides, this is quite
 // conservative and returns a winning score only when we are very sure that the pawn is winning.
 // main helper, used directly in evaluate()
 Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
@@ -1050,17 +1057,17 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 }
 
 
-// evaluate_space() computes the space evaluation for a given side. The
-// space evaluation is a simple bonus based on the number of safe squares
-// available for minor pieces on the central four files on ranks 2--4. Safe
-// squares one, two or three squares behind a friendly pawn are counted
-// twice. Finally, the space bonus is scaled by a weight taken from the
+// computes the space evaluation for a given side. The space evaluation is 
+// a simple bonus based on the number of safe squares available for minor 
+// pieces on the central four files on ranks 2--4. Safe squares one, two 
+// or three squares behind a friendly pawn are counted twice. 
+// Finally, the space bonus is scaled by a weight taken from the
 // material hash table. The aim is to improve play on game opening.
 // main helper, used directly in evaluate()
-int evaluate_space(Color us, const Position& pos, EvalInfo& ei)
+template<Color us>
+int evaluate_space(const Position& pos, EvalInfo& ei)
 {
-	Color opp = ~us;
-
+	opp_us;
 	// Find the safe squares for our pieces inside the area defined by
 	// SpaceMask[]. A square is unsafe if it is attacked by an enemy
 	// pawn, or if it is undefended and attacked by an enemy piece.

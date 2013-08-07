@@ -8,12 +8,13 @@ const uint INDEX_MAX = 2*24*64*64; // side * psq * wksq * bksq = 196608
 uint KPKBitbase[INDEX_MAX / 32];
 
 // A KPK bitbase index is an integer in [0, INDEX_MAX] range
+// The bitbase assumes white to be the stronger side. 
 //
 // Information is mapped in a way that minimizes number of iterations:
 //
 // bit  0- 5: white king square (from SQ_A1 to SQ_H8)
 // bit  6-11: black king square (from SQ_A1 to SQ_H8)
-// bit    12: side to move (WHITE or BLACK)
+// bit    12: side to move
 // bit 13-14: white pawn file (from FILE_A to FILE_D)
 // bit 15-17: white pawn 6 - rank (from 6 - RANK_7 to 6 - RANK_2)
 uint index(Color us, Square bksq, Square wksq, Square psq)
@@ -43,7 +44,8 @@ private:
 
 #define PawnAtk pawn_attack(W, psq)
 #define KingAtk(color) king_attack(color##ksq)
-int KPKPosition::classify_leaf(uint idx) // from white's perspective
+// from white's perspective as the winning side
+int KPKPosition::classify_leaf(uint idx)
 {
 	wksq = idx & 0x3F;
 	bksq = (idx >> 6) & 0x3F;
@@ -73,6 +75,7 @@ int KPKPosition::classify_leaf(uint idx) // from white's perspective
 	return res = UNKNOWN;
 }
 
+// from white's perspective as the winning side
 int KPKPosition::classify(const std::vector<KPKPosition>& db)
 {
 	// White to Move: If one move leads to a position classified as WIN, the result
@@ -116,12 +119,14 @@ namespace KPKbase
 	bool probe(Square wksq, Square wpsq, Square bksq, Color us) 
 	{
 		uint idx = index(us, bksq, wksq, wpsq);
+		/// Remainder of idx divided by 32 determines the bit location at which the idx's
+		/// WIN/DRAW status is determined. If that bit is 1, it's a WIN, else DRAW
 		return (  KPKBitbase[idx / 32] & (1 << (idx & 0x1F))  ) != 0;
 	}
 
 	void init()
 	{
-		uint idx, repeat = 1;
+		uint idx;
 		std::vector<KPKPosition> db(INDEX_MAX);
 
 		// Initialize db with known win / draw positions
@@ -130,12 +135,15 @@ namespace KPKbase
 
 		// Iterate through the positions until no more of the unknown positions can be
 		// changed to either wins or draws (15 cycles needed).
+		bool repeat = true;
 		while (repeat)
-			for (repeat = idx = 0; idx < INDEX_MAX; idx++)
+			for (repeat = false, idx = 0; idx < INDEX_MAX; idx++)
 				if (db[idx] == UNKNOWN && db[idx].classify(db) != UNKNOWN)
-					repeat = 1;
+					repeat = true;
 
 		// Map 32 results into one KPKBitbase[] entry
+		/// Remainder of idx divided by 32 determines the bit location at which the idx's
+		/// WIN/DRAW status is determined. If that bit is 1, it's a WIN, else DRAW
 		for (idx = 0; idx < INDEX_MAX; idx++)
 			if (db[idx] == WIN)
 				KPKBitbase[idx / 32] |= 1 << (idx & 0x1F);

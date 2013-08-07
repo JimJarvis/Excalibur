@@ -61,19 +61,24 @@ namespace Board
 	// Shift the bitboard by a DELTA
 	template<int delta>
 	inline Bit shift_board(Bit b) // template version
-	{ return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
-			: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 : delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
-			: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 : delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9
-			: 0; }
-	inline Bit shift_board(Bit b, int delta)  // non-template version 
-	{ return  delta == DELTA_N  ?  b << 8 : delta == DELTA_S  ?  b >> 8
-	: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 : delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
-	: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 : delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9
-	: 0; }
+	{ return  delta == DELTA_N  ?  b << 8 
+				: delta == DELTA_S  ?  b >> 8
+				: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 
+				: delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
+				: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 
+				: delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9 : 0; }
+	inline Bit shift_board(Bit b, int delta) // non-template version
+	{ return  delta == DELTA_N  ?  b << 8 
+				: delta == DELTA_S  ?  b >> 8
+				: delta == DELTA_NE ? (b & ~file_mask(FILE_H)) << 9 
+				: delta == DELTA_SE ? (b & ~file_mask(FILE_H)) >> 7
+				: delta == DELTA_NW ? (b & ~file_mask(FILE_A)) << 7 
+				: delta == DELTA_SW ? (b & ~file_mask(FILE_A)) >> 9 : 0; }
 
-	// Generate the U64 magic multipliers. Won't actually be run. Pretabulated literals
-	void rook_magicU64_generator();  // will display the results to stdout
-	void bishop_magicU64_generator();
+	// Generate the rook/bishop U64 magic multipliers. 
+	// can be run by command 'magic bishop' or 'magic rook'
+	// if fail, return an empty string
+	template<PieceType PT> string magicU64_generate();  // will display the results to stdout
 }  // namespace Board
 
 #endif // __board_h__

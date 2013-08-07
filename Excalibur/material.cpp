@@ -46,6 +46,9 @@ EndEvaluator<KQKRPs> ScalingFuncKQKRPs[] = { EndEvaluator<KQKRPs>(W), EndEvaluat
 EndEvaluator<KPsK>   ScalingFuncKPsK[]   = { EndEvaluator<KPsK>(W),   EndEvaluator<KPsK>(B) };
 EndEvaluator<KPKP>   ScalingFuncKPKP[]   = { EndEvaluator<KPKP>(W),   EndEvaluator<KPKP>(B) };
 
+// Handy macro for template<Color us> and defines opp color
+#define opp_us const Color opp = (us == W ? B : W)
+
 // Helper templates used to detect a specific material distribution
 template <EndgameType egType> bool is_endgame(Color us, const Position& pos);
 // explicit instantiation
@@ -78,11 +81,10 @@ template<> bool is_endgame<KQKRPs>(Color us, const Position& pos)
 
 /// imbalance() calculates imbalance comparing piece count of each
 /// piece type for both colors.
-int imbalance(Color us, const Position& pos)
+template<Color us>
+int imbalance(const Position& pos)
 {
-	// template instantiation
-	Color opp = ~us;
-
+	opp_us;
 	int pt1, pt2, pc, v;
 	int value = 0;
 
@@ -226,7 +228,7 @@ Entry* probe(const Position& pos)
 		ent->spaceWeight = minorPieceCount * minorPieceCount;
 	}
 
-	ent->score = (short)((imbalance(W, pos) - imbalance(B, pos)) / 16);
+	ent->score = (short)((imbalance<W>(pos) - imbalance<B>(pos)) / 16);
 	return ent;
 }
 

@@ -46,8 +46,8 @@ const Score CandidatePassed[RANK_N] =
 	S(34,68), S(83,166), S(0, 0), S( 0, 0)
 };
 
-// Weakness of our pawn shelter in front of the king indexed by [king pawn][rank]
-const Value ShelterWeakness[2][RANK_N] =
+// Weakness of our pawn shield in front of the king indexed by [king pawn][rank]
+const Value ShieldWeakness[2][RANK_N] =
 { { 141, 0, 38, 102, 128, 141, 141 },
 {  61, 0, 16,  44,  56,  61,  61 } };
 
@@ -62,10 +62,13 @@ const Value MaxSafetyBonus = 263;
 
 #undef S
 
+// Handy macro for template<Color us> and defines opp color
+#define opp_us const Color opp = (us == W ? B : W)
+
 template<Color us>
-Score eval_pawns(const Position& pos, Pawnstruct::Entry* ent) 
+Score evaluate_pawns(const Position& pos, Pawnstruct::Entry* ent) 
 {
-	const Color  opp  = (us == W ? B : W);
+	opp_us;
 	const int UP    = (us == W ? DELTA_N  : DELTA_S);
 	const int RIGHT = (us == W ? DELTA_NE : DELTA_SW);
 	const int LEFT  = (us == W ? DELTA_NW : DELTA_SE);
@@ -149,7 +152,7 @@ Score eval_pawns(const Position& pos, Pawnstruct::Entry* ent)
 			ent->passedPawns[us] |= setbit(sq);
 
 		// Score this pawn
-		if (isolated)		score -= Isolated[opposed][f];
+		if (isolated)	score -= Isolated[opposed][f];
 		if (doubled)	score -= Doubled[opposed][f];
 		if (backward)	score -= Backward[opposed][f];
 		if (chain)		score += ChainMember[f];
@@ -177,16 +180,19 @@ namespace Pawnstruct
 			return ent;
 
 		ent->key = key;
-		ent->score = eval_pawns<W>(pos, ent) - eval_pawns<B>(pos, ent);
+		ent->score = evaluate_pawns<W>(pos, ent) - evaluate_pawns<B>(pos, ent);
 		return ent;
 	}
 
-	/// Entry::shelter_storm() calculates shelter and storm penalties for the file
+	/// Entry::shield_storm() calculates shield and storm penalties for the file
 	/// the king is on, as well as the two adjacent files.
-	Value Entry::shelter_storm(Color us, const Position& pos, Square ksq)
+	/// Note that this template is declared but not called by any other inline 
+	/// functions in the header file. Therefore we don't need to explicitly
+	/// instantiate the template. 
+	template<Color us>
+	Value Entry::shield_storm(const Position& pos, Square ksq)
 	{
-		Color opp = ~us;
-
+		opp_us;
 		Value safety = MaxSafetyBonus;
 		Bit b = pos.piece_union(PAWN) & ( in_front_mask(us, ksq) | rank_mask(sq2rank(ksq)) );
 		Bit ourPawns = b & pos.piece_union(us) & ~rank_mask(sq2rank(ksq));
@@ -198,10 +204,10 @@ namespace Pawnstruct
 
 		for (int f = kf - 1; f <= kf + 1; f++)
 		{
-			// Shelter penalty is higher for the pawn in front of the king
+			// Shield penalty is higher for the pawn in front of the king
 			b = ourPawns & file_mask(f);
 			rkUs = b ? sq2rank(us == W ? lsb(b) : flip_vert(msb(b))) : RANK_1;
-			safety -= ShelterWeakness[f != kf][rkUs];
+			safety -= ShieldWeakness[f != kf][rkUs];
 
 			// Storm danger is smaller if enemy pawn is blocked
 			b  = oppPawns & file_mask(f);
@@ -214,7 +220,8 @@ namespace Pawnstruct
 
 	/// Entry::update_safety() calculates and caches a bonus for king safety. It is
 	/// called only when king square or castle rights change, about 20% of total king_safety() calls.
-	Score Entry::update_safety(Color us, const Position& pos, Square ksq)
+	template<Color us>
+	Score Entry::update_safety(const Position& pos, Square ksq)
 	{
 		kingSquares[us] = ksq;
 		castleRights[us] = pos.castle_rights(us);
@@ -227,16 +234,19 @@ namespace Pawnstruct
 			if (relative_rank(us, ksq) > RANK_4)
 				return kingSafety[us] = make_score(0, -16 * minKPdistance[us]);
 
-			Value bonus = shelter_storm(us, pos, ksq);
+			Value bonus = shield_storm<us>(pos, ksq);
 
 			// If we can castle use the bonus after the castle if is bigger
 			if (can_castle<CASTLE_OO>(pos.castle_rights(us)))
-				bonus = max(bonus, shelter_storm(us, pos, relative_square(us, SQ_G1)));
+				bonus = max(bonus, shield_storm<us>(pos, relative_square(us, SQ_G1)));
 
 			if (can_castle<CASTLE_OOO>(pos.castle_rights(us)))
-				bonus = max(bonus, shelter_storm(us, pos, relative_square(us, SQ_C1)));
+				bonus = max(bonus, shield_storm<us>(pos, relative_square(us, SQ_C1)));
 
 			return kingSafety[us] = make_score(bonus, -16 * minKPdistance[us]);
 	}
+	// explicit instantiation
+	template Score Entry::update_safety<W>(const Position& pos, Square ksq);
+	template Score Entry::update_safety<B>(const Position& pos, Square ksq);
 
 } // namespace Pawns

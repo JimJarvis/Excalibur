@@ -23,13 +23,16 @@ namespace Pawnstruct
 		{ return semiopenFiles[c] & (left ? ((1 << f) - 1) : ~((1 << (f+1)) - 1)); }
 
 		// if the king moves or castling rights changes, we must update king safety evaluation
-		Score king_safety(Color us, const Position& pos, Square ksq)
-		{ return kingSquares[us] == ksq && castleRights[us] == pos.castle_rights(us)
-		? kingSafety[us] : update_safety(us, pos, ksq); }
+		template<Color us> 
+		Score king_safety(const Position& pos, Square ksq)
+		{ 
+			return kingSquares[us] == ksq && castleRights[us] == pos.castle_rights(us)
+				? kingSafety[us] : update_safety<us>(pos, ksq); 
+		}
 
 		// privates: 
-		Score update_safety(Color us, const Position& pos, Square ksq);
-		Value shelter_storm(Color us, const Position& pos, Square ksq);
+		template<Color> Score update_safety(const Position& pos, Square ksq);
+		template<Color> Value shield_storm(const Position& pos, Square ksq);
 
 		U64 key;
 		Bit passedPawns[COLOR_N];

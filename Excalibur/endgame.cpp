@@ -64,21 +64,21 @@ namespace Endgame
 {
 	// key and evaluator function collection.
 	// Initialized at program startup. 
-	Map evalFuncMap;
-	Map scalingFuncMap;
+	Map EvalFuncMap;
+	Map ScalingFuncMap;
 
 	// add entries to the maps using the endgame type-code
 	template<EndgameType E>
 	void add_eval_func(const string& code)
 	{
 		for (Color c : COLORS)
-		evalFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
+		EvalFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
 	}
 	template<EndgameType E>
 	void add_scaling_func(const string& code)
 	{
 		for (Color c : COLORS)
-		scalingFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
+		ScalingFuncMap[code2key(code, c)] = std::unique_ptr<EndEvaluatorBase>(new EndEvaluator<E>(c));
 	}
 
 	void init()
@@ -177,6 +177,8 @@ Value EndEvaluator<KPK>::operator()(const Position& pos) const
 	Square wksq, bksq, wpsq;
 	Color us;
 
+	// The KPK bitbase assumes white to be the stronger side
+	// So when black is actually stronger, we pretend to be white.
 	if (strongerSide == W)
 	{
 		wksq = pos.king_sq(W);
@@ -188,7 +190,8 @@ Value EndEvaluator<KPK>::operator()(const Position& pos) const
 	{
 		wksq = flip_vert(pos.king_sq(B));
 		bksq = flip_vert(pos.king_sq(W));
-		wpsq = flip_vert(pos.pieceList[B][PAWN][0]);
+		wpsq = pos.pieceList[B][PAWN][0];
+		flip_vert(wpsq);
 		us = ~pos.turn;
 	}
 
@@ -226,10 +229,10 @@ Value EndEvaluator<KRKP>::operator()(const Position& pos) const
 
 	if (strongerSide == B)
 	{
-		wksq = flip_vert(wksq);
-		wrsq = flip_vert(wrsq);
-		bksq = flip_vert(bksq);
-		bpsq = flip_vert(bpsq);
+		flip_vert(wksq);
+		flip_vert(wrsq);
+		flip_vert(bksq);
+		flip_vert(bpsq);
 	}
 
 	Square queeningSq = fr2sq(sq2file(bpsq), RANK_1);
@@ -472,11 +475,11 @@ ScaleFactor EndEvaluator<KRPKR>::operator()(const Position& pos) const
 	// pawn is on the left half of the board.
 	if (strongerSide == B)
 	{
-		wksq = flip_vert(wksq);
-		wrsq = flip_vert(wrsq);
-		wpsq = flip_vert(wpsq);
-		bksq = flip_vert(bksq);
-		brsq = flip_vert(brsq);
+		flip_vert(wksq);
+		flip_vert(wrsq);
+		flip_vert(wpsq);
+		flip_vert(bksq);
+		flip_vert(brsq);
 	}
 	if (sq2file(wpsq) > FILE_D)
 	{
@@ -824,9 +827,9 @@ ScaleFactor EndEvaluator<KPKP>::operator()(const Position& pos) const
 
 	if (strongerSide == B)
 	{
-		wksq = flip_vert(wksq);
-		bksq = flip_vert(bksq);
-		wpsq = flip_vert(wpsq);
+		flip_vert(wksq);
+		flip_vert(bksq);
+		flip_vert(wpsq);
 		us   = ~us;
 	}
 

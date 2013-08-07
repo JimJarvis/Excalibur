@@ -67,18 +67,18 @@ namespace Endgame
 {
 	typedef std::map<U64, std::unique_ptr<EndEvaluatorBase>> Map;
 	// key and evaluator function collection. Init at program startup.
-	extern Map evalFuncMap; 
-	extern Map scalingFuncMap; 
+	extern Map EvalFuncMap; 
+	extern Map ScalingFuncMap; 
 
 	// initialized in Eval::init()
 	void init();
 
 	// map[key].get() gets the original pointer from the unique_ptr<>
 	inline EndEvaluatorBase* probe_eval_func(U64 key, EndEvaluatorBase** eeb)
-	{  return *eeb= (evalFuncMap.count(key) ? evalFuncMap[key].get() : nullptr ); }
+	{  return *eeb= (EvalFuncMap.count(key) ? EvalFuncMap[key].get() : nullptr ); }
 
 	inline EndEvaluatorBase* probe_scaling_func(U64 key, EndEvaluatorBase** eeb)
-	{  return *eeb= (scalingFuncMap.count(key) ? scalingFuncMap[key].get() : nullptr ); }
+	{  return *eeb= (ScalingFuncMap.count(key) ? ScalingFuncMap[key].get() : nullptr ); }
 }
 
 #endif // __endgame_h__
