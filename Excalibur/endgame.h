@@ -17,7 +17,7 @@ namespace KPKbase
 enum EndgameType
 {
 	// Evaluation functions
-	KXK,   // Generic "mate lone king" eval
+	KXK,   // Generic "mate lone king" eval; NonUnique
 	KK,		// K vs K
 	KNK,		// KN vs K
 	KNNK,  // KNN vs K
@@ -30,20 +30,20 @@ enum EndgameType
 	KQKP,  // KQ vs KP
 	KQKR,  // KQ vs KR
 	KBBKN, // KBB vs KN
-	KmmKm, // K and two minors vs K and one or two minors
+	KmmKm, // K and two minors vs K and one or two minors; NonUnique
 
 	// Scaling functions
-	KBPsK,   // KB+pawns vs K
-	KQKRPs,  // KQ vs KR+pawns
+	KBPsK,   // KB+pawns vs K; NonUnique
+	KQKRPs,  // KQ vs KR+pawns; NonUnique
 	KRPKR,   // KRP vs KR
 	KRPPKRP, // KRPP vs KRP
-	KPsK,    // K+pawns vs K
+	KPsK,    // K+pawns vs K; NonUnique
 	KBPKB,   // KBP vs KB
 	KBPPKB,  // KBPP vs KB
 	KBPKN,   // KBP vs KN
 	KNPK,    // KNP vs K
 	KNPKB,   // KNP vs KB
-	KPKP     // KP vs KP
+	KPKP     // KP vs KP; NonUnique because the strongerSide color can't be determined
 };
 
 // Base template for EndEvaluator (evalFunc and scalingFunc)
@@ -67,10 +67,16 @@ private:
 
 namespace Endgame
 {
-	typedef std::map<U64, unique_ptr<EndEvaluatorBase>> EgMap;
+	typedef map<U64, unique_ptr<EndEvaluatorBase>> EgMap;
 	// key and evaluator function collection. Init at program startup.
 	extern EgMap EvalFuncMap; 
 	extern EgMap ScalingFuncMap; 
+
+	typedef map<EndgameType, unique_ptr<EndEvaluatorBase>> EgMap2[COLOR_N];
+	// A few material distribution, like KBPsK, cannot be determined 
+	// by a unique position material hash key (i.e. corresponds to more than 
+	// 1 material configuration) Thus we use the EgType explicitly as the map key.
+	extern EgMap2 NonUniqueFuncMap;
 
 	// initialized in Eval::init()
 	void init();
@@ -81,6 +87,10 @@ namespace Endgame
 
 	inline EndEvaluatorBase* probe_scaling_func(U64 key)
 	{  return ScalingFuncMap.count(key) ? ScalingFuncMap[key].get() : nullptr; }
+
+	template<EndgameType Eg, Color c>
+	inline EndEvaluatorBase* probe_non_unique_func()
+	{	return NonUniqueFuncMap[c][Eg].get(); }
 }
 
 #endif // __endgame_h__

@@ -66,6 +66,7 @@ namespace Endgame
 	// Initialized at program startup. 
 	EgMap EvalFuncMap;
 	EgMap ScalingFuncMap;
+	EgMap2 NonUniqueFuncMap;
 
 	// add entries to the maps using the endgame type-code
 	template<EndgameType Eg>
@@ -79,6 +80,13 @@ namespace Endgame
 	{
 		for (Color c : COLORS)
 		ScalingFuncMap[code2key(code, c)] = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c));
+	}
+	// For non-unique material distributions
+	template<EndgameType Eg>
+	void add_non_unique_func()
+	{
+		for (Color c : COLORS)
+		NonUniqueFuncMap[c][Eg] = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c));
 	}
 
 	void init()
@@ -105,6 +113,15 @@ namespace Endgame
 		add_scaling_func<KBPKN>("KBPKN");
 		add_scaling_func<KNPK>("KNPK");
 		add_scaling_func<KNPKB>("KNPKB");
+
+		add_non_unique_func<KXK>();
+		add_non_unique_func<KmmKm>();
+		add_non_unique_func<KBPsK>();
+		add_non_unique_func<KQKRPs>();
+		add_non_unique_func<KPsK>();
+		// KPKP is a special case: although its material key is unique, 
+		// we can't determine the strongerSide color.
+		add_non_unique_func<KPKP>();
 	}
 } // namespace Endgame
 

@@ -36,15 +36,6 @@ const int QuadraticCoefficientsOppositeColor[][PIECE_TYPE_N] =
 	{ 106,  101,   3,   151,  171,   41 }  // Queen
 };
 
-// The following 5 configurations are accessed explicitly because they correspond to more than 
-// one material configuration, thus are not added to EvalFuncMap or ScalingFuncMap collection:
-// (KPKP is special because no 'strongerSide' can be determined)
-// KmmKm, KXK    KBPsK, KQKRPs, KPsK, KPKP
-unique_ptr<EndEvaluatorBase> tmp_eg; // global unique_ptr preserver
-template<EndgameType Eg, Color c>
-EndEvaluatorBase* create_eg() 
-	{ tmp_eg = unique_ptr<EndEvaluatorBase>(new EndEvaluator<Eg>(c)); return tmp_eg.get(); }
-
 // Handy macro for template<Color us> and defines opp color
 #define opp_us const Color opp = (us == W ? B : W)
 
@@ -115,6 +106,10 @@ namespace Material
 // Stores the material evaluation hash table
 HashTable<Entry, 8192> MaterialTable;
 
+using Endgame::probe_eval_func;
+using Endgame::probe_scaling_func;
+using Endgame::probe_non_unique_func;
+
 /// Material::probe() takes a position object as input, looks up a MaterialEntry
 /// object, and returns a pointer to it. If the material configuration is not
 /// already present in the table, it is computed and stored there, so we don't
@@ -138,13 +133,14 @@ Entry* probe(const Position& pos)
 	// Let's look if we have a specialized evaluation function for this
 	// particular material configuration. First we look for a fixed
 	// configuration one, then a generic one if previous search failed.
-	if ((ent->evalFunc = Endgame::probe_eval_func(key)) != nullptr)
+	// Endgame::probe
+	if ((ent->evalFunc = probe_eval_func(key)) != nullptr)
 		return ent;
 
 	if (is_endgame<KXK, W>(pos))
-	{ ent->evalFunc = create_eg<KXK, W>(); return ent; }
+	{ ent->evalFunc = probe_non_unique_func<KXK, W>(); return ent; }
 	else if (is_endgame<KXK, B>(pos))
-	{ ent->evalFunc = create_eg<KXK, B>(); return ent; }
+	{ ent->evalFunc = probe_non_unique_func<KXK, B>(); return ent; }
 
 	if (!pos.piece_union(PAWN) && !pos.piece_union(ROOK) && !pos.piece_union(QUEEN))
 	{
@@ -154,7 +150,7 @@ Entry* probe(const Position& pos)
 			&& pos.pieceCount[B][BISHOP] + pos.pieceCount[B][KNIGHT] <= 2)
 		{
 			 // always DRAW, regardless of color
-			ent->evalFunc = create_eg<KmmKm, W>();
+			ent->evalFunc = probe_non_unique_func<KmmKm, W>();
 			return ent;
 		}
 	}
@@ -166,7 +162,7 @@ Entry* probe(const Position& pos)
 	// scaling functions and we need to decide which one to use.
 	EndEvaluatorBase* sf;
 
-	if ((sf = Endgame::probe_scaling_func(key)) != nullptr)
+	if ((sf = probe_scaling_func(key)) != nullptr)
 	{
 		ent->scalingFunc[sf->strong_color()] = sf;
 		return ent;
@@ -177,14 +173,14 @@ Entry* probe(const Position& pos)
 	// Note that these ones don't return after setting the function.
 	
 	if (is_endgame<KBPsK, W>(pos))
-		ent->scalingFunc[W] = create_eg<KBPsK, W>();
+		ent->scalingFunc[W] = probe_non_unique_func<KBPsK, W>();
 	else if (is_endgame<KBPsK, B>(pos))
-		ent->scalingFunc[B] = create_eg<KBPsK, B>();
+		ent->scalingFunc[B] = probe_non_unique_func<KBPsK, B>();
 
 	if (is_endgame<KQKRPs, W>(pos))
-		ent->scalingFunc[W] = create_eg<KQKRPs, W>();
+		ent->scalingFunc[W] = probe_non_unique_func<KQKRPs, W>();
 	else if (is_endgame<KQKRPs, B>(pos))
-		ent->scalingFunc[B] = create_eg<KQKRPs, B>();
+		ent->scalingFunc[B] = probe_non_unique_func<KQKRPs, B>();
 
 	Value npm_w = pos.non_pawn_material(W);
 	Value npm_b = pos.non_pawn_material(B);
@@ -192,15 +188,15 @@ Entry* probe(const Position& pos)
 	if (npm_w + npm_b == VALUE_ZERO)
 	{
 		if (pos.pieceCount[B][PAWN] == 0)
-			ent->scalingFunc[W] = create_eg<KPsK, W>();
+			ent->scalingFunc[W] = probe_non_unique_func<KPsK, W>();
 		else if (pos.pieceCount[W][PAWN] == 0)
-			ent->scalingFunc[B] = create_eg<KPsK, B>();
+			ent->scalingFunc[B] = probe_non_unique_func<KPsK, B>();
 		else if (pos.pieceCount[W][PAWN] == 1 && pos.pieceCount[B][PAWN] == 1)
 		{
 			// This is a special case because we set scaling functions
 			// for both colors instead of only one.
-			ent->scalingFunc[W] = create_eg<KPKP, W>();
-			ent->scalingFunc[B] = create_eg<KPKP, B>();
+			ent->scalingFunc[W] = probe_non_unique_func<KPKP, W>();
+			ent->scalingFunc[B] = probe_non_unique_func<KPKP, B>();
 		}
 	}
 
