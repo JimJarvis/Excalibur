@@ -89,6 +89,7 @@ namespace Endgame
 		add_eval_func<KPK>("KPK");
 		add_eval_func<KBK>("KBK");
 		add_eval_func<KNK>("KNK");
+		add_eval_func<KNNK>("KNNK");
 		add_eval_func<KBNK>("KBNK");
 		add_eval_func<KRKP>("KRKP");
 		add_eval_func<KRKB>("KRKB");
@@ -96,7 +97,6 @@ namespace Endgame
 		add_eval_func<KQKP>("KQKP");
 		add_eval_func<KQKR>("KQKR");
 		add_eval_func<KBBKN>("KBBKN");
-		add_eval_func<KNNK>("KNNK");
 
 		add_scaling_func<KRPKR>("KRPKR");
 		add_scaling_func<KRPPKRP>("KRPPKRP");

@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
 	Utils::init();
 	Board::init_tables();
-	Zobrist::init_keys();
+	Zobrist::init_keys_psqt();
 	UCI::init();
 	Eval::init();
 
@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 	string fen = concat_args(argc, argv);
 	Position pos(fen);
 	Value margin = 0;
+	Search::RootColor = pos.turn;
 	Value value = Eval::evaluate(pos, margin);
 	cout << "~~~~~~~~~~~~~~~~~~~" << endl;
 	cout << "Value = " << fixed << setprecision(2) 

@@ -206,26 +206,25 @@ inline double centi_pawn(Value v) { return double(v) / double(MG_PAWN); }
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
 
-// Platform-specific system time
+// Platform-specific system time in ms
 #ifdef _WIN32  // Windows
 #  include <sys/timeb.h>
-typedef _timeb sys_time_t;
-inline void system_time(sys_time_t* t) { _ftime_s(t); }
-inline U64 time_to_ms(const sys_time_t& t) { return t.time * 1000LL + t.millitm; }
-#else   // Linux
-#  include <sys/time.h>
-typedef timeval sys_time_t;
-inline void system_time(sys_time_t* t) { gettimeofday(t, NULL); }
-inline long long time_to_ms(const sys_time_t& t) { return t.tv_sec * 1000LL + t.tv_usec / 1000; }
-#endif // !_WIN32
-
-// Get system time
 inline U64 now()
 {
-	sys_time_t t;
-	system_time(&t);
-	return time_to_ms(t);
+	_timeb t;
+	_ftime_s(&t);
+	return t.time * 1000LL + t.millitm;
 }
+#else   // Linux
+#  include <sys/time.h>
+inline U64 now()
+{
+	timeval t;
+	gettimeofday(&t, NULL);
+	return t.tv_sec * 1000LL + t.tv_usec / 1000;
+}
+#endif // !_WIN32
+
 
 /*
  *	Variadic MACRO utilities. Used mainly for debugging

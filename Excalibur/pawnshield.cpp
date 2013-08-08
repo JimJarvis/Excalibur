@@ -46,15 +46,16 @@ const Score CandidatePassed[RANK_N] =
 	S(34,68), S(83,166), S(0, 0), S( 0, 0)
 };
 
-// Weakness of our pawn shield in front of the king indexed by [king pawn][rank]
-const Value ShieldWeakness[2][RANK_N] =
-{ { 141, 0, 38, 102, 128, 141, 141 },
-{  61, 0, 16,  44,  56,  61,  61 } };
+// Weakness of our pawn shelter in front of the king indexed by [rank]
+const Value ShieldWeakness[RANK_N] =
+{ 100, 0, 27, 73, 92, 101, 101 };
 
-// Danger of enemy pawns moving toward our king indexed by [pawn blocked][rank]
-const Value StormDanger[2][RANK_N] =
-{ { 26, 0, 128, 51, 26 },
-{ 13, 0,  64, 25, 13 } };
+// Danger of enemy pawns moving toward our king indexed by
+// [no friendly pawn | pawn unblocked | pawn blocked][rank of enemy pawn]
+const Value StormDanger[3][RANK_N] =
+{ {  0,  64, 128, 51, 26 },
+	{ 26,  32,  96, 38, 20 },
+	{  0,   0,  64, 25, 13 }};
 
 // Max bonus for king safety. Corresponds to start position with all the pawns
 // in front of the king and no enemy pawn on the horizon.
@@ -88,7 +89,7 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 	ent->kingSquares[us] = SQ_NONE;
 	ent->semiopenFiles[us] = 0xFF;
 	ent->pawnAttackmap[us] = shift_board<RIGHT>(ourPawns) | shift_board<LEFT>(ourPawns);
-	ent->pawnsOnSquares[us][B] = bit_count(ourPawns & B_SQUARES);
+	ent->pawnsOnSquares[us][B] = bit_count(ourPawns & DARK_SQUARES);
 	ent->pawnsOnSquares[us][W] = pos.pieceCount[us][PAWN] - ent->pawnsOnSquares[us][B];
 
 	// Loop through all pawns of the current color and score each pawn
@@ -165,7 +166,7 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 
 namespace Pawnshield 
 {
-	HashTable<Entry, 16384> pawnsTable;
+	HashTable<Entry, 16384> PawnshieldTable;
 
 	/// probe() takes a position object as input, computes a Entry object, and returns
 	/// a pointer to it. The result is also stored in a hash table, so we don't have
@@ -174,7 +175,7 @@ namespace Pawnshield
 	Entry* probe(const Position& pos) 
 	{
 		U64 key = pos.pawn_key();
-		Entry* ent = pawnsTable[key];
+		Entry* ent = PawnshieldTable[key];
 
 		if (ent->key == key)
 			return ent;
@@ -195,24 +196,25 @@ namespace Pawnshield
 		opp_us;
 		Value safety = MaxSafetyBonus;
 		Bit b = pos.piece_union(PAWN) & ( in_front_mask(us, ksq) | rank_mask(sq2rank(ksq)) );
-		Bit ourPawns = b & pos.piece_union(us) & ~rank_mask(sq2rank(ksq));
+		Bit ourPawns = b & pos.piece_union(us);
 		Bit oppPawns = b & pos.piece_union(opp);
 		int rkUs, rkOpp;
 		int kf = sq2file(ksq);
 
-		kf = (kf == FILE_A) ? FILE_B : (kf == FILE_H) ? FILE_G : kf;
+		kf = (kf == FILE_A) ? FILE_B 
+			: (kf == FILE_H) ? FILE_G : kf;
 
 		for (int f = kf - 1; f <= kf + 1; f++)
 		{
 			// Shield penalty is higher for the pawn in front of the king
 			b = ourPawns & file_mask(f);
-			rkUs = b ? sq2rank(us == W ? lsb(b) : flip_vert(msb(b))) : RANK_1;
-			safety -= ShieldWeakness[f != kf][rkUs];
+			rkUs = b ? relative_rank(us, us == W ? lsb(b) : msb(b)) : RANK_1;
+			safety -= ShieldWeakness[rkUs];
 
 			// Storm danger is smaller if enemy pawn is blocked
 			b  = oppPawns & file_mask(f);
-			rkOpp = b ? sq2rank(us == W ? lsb(b) : flip_vert(msb(b))) : RANK_1;
-			safety -= StormDanger[rkOpp == rkUs + 1][rkOpp];
+			rkOpp = b ? relative_rank(us, us == W ? lsb(b) : msb(b)) : RANK_1;
+			safety -= StormDanger[rkUs == RANK_1 ? 0 : rkOpp == rkUs + 1 ? 2 : 1][rkOpp];
 		}
 
 		return safety;

@@ -13,7 +13,9 @@ namespace Zobrist
 	extern U64 castleOO[COLOR_N], castleOOO[COLOR_N];
 	extern U64 turn;
 	extern U64 exclusion;
-	void init_keys(); // also init PieceSquareTable
+	// Init zobrist keys and PieceSquareTable. 
+	// Called at program startup. 
+	void init_keys_psqt();
 }
 
 #endif // __zobrist_h__

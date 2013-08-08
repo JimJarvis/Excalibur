@@ -113,7 +113,7 @@ int imbalance(const Position& pos)
 namespace Material
 {
 // Stores the material evaluation hash table
-HashTable<Entry, 8192> materialTable;
+HashTable<Entry, 8192> MaterialTable;
 
 /// Material::probe() takes a position object as input, looks up a MaterialEntry
 /// object, and returns a pointer to it. If the material configuration is not
@@ -122,7 +122,7 @@ HashTable<Entry, 8192> materialTable;
 Entry* probe(const Position& pos)
 {
 	U64 key = pos.material_key();
-	Entry* ent = materialTable[key];
+	Entry* ent = MaterialTable[key];
 
 	// If ent->key matches the position's material hash key, it means that we
 	// have analyzed this material configuration before, and we can simply

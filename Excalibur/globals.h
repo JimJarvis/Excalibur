@@ -33,8 +33,6 @@ typedef int ScaleFactor;
 #define FILE_N 8
 #define RANK_N 8
 
-const Bit B_SQUARES = 0xAA55AA55AA55AA55ULL;  // a bitboard of all black squares
-const Bit W_SQUARES = ~B_SQUARES; // a bitboard of all white squares
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 
@@ -50,6 +48,9 @@ enum : uint
 	SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
 	SQ_NONE // a non-existent square
 };
+
+const Bit DARK_SQUARES = 0xAA55AA55AA55AA55ULL;  // a bitboard of all dark squares
+const Bit LIGHT_SQUARES = ~DARK_SQUARES; // a bitboard of all light squares
 
 // square index to algebraic notation
 static const char* SQ_NAME[SQ_N] = {

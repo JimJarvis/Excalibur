@@ -16,9 +16,9 @@ U64 KPKdata[INDEX_MAX / 64];
 // bit  6-11: black king square (from SQ_A1 to SQ_H8)
 // bit    12: side to move
 // bit 13-14: white pawn file (from FILE_A to FILE_D)
-// bit 15-17: white pawn 6 - rank (from 6 - RANK_7 to 6 - RANK_2)
+// bit 15-17: white pawn RANK_7 - (from RANK_7 - RANK_7 to RANK_7 - RANK_2)
 uint index(Color us, Square bksq, Square wksq, Square psq)
-{ return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((6 - sq2rank(psq)) << 15); }
+{ return wksq + (bksq << 6) + (us << 12) + (sq2file(psq) << 13) + ((RANK_7 - sq2rank(psq)) << 15); }
 
 enum // possible results
 {
@@ -50,7 +50,7 @@ int KPKPosition::classify_leaf(uint idx)
 	wksq = idx & 0x3F;
 	bksq = (idx >> 6) & 0x3F;
 	us   = Color((idx >> 12) & 0x01);
-	psq  = fr2sq((idx >> 13) & 3,  6 - (idx >> 15));
+	psq  = fr2sq((idx >> 13) & 3,  RANK_7 - (idx >> 15));
 
 	// Check if two pieces are on the same square or if a king can be captured
 	if (   wksq == psq || wksq == bksq || bksq == psq

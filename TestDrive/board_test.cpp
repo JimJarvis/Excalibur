@@ -17,7 +17,7 @@ TEST(Misc, Setup)
 	// initialize
 	Utils::init();
 	Board::init_tables();
-	Zobrist::init_keys();
+	Zobrist::init_keys_psqt();
 	Eval::init();
 
 	// Read from FEN.epd

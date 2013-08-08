@@ -45,8 +45,8 @@ namespace Board
 	extern inline Bit in_front_mask(Color c, Square sq);
 	extern inline Bit forward_mask(Color c, Square sq);
 	extern inline Bit ray_mask(PieceType pt, Square sq);
-	inline Bit same_color_sq_mask(Square sq) // return a bitmap of all squares same color as sq
-	{ return (W_SQUARES & setbit(sq)) ? W_SQUARES : B_SQUARES; }
+	inline Bit colored_sq_mask(Square sq) // return a bitmap of all squares same color as sq
+	{ return (LIGHT_SQUARES & setbit(sq)) ? LIGHT_SQUARES : DARK_SQUARES; }
 
 	// with respect to the reference frame of Color
 	inline Square relative_square(Color c, Square s) { return s ^ (c * 56); }

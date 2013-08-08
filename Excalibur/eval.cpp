@@ -514,7 +514,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 	if (bonus && (ei.attackedBy[us][PAWN] & setbit(sq))!= 0 )
 	{
 		if (   !pos.Knightmap[opp]
-			&& !(same_color_sq_mask(sq) & pos.Bishopmap[opp]))
+			&& !(colored_sq_mask(sq) & pos.Bishopmap[opp]))
 			bonus += bonus + bonus / 2;
 		else
 			bonus += bonus / 2;
@@ -751,8 +751,8 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		// value that will be used for pruning because this value can sometimes
 		// be very big, and so capturing a single attacking piece can therefore
 		// result in a score change far bigger than the value of the captured piece.
-		score -= KingDanger[us == pos.turn][attackUnits];
-		margins[us] += mg_value(KingDanger[us == pos.turn][attackUnits]) / 2;
+		score -= KingDanger[us == Search::RootColor][attackUnits];
+		margins[us] += mg_value(KingDanger[us == Search::RootColor][attackUnits]);
 	}
 
 	DEBUG_MSG("King " << C(us), score);
