@@ -211,25 +211,20 @@ DEF_OPERATOR(PieceType);
 #endif
 
 // thrown when requested file can't be opened
-class FileNotFoundException : public std::exception
+class FileNotFoundException : public exception
 {
 public:
-	FileNotFoundException(string fp)
-	{
-		errmsg = new string("Error when opening ");
-		*errmsg += fp;
-	};
+	FileNotFoundException(string fp) : errmsg("Error when opening ")
+		{ errmsg += fp; }
 #ifdef _MSC_VER  // VC++ doesn't yet support noexcept()
-	~FileNotFoundException() { delete errmsg; }
 	virtual const char* what() const throw()
-		{ return errmsg->c_str(); }
+		{ return errmsg.c_str(); }
 #else  // C++11 noexcept operator. Required by gcc
-	~FileNotFoundException() noexcept(true) { delete errmsg; }
 	virtual const char* what() noexcept(true)
-		{ return errmsg->c_str(); }
+		{ return errmsg.c_str(); }
 #endif
 private:
-	string *errmsg;
+	string errmsg;
 };
 
 #include <vector>

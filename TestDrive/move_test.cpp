@@ -25,17 +25,29 @@ TEST(Move, Generator)
 }
 */
 
+// Wrapper for gen_moves<LEGAL>
+class LegalWrapper
+{
+public:
+	LegalWrapper(const Position& pos) : it(mbuf), end(pos.gen_moves<LEGAL>(mbuf)) { end->move = MOVE_NONE; }
+	void operator++() { it++; }
+	Move operator*() const { return it->move; }
+	size_t size() const { return end - mbuf; }
+private:
+	ScoredMove mbuf[MAX_MOVES];
+	ScoredMove *it, *end;
+};
+
 TEST(Move, Checks)
 {
 	bool verbose = false;
 	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
 	pos.parse_fen("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
-	int end = pos.gen_non_evasions(0);
 	int check = 0, quiet = 0; // count checking moves
 	StateInfo si; 
-	for (int i = 0; i < end; i++)
+	for (LegalWrapper i(pos); *i; i++)
 	{
-		Move m = MoveBuffer[i].move;
+		Move m = *i;
 		pos.make_move(m, si);
 		if (pos.is_own_king_attacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
@@ -122,12 +134,10 @@ TEST(Move, MakeUnmake)
 	{
 		pos = Position(fenList[i]);
 		pos_orig = pos;
-		int end = pos.gen_non_evasions(0);
-
 		StateInfo si;
-		for (int i = 0; i < end; i++) // testing all possible moves
+		for (LegalWrapper it(pos); *it; it++)
 		{
-			Move m = MoveBuffer[i].move;
+			Move m = *it;
 			pos.make_move(m, si);
 
 			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << ushort(m) << "\n" << fenList[i];
@@ -158,16 +168,12 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 {
 	if (depth == 0)  return;
 
-	int currentBuf, nextBuf; 
-	currentBuf = MoveBufEnds[ply];
-
 	// generate from this ply
-	nextBuf = MoveBufEnds[ply + 1] = pos.gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
-	for (int i = currentBuf; i < nextBuf; i++)
+	for (LegalWrapper i(pos); *i; i++)
 	{
-		moveTrace[ply] = m = MoveBuffer[i].move;
+		moveTrace[ply] = m = *i;
 		pos.make_move(m, si);
 		
 		ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg; 
@@ -197,65 +203,3 @@ TEST(Move, KeyInvariant)
 		//cout << "Case " <<  i+1 << " passed" << endl;
 	}
 }
-
-/*
-// Non-recursive version
-// test incrementally updated hash keys and value invariants
-#define errmsg1 fenList[i] << "\n" << string(m) << endl
-#define errmsg2 fenList[i] << "\n" << string(m) << "   " << string(m2) << endl
-#define errmsg3 fenList[i] << "\n" << string(m) << "   " << string(m2) << "   " << string(m3) << endl
-#define INVARIANT(depth) \
-ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg##depth; \
-ASSERT_EQ(pos.calc_material_key(), pos.st->materialKey) << errmsg##depth; \
-ASSERT_EQ(pos.calc_pawn_key(), pos.st->pawnKey) << errmsg##depth; \
-ASSERT_EQ(pos.calc_psq_score(), pos.st->psqScore) << errmsg##depth; \
-for (Color c : COLORS) \
-	ASSERT_EQ(pos.calc_non_pawn_material(c), pos.st->npMaterial[c]) << errmsg##depth
-
-TEST(Move, KeyInvariant2)
-{
-	for (int i = 0; i < TEST_SIZE; i++)
-	{
-		pos = Position(fenList[i]);
-		int end = pos.genLegal(0);
-
-		StateInfo si;
-		for (int i = 0; i < end; i++) // testing all possible moves
-		{
-			Move m = MoveBuffer[i];
-			pos.makeMove(m, si);
-
-			if (false)   // turn verbose on/off
-			cout << "Key = " << pos.calc_key() << ";  "
-				<< "MaterialKey = " << pos.calc_material_key() << ";  "
-				<< "PawnKey = " << pos.calc_pawn_key() << ";  "
-				<< "psqScore = " << pos.calc_psq_score() << ";  "
-				<< "NP[W] = " <<  pos.calc_non_pawn_material(W) << ";  "
-				<< "NP[B] = " << pos.calc_non_pawn_material(B) << endl;
-
-			INVARIANT(1);
-
-			int end2 = pos.genLegal(end);
-			StateInfo si2;
-			for (int i2 = end; i2 < end2; i2++)
-			{
-				Move m2 = MoveBuffer[i2];
-				pos.makeMove(m2, si2);
-				INVARIANT(2);
-
-				int end3 = pos.genLegal(end2);
-				StateInfo si3;
-				for (int i3 = end2; i3 < end3; i3++)
-				{
-					Move m3 = MoveBuffer[i3];
-					pos.makeMove(m3, si3);
-					INVARIANT(3);
-					pos.unmakeMove(m3);
-				}
-				pos.unmakeMove(m2);
-			}
-			pos.unmakeMove(m);
-		} 
-	}
-}
-*/

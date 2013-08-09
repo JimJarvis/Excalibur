@@ -114,15 +114,15 @@ TEST(Board, Between)
 			x1 = sq2file(sq1); x2 = sq2file(sq2);
 			y1 = sq2rank(sq1); y2 = sq2rank(sq2);
 			if (x1 != x2 && y1 != y2 && abs(x1-x2)!=abs(y1-y2))
-				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between_mask(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			if (x1 == x2 && y1 == y2)
-				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between_mask(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			if (abs(x1 - x2)==1 && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==1 || abs(x1-x2)==1 && abs(y1-y2)==1 )
-				ASSERT_EQ(0, between(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+				ASSERT_EQ(0, between_mask(sq1, sq2))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			for (int bitCnt = 2; bitCnt <= 7; bitCnt++)
 			{
 				if (abs(x1 - x2)==bitCnt && abs(y1-y2)==0 || abs(x1-x2)==0 && abs(y1-y2)==bitCnt || abs(x1-x2)==bitCnt && abs(y1-y2)==bitCnt )
-					ASSERT_EQ(bitCnt-1, bit_count(between(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
+					ASSERT_EQ(bitCnt-1, bit_count(between_mask(sq1, sq2)))<< "sq1 = " << sq1 << " && sq2 = " << sq2 << endl;;
 			}
 		}		
 	}

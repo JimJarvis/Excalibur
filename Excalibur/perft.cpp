@@ -3,41 +3,34 @@
 
 // variables that might be used for debugging
 // uncomment some code to show more detailed debugging info
-extern U64 perft_castle, perft_promo, perft_EP, perft_check, perft_mate; 
-extern int divideDepth;
+const int DivideDepth = 2;
 
 /* Classical performance test. Return raw node count */
-U64 Position::perft(int depth, int ply)
+U64 Position::perft(int depth)
 {
-	int currentBuf, nextBuf; 
-	currentBuf = MoveBufEnds[ply];
-
-	if (depth == 1) 
-		return gen_legal(currentBuf) - currentBuf; 
+	ScoredMove moveBuf[MAX_MOVES];
+	if (depth == 1)
+		return gen_moves<LEGAL>(moveBuf) - moveBuf; 
 
 	U64 nodeCount = 0;
-	// generate from this ply
-	nextBuf = MoveBufEnds[ply + 1] = gen_legal(currentBuf);
 	Move m;
 	StateInfo si;
-	for (int i = currentBuf; i < nextBuf; i++)
+	ScoredMove *it;
+	ScoredMove *end = gen_moves<LEGAL>(moveBuf);
+	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
+	end->move = MOVE_NONE;
+	for (it = moveBuf; it != end; ++it)
 	{
-		m = MoveBuffer[i].move;
+		m = it->move;
 		make_move(m, si);
-			//U64 count = perft(depth - 1, ply + 1);
-			//if (depth == divideDepth)
-			//{
-			//	cout << m << ": ";
-			//	cout << count << endl;
-			//}
-			//nodeCount += count;
-		nodeCount += perft(depth - 1, ply + 1);
-			//if (depth == 1)
-			//{
-			//	if (m.isEP()) perft_EP ++;
-			//	if (m.isCastle())  perft_castle ++;
-			//	if (m.isPromo()) perft_promo ++;
-			//}
+		//U64 count = perft(depth - 1);
+		//if (depth == DivideDepth)
+		//{
+		//	cout << m2str(m) << ": ";
+		//	cout << count << endl;
+		//}
+		//nodeCount += count;
+		nodeCount += perft(depth - 1);
 		unmake_move(m);
 	}
 	
@@ -67,7 +60,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 	static const int SPEEDOMETER = 250000000;
 	ifstream fin(filePath.c_str());
 	if (!fin.is_open())  // MUST new and throw an exception pointer
-		throw new FileNotFoundException(filePath);
+		throw FileNotFoundException(filePath);
 	Position ptest;
 	string str, FEN;
 	U64 ans, actual, roundTime, roundNodes, start, end, totalTime = 0, totalNodes = 0;
@@ -101,7 +94,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 					cout << "FATAL ERROR at depth " << depth << endl;
 					cout << FEN << endl;
 					cout << "Expected = " << ans << "    Actual = " << actual << endl;
-					throw exception("perft death");
+					throw exception();
 				}
 
 				if (5 <= depth && depth <=6)

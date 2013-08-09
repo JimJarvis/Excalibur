@@ -278,8 +278,8 @@ void PerftThread::execute()
 		case 1: perft_verifier(PH.epdFile, PH.epdId); break;
 		case 2: perft_verifier(PH.posperft, PH.depth); break;
 	}
-	} catch (FileNotFoundException* e) // must be an exception pointer
-	{ cout << e->what() << endl; delete e; Signal.stop = true; }
+	} catch (FileNotFoundException e) // must be an exception pointer
+	{ cout << e.what() << endl; Signal.stop = true; }
 	Signal.stop = true;
 }
 

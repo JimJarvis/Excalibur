@@ -571,7 +571,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 		// give a discovered check through an x-ray attack.
 		else if ( PT == BISHOP
 			&& (ray_mask(PT, pos.king_sq(opp)) & setbit(sq))
-			&& !more_than_one_bit(between(sq, pos.king_sq(opp)) & pos.Occupied))
+			&& !more_than_one_bit(between_mask(sq, pos.king_sq(opp)) & pos.Occupied))
 			score += BishopPin;
 
 		// Penalty for bishop with same colored pawns

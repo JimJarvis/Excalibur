@@ -20,7 +20,7 @@ struct StateInfo
 
 	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "key" excluded
 	U64 key;
-	Bit CheckerMap; // a map that collects all checkers
+	Bit checkerMap; // a map that collects all checkers
 	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
 };
@@ -77,18 +77,8 @@ public:
 	template<GenType>
 	ScoredMove* gen_moves(ScoredMove* moveBuf) const;
 
-	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
-	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) const /* default: pseudo non-evasions */
-		{ return legal ? gen_legal_helper(index, ~Colormap[turn], true, pinned) : gen_helper(index, ~Colormap[turn], true); }
-
-	int gen_legal(int index) const  { return st->CheckerMap ? 
-		gen_evasions(index, true, pinned_map()) : 	gen_non_evasions(index, true, pinned_map()); }  // generate only legal moves
-	int gen_pseudo_legal(int index)  { return st->CheckerMap ?
-		gen_evasions(index) : gen_non_evasions(index); }// generate pseudo legal moves
-
 	bool is_legal(Move& mv, Bit& pinned) const;  // judge if a pseudo-legal move is legal, given the pinned map.
-	// 8192 - 218 = 7974 : 218 being the most legal moves ever known
-	int count_legal() const { return gen_legal(7974) - 7974; }
+	int count_legal() const; // count the number of legal moves
 	Bit pinned_map() const; // a bitmap of all pinned pieces
 	
 	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
@@ -105,7 +95,7 @@ public:
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
-	U64 perft(int depth) { return perft(depth, 0); } // start recursion from root
+	U64 perft(int depth); // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// Use explicit template instantiation
@@ -134,7 +124,7 @@ public:
 	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
 
 	// More getter methods
-	Bit checker_map() const { return st->CheckerMap; }
+	Bit checker_map() const { return st->checkerMap; }
 	byte castle_rights(Color c) const { return st->castleRights[c]; }
 	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
 	Bit piece_union(Color c) const { return Colormap[c]; }
@@ -143,11 +133,14 @@ public:
 		{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
 private:
-	// index in moveBuffer, Target square, and will the king move or not. Used to generate evasions and non-evasions.
-	int gen_helper(int index, Bit Target, bool isNonEvasion) const;  // pseudo-moves
-	int gen_legal_helper(int index, Bit Target, bool isNonEvasion, Bit& pinned) const;  // a close of genHelper, but built in legality check
-
-	U64 perft(int depth, int ply);  // will be called with ply = 0
+	template<PieceType, bool legal>
+	ScoredMove* gen_piece(ScoredMove*, Bit target, Bit pinned = 0) const;
+	template<bool legal>
+	ScoredMove* gen_pawn(ScoredMove*, Bit target, Bit pinned = 0) const;
+	template<GenType, bool legal>
+	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0) const; 
+	template<bool legal>
+	ScoredMove* gen_evasion(ScoredMove*, Bit pinned = 0) const;
 };
 
 
@@ -201,9 +194,6 @@ inline Bit Position::attackers_to(Square sq, Bit occ) const
 		| (piece_union(ROOK, QUEEN) & Board::rook_attack(sq, occ))
 		| (piece_union(BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
-
-extern ScoredMove MoveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
-extern int MoveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 // perft verifier, with an epd data file. 
 // You can supply an optional "startID" to skip until the first test that matches the ID. The ID is the part after "id gentest-"

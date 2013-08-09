@@ -117,7 +117,7 @@ void Position::parse_fen(string fenstr)
 		fen >> st->fullMove;
 	}
 	st->capt = NON;
-	st->CheckerMap = attackers_to(king_sq(turn),  ~turn);
+	st->checkerMap = attackers_to(king_sq(turn),  ~turn);
 
 	st->key = calc_key();
 	st->materialKey = calc_material_key();
@@ -125,8 +125,6 @@ void Position::parse_fen(string fenstr)
 	st->psqScore = calc_psq_score();
 	for (Color c : COLORS)
 		st->npMaterial[c] = calc_non_pawn_material(c);
-
-	MoveBufEnds[0] = 0;
 }
 
 // Convert the current position to an FEN expression
