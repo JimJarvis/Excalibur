@@ -26,7 +26,6 @@
     <ClCompile Include="eval.cpp" />
     <ClCompile Include="kpkbase.cpp" />
     <ClCompile Include="material.cpp" />
-    <ClCompile Include="move.cpp" />
     <ClCompile Include="pawnshield.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="search.cpp" />

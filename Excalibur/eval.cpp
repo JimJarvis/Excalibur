@@ -384,17 +384,17 @@ namespace Eval
 	Value see(const Position& pos, Move& m, Value asymmThresh /* =0 */ )
 	{
 		// ignore castling
-		if (m.is_castle()) return 0;
+		if (is_castle(m)) return 0;
 
 		Bit occ, attackers, usAttackers;
 		Value swapList[32], idx = 1;
-		Square from = m.get_from();
-		Square to = m.get_to();
+		Square from = get_from(m);
+		Square to = get_to(m);
 		swapList[0] = PIECE_VALUE[MG][pos.boardPiece[to]];
 		Color us = pos.boardColor[from];
 		occ = pos.Occupied ^ setbit(from);
 
-		if (m.is_ep())
+		if (is_ep(m))
 		{
 			occ ^= pawn_push(~us, to); // remove the captured pawn
 			swapList[0] = PIECE_VALUE[MG][PAWN];
@@ -500,7 +500,7 @@ void init_eval_info(const Position& pos, EvalInfo& ei)
 		ei.kingRing[opp] = ei.kingAttackersCount[us] = 0;
 }
 
-// evaluates bishop and knight outposts squares
+// Evaluates bishop and knight outposts squares
 // A sub-helper used in another sub-helper evaluate_pieces()
 template<PieceType PT, Color us>  // BISHOP or KNIGHT
 Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
@@ -525,7 +525,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 }
 
 
-// assigns bonuses and penalties to the pieces of a given color
+// Assigns bonuses and penalties to the pieces of a given color
 // sub-helper used in the helper evaluate_pieces_of_color()
 template<PieceType PT, Color us>
 Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mobilityArea)
@@ -623,7 +623,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 	return score;
 }
 
-// assigns bonuses and penalties to all the pieces of a given color.
+// Assigns bonuses and penalties to all the pieces of a given color.
 // main helper, used directly in evaluate()
 template<Color us>
 Score evaluate_pieces_of_color(const Position& pos, EvalInfo& ei, Score& mobility)
@@ -650,7 +650,7 @@ Score evaluate_pieces_of_color(const Position& pos, EvalInfo& ei, Score& mobilit
 }
 
 
-// assigns bonuses and penalties to a king of a given color
+// Assigns bonuses and penalties to a king of a given color
 // main helper, used directly in evaluate()
 template<Color us>
 Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
@@ -760,7 +760,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 }
 
 
-// assigns bonuses according to the type of attacking piece
+// Assigns bonuses according to the type of attacking piece
 // and the type of attacked one.
 // main helper, used directly in evaluate()
 template<Color us>
@@ -800,7 +800,7 @@ Score evaluate_threats(const Position& pos, EvalInfo& ei)
 }
 
 
-// evaluates the passed pawns of the given color
+// Evaluates the passed pawns of the given color
 // main helper, used directly in evaluate()
 template<Color us>
 Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
@@ -898,7 +898,7 @@ Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
 }
 
 
-// evaluates the unstoppable passed pawns for both sides, this is quite
+// Evaluates the unstoppable passed pawns for both sides, this is quite
 // conservative and returns a winning score only when we are very sure that the pawn is winning.
 // main helper, used directly in evaluate()
 Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
@@ -1057,7 +1057,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 }
 
 
-// computes the space evaluation for a given side. The space evaluation is 
+// Computes the space evaluation for a given side. The space evaluation is 
 // a simple bonus based on the number of safe squares available for minor 
 // pieces on the central four files on ranks 2--4. Safe squares one, two 
 // or three squares behind a friendly pawn are counted twice. 

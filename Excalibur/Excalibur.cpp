@@ -17,10 +17,10 @@ int main(int argc, char **argv)
 	// set transposition table size
 	TT.set_size((int) OptMap["Hash"]);
 
-	//UCI::process();
+	UCI::process();
 	
 	// Static evaluation debugging
-	string fen = concat_args(argc, argv);
+	/*string fen = concat_args(argc, argv);
 	Position pos(fen);
 	Value margin = 0;
 	Search::RootColor = pos.turn;
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 	cout << "~~~~~~~~~~~~~~~~~~~" << endl;
 	cout << "Value = " << fixed << setprecision(2) 
 	<< centi_pawn(value) << endl;
-	cout << "Margin = " << centi_pawn(margin) << endl;
+	cout << "Margin = " << centi_pawn(margin) << endl;*/
 
 	return 0;
 }

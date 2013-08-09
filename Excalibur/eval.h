@@ -4,6 +4,7 @@
 #define __eval_h__
 
 #include "position.h"
+using namespace Moves;
 
 namespace Eval
 {
@@ -28,8 +29,8 @@ namespace Eval
 		// Early return if SEE cannot be negative because captured piece value
 		// is not less then capturing one. Note that king moves always return
 		// here because king midgame value is set to 0.
-		if (PIECE_VALUE[MG][pos.boardPiece[m.get_from()]] 
-				<= PIECE_VALUE[MG][pos.boardPiece[m.get_to()]])
+		if (PIECE_VALUE[MG][pos.boardPiece[get_from(m)]] 
+				<= PIECE_VALUE[MG][pos.boardPiece[get_to(m)]])
 			return 1;
 		return see(pos, m);  // only cares about positive or negative
 	}

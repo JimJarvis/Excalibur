@@ -32,9 +32,6 @@
     <ClCompile Include="..\Excalibur\utils.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\move.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Excalibur\perft.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>

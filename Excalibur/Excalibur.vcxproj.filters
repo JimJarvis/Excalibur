@@ -29,9 +29,6 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="move.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="perft.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

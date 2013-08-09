@@ -35,7 +35,7 @@ TEST(Move, Checks)
 	StateInfo si; 
 	for (int i = 0; i < end; i++)
 	{
-		Move m = MoveBuffer[i];
+		Move m = MoveBuffer[i].move;
 		pos.make_move(m, si);
 		if (pos.is_own_king_attacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
@@ -52,37 +52,34 @@ TEST(Move, Judgement)
 	Move m;
 	RKiss::init_seed(107);
 	Square from = RKiss::rand64() % 64;
-	m.set_from(from);
 	Square to = RKiss::rand64() % 64;
-	m.set_to(to);
+	set_from_to(m, from, to);
 	PieceType proms[4] = {QUEEN, BISHOP, KNIGHT, ROOK}; // promoted
 	for (PieceType prom : proms)
 	{
-		m.set_promo(prom);
-		ASSERT_EQ(m.get_promo(), prom);
-		ASSERT_TRUE(m.is_promo());
-		ASSERT_FALSE(m.is_ep());
-		ASSERT_FALSE(m.is_castle());
-		m.clear_special();
-		ASSERT_EQ(m.get_from(), from);
-		ASSERT_EQ(m.get_to(), to);
+		set_promo(m, prom);
+		ASSERT_EQ(get_promo(m), prom);
+		ASSERT_TRUE(is_promo(m));
+		ASSERT_FALSE(is_ep(m));
+		ASSERT_FALSE(is_castle(m));
+		ASSERT_EQ(get_from(m), from);
+		ASSERT_EQ(get_to(m), to);
 	}
-	m.clear();
+	clear(m);
 
-	m.set_from(str2sq("c2"));
-	m.set_to(str2sq("c4"));
-	m.set_castle();
-	ASSERT_FALSE(m.is_promo());
-	ASSERT_TRUE(m.is_castle());
-	ASSERT_FALSE(m.is_ep());
-	ASSERT_EQ(m.get_from(), 10);
-	ASSERT_EQ(m.get_to(), 26);
-	m.clear();
+	set_from_to(m, str2sq("c2"), str2sq("c4"));
+	set_castle(m);
+	ASSERT_FALSE(is_promo(m));
+	ASSERT_TRUE(is_castle(m));
+	ASSERT_FALSE(is_ep(m));
+	ASSERT_EQ(get_from(m), 10);
+	ASSERT_EQ(get_to(m), 26);
+	clear(m);
 
-	m.set_ep();
-	ASSERT_FALSE(m.is_promo());
-	ASSERT_FALSE(m.is_castle());
-	ASSERT_TRUE(m.is_ep());
+	set_ep(m);
+	ASSERT_FALSE(is_promo(m));
+	ASSERT_FALSE(is_castle(m));
+	ASSERT_TRUE(is_ep(m));
 }
 
 // Test pieceList[][][] consistency
@@ -130,15 +127,15 @@ TEST(Move, MakeUnmake)
 		StateInfo si;
 		for (int i = 0; i < end; i++) // testing all possible moves
 		{
-			Move m = MoveBuffer[i];
+			Move m = MoveBuffer[i].move;
 			pos.make_move(m, si);
 
-			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << string(m) << "\n" << fenList[i];
+			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << ushort(m) << "\n" << fenList[i];
 			
 			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << string(m);
+			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << ushort(m);
 		} 
 	}
 }
@@ -153,7 +150,7 @@ string print_move_trace(int ply)  // helper
 	oss << currentFEN << endl;
 	oss << "Move trace: ";
 	for (int i = 0; i <= ply; i++)
-		oss << string(moveTrace[i]) << "  ";
+		oss << ushort(moveTrace[i]) << "  ";
 	return oss.str();
 }
 
@@ -170,7 +167,7 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
-		moveTrace[ply] = m = MoveBuffer[i];
+		moveTrace[ply] = m = MoveBuffer[i].move;
 		pos.make_move(m, si);
 		
 		ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg; 

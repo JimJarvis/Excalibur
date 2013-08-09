@@ -74,6 +74,9 @@ public:
 	Square king_sq(Color c) const { return pieceList[c][KING][0]; }
 
 	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
+	template<GenType>
+	ScoredMove* gen_moves(ScoredMove* moveBuf) const;
+
 	int gen_evasions(int index, bool legal = false, Bit pinned = 0) const;  // default: pseudo evasions - our king is in check. Or you can generate strictly legal evasions.
 	int gen_non_evasions(int index, bool legal = false, Bit pinned = 0) const /* default: pseudo non-evasions */
 		{ return legal ? gen_legal_helper(index, ~Colormap[turn], true, pinned) : gen_helper(index, ~Colormap[turn], true); }
@@ -199,7 +202,7 @@ inline Bit Position::attackers_to(Square sq, Bit occ) const
 		| (piece_union(BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
 
-extern Move MoveBuffer[8192]; // all generated moves of the current search tree are stored in this array.
+extern ScoredMove MoveBuffer[4096]; // all generated moves of the current search tree are stored in this array.
 extern int MoveBufEnds[64];      // this arrays keeps track of which moves belong to which ply
 
 // perft verifier, with an epd data file. 

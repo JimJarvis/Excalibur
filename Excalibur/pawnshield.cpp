@@ -185,11 +185,11 @@ namespace Pawnshield
 		return ent;
 	}
 
-	/// Entry::shield_storm() calculates shield and storm penalties for the file
+	/// Calculates shield and storm penalties for the file
 	/// the king is on, as well as the two adjacent files.
-	/// Note that this template is declared but not called by any other inline 
-	/// functions in the header file. Therefore we don't need to explicitly
-	/// instantiate the template. 
+	/// Note that the template isn't explicitly instantiated because
+	/// update_safety<>'s explicit instantiation already takes care of 
+	/// shield_storm<>
 	template<Color us>
 	Value Entry::shield_storm(const Position& pos, Square ksq)
 	{
@@ -220,8 +220,8 @@ namespace Pawnshield
 		return safety;
 	}
 
-	/// Entry::update_safety() calculates and caches a bonus for king safety. It is
-	/// called only when king square or castle rights change, about 20% of total king_safety() calls.
+	/// Calculates and caches a bonus for king safety. It is called only when 
+	/// king square or castle rights change, about 20% of total king_safety() calls.
 	template<Color us>
 	Score Entry::update_safety(const Position& pos, Square ksq)
 	{

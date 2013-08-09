@@ -120,6 +120,17 @@ enum CastleType: byte
 	// the CASTLE_MASK is filled out in Board::init_tables()
 };
 
+// Move generation types
+enum GenType : byte
+{
+	CAPTURE,
+	QUIET,
+	QUIET_CHECK,
+	EVASION,
+	NON_EVASION,
+	LEGAL
+};
+
 /// Score enum keeps a midgame and an endgame value in a single integer, first
 /// LSB 16 bits are used to store endgame value, while upper bits are used for
 /// midgame value.

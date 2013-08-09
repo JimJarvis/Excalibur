@@ -22,7 +22,7 @@ U64 Position::perft(int depth, int ply)
 	StateInfo si;
 	for (int i = currentBuf; i < nextBuf; i++)
 	{
-		m = MoveBuffer[i];
+		m = MoveBuffer[i].move;
 		make_move(m, si);
 			//U64 count = perft(depth - 1, ply + 1);
 			//if (depth == divideDepth)
