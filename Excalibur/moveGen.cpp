@@ -16,7 +16,7 @@ int MoveBufEnds[64];
 
 // Helper functions for the main gen_moves()
 template<bool legal>
-ScoredMove* Position::gen_pawn(ScoredMove* moveBuf, Bit target, Bit pinned) const
+ScoredMove* Position::gen_pawn(ScoredMove* moveBuf, Bit& target, Bit pinned) const
 {
 	Color opp = ~turn;
 	const Square *tmpSq = pieceList[turn][PAWN];
@@ -84,7 +84,7 @@ ScoredMove* Position::gen_pawn(ScoredMove* moveBuf, Bit target, Bit pinned) cons
 }
 
 template<PieceType PT, bool legal>
-ScoredMove* Position::gen_piece(ScoredMove* moveBuf, Bit target, Bit pinned) const
+ScoredMove* Position::gen_piece(ScoredMove* moveBuf, Bit& target, Bit pinned) const
 {
 	const Square *tmpSq = pieceList[turn][PT];
 	Square from, to;
@@ -122,13 +122,13 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* moveBuf, Bit target, Bit pinned
 			if (can_castle<CASTLE_OO>(st->castleRights[turn]))
 			{
 				if (!(CastleMask[turn][CASTLE_FG] & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(CastleMask[turn][CASTLE_EG], ~turn))
+					if (!is_map_attacked(CastleMask[turn][CASTLE_EG], ~turn))
 						add_move(MOVE_CASTLING[turn][CASTLE_OO]);  // prestored king's castling move
 			}
 			if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
 			{
 				if (!(CastleMask[turn][CASTLE_BD] & Occupied))  // no pieces between the king and rook
-					if (!is_bit_attacked(CastleMask[turn][CASTLE_CE], ~turn))
+					if (!is_map_attacked(CastleMask[turn][CASTLE_CE], ~turn))
 						add_move(MOVE_CASTLING[turn][CASTLE_OOO]);  // prestored king's castling move
 			}
 		}
@@ -283,29 +283,6 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 	return !pinned ||		// it isn't pinned at all
 		!(pinned & setbit(from)) ||    // pinned but doesn't move
 		( is_aligned(from, to, king_sq(turn)) );  // the ksq, from and to squares are aligned: move along the pin direction.
-}
-
-// Move legality test to see if any '1' in Target is attacked by the specific color
-// for check detection and castling legality
-bool Position::is_bit_attacked(Bit Target, Color attacker) const
-{
-	Square to;
-	Color defender = ~attacker;
-	Bit pawn_map = Pawnmap[attacker];
-	Bit knight_map = Knightmap[attacker];
-	Bit king_map = Kingmap[attacker];
-	Bit ortho_slider_map = Rookmap[attacker] | Queenmap[attacker];
-	Bit diag_slider_map = Bishopmap[attacker] | Queenmap[attacker];
-	while (Target)
-	{
-		to = pop_lsb(Target);
-		if (knight_map & attack_map<KNIGHT>(to))  return true; 
-		if (king_map & attack_map<KING>(to))  return true; 
-		if (pawn_map & Board::pawn_attack(defender, to))  return true; 
-		if (ortho_slider_map & attack_map<ROOK>(to))  return true; 
-		if (diag_slider_map & attack_map<BISHOP>(to))  return true;
-	}
-	return false; 
 }
 
 

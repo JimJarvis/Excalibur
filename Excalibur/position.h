@@ -86,12 +86,12 @@ public:
 	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
 
-	bool is_bit_attacked(Bit Target, Color attacker) const;  // return if any '1' in the target bitmap is attacked.
-	bool is_sq_attacked(Square sq, Color attacker) const;  // return if the specified square is attacked. Inlined.
+	bool is_map_attacked(Bit target, Color opp) const;  // return if any '1' in the target bitmap is attacked.
+	bool is_sq_attacked(Square sq, Color opp) const;  // return if the specified square is attacked. Inlined.
 	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), ~turn); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(~turn), turn); }
-	Bit attackers_to(Square sq, Color attacker, Bit occ) const;  // inlined
-	Bit attackers_to(Square sq, Color attacker) const { return attackers_to(sq, attacker, Occupied); };
+	Bit attackers_to(Square sq, Color opp, Bit occ) const;  // inlined
+	Bit attackers_to(Square sq, Color opp) const { return attackers_to(sq, opp, Occupied); };
 	Bit attackers_to(Square sq, Bit occ) const;  // regardless of color: records all attackers and defenders
 	Bit attackers_to(Square sq) const { return attackers_to(sq, Occupied); };  // regardless of color: records all attackers and defenders
 
@@ -136,9 +136,9 @@ public:
 
 private:
 	template<PieceType, bool legal>
-	ScoredMove* gen_piece(ScoredMove*, Bit target, Bit pinned = 0) const;
+	ScoredMove* gen_piece(ScoredMove*, Bit& target, Bit pinned = 0) const;
 	template<bool legal>
-	ScoredMove* gen_pawn(ScoredMove*, Bit target, Bit pinned = 0) const;
+	ScoredMove* gen_pawn(ScoredMove*, Bit& target, Bit pinned = 0) const;
 	template<GenType, bool legal>
 	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0) const; 
 	template<bool legal>
@@ -149,45 +149,54 @@ private:
 // Explicit attack mask template instantiation. Attack from a specific square.
 // non-sliding pieces
 template<>
-inline Bit Position::attack_map<PAWN>(Square sq) const { return Board::pawn_attack(turn, sq); }
+INLINE Bit Position::attack_map<PAWN>(Square sq) const { return Board::pawn_attack(turn, sq); }
 template<>
-inline Bit Position::attack_map<KNIGHT>(Square sq) const { return Board::knight_attack(sq); }
+INLINE Bit Position::attack_map<KNIGHT>(Square sq) const { return Board::knight_attack(sq); }
 template<>
-inline Bit Position::attack_map<KING>(Square sq) const { return Board::king_attack(sq); }
-// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized. Defined as inline func:
+INLINE Bit Position::attack_map<KING>(Square sq) const { return Board::king_attack(sq); }
+// sliding pieces: only 2 lookup's and minimal calculation. Efficiency maximized.
 template<>
-inline Bit Position::attack_map<ROOK>(Square sq) const { return Board::rook_attack(sq, Occupied); }
+INLINE Bit Position::attack_map<ROOK>(Square sq) const { return Board::rook_attack(sq, Occupied); }
 template<>
-inline Bit Position::attack_map<BISHOP>(Square sq) const { return Board::bishop_attack(sq, Occupied); }
+INLINE Bit Position::attack_map<BISHOP>(Square sq) const { return Board::bishop_attack(sq, Occupied); }
 template<>
-inline Bit Position::attack_map<QUEEN>(Square sq) const { return Board::rook_attack(sq, Occupied) | Board::bishop_attack(sq, Occupied); }
+INLINE Bit Position::attack_map<QUEEN>(Square sq) const { return Board::rook_attack(sq, Occupied) | Board::bishop_attack(sq, Occupied); }
 
 
 inline ostream& operator<<(ostream& os, Position pos)
 { os << pos.print<true>(); return os; }
 
 // Check if a single square is attacked. For check detection
-inline bool Position::is_sq_attacked(Square sq, Color attacker) const
+INLINE bool Position::is_sq_attacked(Square sq, Color opp) const
 {
-	if (Knightmap[attacker] & Board::knight_attack(sq)) return true;
-	if (Kingmap[attacker] & Board::king_attack(sq)) return true;
-	if (Pawnmap[attacker] & Board::pawn_attack(~attacker, sq)) return true;
-	if ((Rookmap[attacker] | Queenmap[attacker]) & attack_map<ROOK>(sq)) return true; // orthogonal slider
-	if ((Bishopmap[attacker] | Queenmap[attacker]) & attack_map<BISHOP>(sq)) return true; // diagonal slider
+	if (Knightmap[opp] & Board::knight_attack(sq)) return true;
+	if (Kingmap[opp] & Board::king_attack(sq)) return true;
+	if (Pawnmap[opp] & Board::pawn_attack(~opp, sq)) return true;
+	if ((Rookmap[opp] | Queenmap[opp]) & attack_map<ROOK>(sq)) return true; // orthogonal slider
+	if ((Bishopmap[opp] | Queenmap[opp]) & attack_map<BISHOP>(sq)) return true; // diagonal slider
+	return false;
+}
+
+// Move legality test to see if anywhere in the bitmap is attacked by a color
+// for check detection and castling legality
+INLINE bool Position::is_map_attacked(Bit target, Color opp) const
+{
+	while (target)
+		if (is_sq_attacked(pop_lsb(target), opp)) return true;
 	return false;
 }
 
 // Bitmap of attackers to a specific square
-inline Bit Position::attackers_to(Square sq, Color attacker, Bit occ) const
+INLINE Bit Position::attackers_to(Square sq, Color opp, Bit occ) const
 {
-	return (Pawnmap[attacker] & Board::pawn_attack(~attacker, sq))
-		| (Knightmap[attacker] & Board::knight_attack(sq))
-		| (Kingmap[attacker] & Board::king_attack(sq))
-		| (piece_union(attacker, ROOK, QUEEN) & Board::rook_attack(sq, occ))
-		| (piece_union(attacker, BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
+	return (Pawnmap[opp] & Board::pawn_attack(~opp, sq))
+		| (Knightmap[opp] & Board::knight_attack(sq))
+		| (Kingmap[opp] & Board::king_attack(sq))
+		| (piece_union(opp, ROOK, QUEEN) & Board::rook_attack(sq, occ))
+		| (piece_union(opp, BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
 // Attackers to a square regardless of color: record all attackers and defenders
-inline Bit Position::attackers_to(Square sq, Bit occ) const
+INLINE Bit Position::attackers_to(Square sq, Bit occ) const
 {
 	return (Pawnmap[W] & Board::pawn_attack(B, sq))
 		| (Pawnmap[B] & Board::pawn_attack(W, sq))

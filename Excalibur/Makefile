@@ -62,6 +62,8 @@ perft.o: search.h
 
 movegen.o: position.h
 
+moveorder.o: moveorder.h
+
 zobrist.o: zobrist.h
 
 ttable.o: ttable.h

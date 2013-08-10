@@ -17,8 +17,7 @@ U64 Position::perft(int depth)
 	StateInfo si;
 	ScoredMove *it, *end = gen_moves<LEGAL>(moveBuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
-	end->move = MOVE_NONE;
-	for (it = moveBuf; it != end; ++it)
+	for (it = moveBuf, end->move = MOVE_NONE; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);

@@ -28,6 +28,7 @@ typedef unsigned char byte;
 typedef unsigned int Square;
 typedef int Value;
 typedef int ScaleFactor;
+typedef int Depth;
 
 #define SQ_N 64
 #define FILE_N 8

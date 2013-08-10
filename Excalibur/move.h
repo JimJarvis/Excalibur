@@ -11,7 +11,7 @@ const PieceType PIECE_PROMO[4] = { KNIGHT, BISHOP, ROOK, QUEEN};
 enum Move : ushort { MOVE_NONE = 0 };
 
 // Maximum supported number of moves generated from a position
-const int MAX_MOVES = 192;
+const int MAX_MOVES = 256;
 
 namespace Moves
 {

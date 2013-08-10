@@ -16,7 +16,7 @@ namespace Search
 		Move currentMove;
 		Move excludedMove;
 		Move killers[2];
-		int reduction;  // depth
+		Depth reduction;
 		Value staticEval;
 		Value staticMargin;
 		int skipNullMove;

@@ -62,6 +62,9 @@
     <ClCompile Include="pawnshield.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="moveorder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h">
@@ -104,6 +107,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pawnshield.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="moveorder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

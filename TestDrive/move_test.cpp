@@ -26,11 +26,13 @@ TEST(Move, Generator)
 */
 
 // Wrapper for gen_moves<LEGAL>
-class LegalWrapper
+class LegalIterator
 {
 public:
-	LegalWrapper(const Position& pos) : it(mbuf), end(pos.gen_moves<LEGAL>(mbuf)) { end->move = MOVE_NONE; }
-	void operator++() { it++; }
+	LegalIterator(const Position& pos) : 
+		it(mbuf), end(pos.gen_moves<LEGAL>(mbuf))
+		{ end->move = MOVE_NONE; }
+	void operator++() { it++; } // prefix version
 	Move operator*() const { return it->move; }
 	size_t size() const { return end - mbuf; }
 private:
@@ -45,9 +47,9 @@ TEST(Move, Checks)
 	pos.parse_fen("1r1N3R/pbPpkP1p/1bn5/3P1pP1/Q6q/2P1B3/P4P1P/4R1K1 w - f6 10 34"); 
 	int check = 0, quiet = 0; // count checking moves
 	StateInfo si; 
-	for (LegalWrapper i(pos); *i; i++)
+	for (LegalIterator it(pos); *it; ++it)
 	{
-		Move m = *i;
+		Move m = *it;
 		pos.make_move(m, si);
 		if (pos.is_own_king_attacked())  // display checking moves
 			{ if (verbose) cout << "check: " <<  m << endl;  check ++; }
@@ -135,7 +137,7 @@ TEST(Move, MakeUnmake)
 		pos = Position(fenList[i]);
 		pos_orig = pos;
 		StateInfo si;
-		for (LegalWrapper it(pos); *it; it++)
+		for (LegalIterator it(pos); *it; ++it)
 		{
 			Move m = *it;
 			pos.make_move(m, si);
@@ -171,9 +173,9 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 	// generate from this ply
 	Move m;
 	StateInfo si;
-	for (LegalWrapper i(pos); *i; i++)
+	for (LegalIterator it(pos); *it; ++it)
 	{
-		moveTrace[ply] = m = *i;
+		moveTrace[ply] = m = *it;
 		pos.make_move(m, si);
 		
 		ASSERT_EQ(pos.calc_key(), pos.st->key) << errmsg; 
