@@ -29,7 +29,7 @@ namespace Transposition
 		}
 	}
 
-	/// TranspositionTable::probe() looks up the current position in the
+	/// probe() looks up the current position in the
 	/// transposition table. Returns a pointer to an entry or NULL if
 	/// position is not found.
 	Entry* Table::probe(U64 key) const
@@ -37,7 +37,7 @@ namespace Transposition
 		Entry* tte = first_entry(key);
 		uint key0 = key >> 32;
 
-		for (uint i = 0; i < CLUSTER_SIZE; ++i, ++tte)
+		for (int i = 0; i < CLUSTER_SIZE; ++i, ++tte)
 			if (tte->key == key0)
 				return tte;
 
@@ -61,7 +61,7 @@ namespace Transposition
 		uint key0 = key >> 32; // Use the high 32 bits as key inside the cluster
 		tte = replace = first_entry(key);  // locate the cluster
 
-		for (uint i = 0; i < CLUSTER_SIZE; ++i, ++tte)
+		for (int i = 0; i < CLUSTER_SIZE; ++i, ++tte)
 		{
 			if (!tte->key || tte->key == key0) // Empty or overwrite old
 			{

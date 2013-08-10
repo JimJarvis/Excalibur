@@ -79,10 +79,9 @@ private:
 	ConditionSignal c;
 };
 
-// thread wrapper
-class Thread
+// Thread wrapper
+struct Thread
 {
-public:
 	Thread() : exist(false) {};
 	virtual void execute() = 0;
 	void notify();
@@ -93,6 +92,28 @@ public:
 	ThreadHandle handle;
 	volatile bool exist;  // monitor if the thread is already dead
 };
+
+// Main thread
+struct MainThread : public Thread
+{
+	MainThread() : thinking(true) {}
+	virtual void execute();
+	int maxPly;
+	volatile bool searching;
+	volatile bool thinking;
+};
+
+// Timer
+struct TimerThread : public Thread
+{
+	TimerThread() : ms(0) {}
+	virtual void execute();
+	int ms;
+};
+
+// Global threads employed throughout the engine
+extern MainThread Mainth;
+extern TimerThread Timer;
 
 // A necessary wrapper for the thread execution function
 inline long launch_helper(Thread* th) { th->execute(); return 0; }

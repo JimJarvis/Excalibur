@@ -1,6 +1,75 @@
 #include "position.h"
 #include "search.h"
 
+namespace
+{
+	struct Entry
+	{
+		U64 store(U64 k, U64 cnt)
+			{ key = k; count = cnt; return cnt; }
+		U64 key;
+		U64 count;
+	};
+
+	// Optimal cluster size by experimentation
+	const uint CLUSTER_SIZE = 4;
+	class Table
+	{
+	public:
+		Table(U64 mbSize);
+		~Table() { free(table); }
+		Entry* probe(U64 key, byte depth) const;
+
+		/// TranspositionTable::first_entry() returns a pointer to the first entry of
+		/// a cluster given a position. The lowest order bits of the key are used to
+		/// get the index of the cluster.
+		Entry* first_entry(U64 key, byte depth) const
+		{ return table + ((uint)key & hashMask) + depth; };
+
+		/// overwrites the entire transposition table
+		/// with zeros. It is called whenever the table is resized, or when the
+		/// user asks the program to clear the table (from the UCI interface).
+		void clear()
+		{ memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
+
+	private:
+		Entry* table;  // size on MB scale
+		uint hashMask;
+	};
+
+	// ctor
+	Table::Table(U64 mbSize)
+	{
+		uint size = CLUSTER_SIZE << msb( (mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
+		if (hashMask == size - CLUSTER_SIZE) // same. No resize request.
+			return;
+
+		hashMask = size - CLUSTER_SIZE;
+		free(table);
+		table = (Entry*) calloc(1, size * sizeof(Entry));
+
+		if (table == nullptr)
+		{
+			cerr << "Failed to allocate " << mbSize
+				<< "MB for the perft hash table." << endl;
+			exit(1);  // fatal alloc error
+		}
+	}
+
+	/// probe() looks up the current position in the
+	/// transposition table. Returns a pointer to an entry or NULL if
+	/// position is not found.
+	Entry* Table::probe(U64 key, byte depth) const
+	{
+		Entry* tte = first_entry(key, depth);
+		if (tte->key != key)
+			tte->key = 0;
+		return tte;
+	}
+}
+
+Table PerftHash(128);
+
 // variables that might be used for debugging
 // uncomment some code to show more detailed debugging info
 const int DivideDepth = 2;
@@ -8,9 +77,14 @@ const int DivideDepth = 2;
 /* Classical performance test. Return raw node count */
 U64 Position::perft(int depth)
 {
+	Entry *tte = PerftHash.probe(st->key, depth);
+	if (tte->key)
+		return tte->count;
+
 	ScoredMove moveBuf[MAX_MOVES];
 	if (depth == 1)
-		return gen_moves<LEGAL>(moveBuf) - moveBuf; 
+		return tte->store(st->key, gen_moves<LEGAL>(moveBuf) - moveBuf);
+		//return gen_moves<LEGAL>(moveBuf) - moveBuf; 
 
 	U64 nodeCount = 0;
 	Move m;
@@ -32,7 +106,7 @@ U64 Position::perft(int depth)
 		unmake_move(m);
 	}
 	
-	return nodeCount;
+	return tte->store(st->key, nodeCount);
 }
 
 /* 
