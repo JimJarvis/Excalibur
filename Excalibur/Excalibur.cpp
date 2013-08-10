@@ -19,15 +19,6 @@ int main(int argc, char **argv)
 
 	UCI::process();
 
-	/*string fen = "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq - 0 1";
-	Position pp(fen);
-	cout << pp.perft(2) << endl;
-	ScoredMove mbuf[100];
-	for (ScoredMove *it = mbuf; it != pp.gen_moves<LEGAL>(mbuf); ++it)
-	{
-		cout << m2str(it->move) << endl;
-	}*/
-
 	// Static evaluation debugging
 	/*string fen = concat_args(argc, argv);
 	Position pos(fen);

@@ -74,6 +74,8 @@ public:
 	Square king_sq(Color c) const { return pieceList[c][KING][0]; }
 
 	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
+	// Except for <LEGAL>, generates pseudo-legal moves.
+	// Pseudos can be illegal iff: (1) pinned  (2) king move  (3) enpassant
 	template<GenType>
 	ScoredMove* gen_moves(ScoredMove* moveBuf) const;
 

@@ -3,6 +3,13 @@ using namespace Board;
 using namespace Moves;
 
 #define add_move(mv) (moveBuf++)->move = mv
+#define add_moves_map(legalcond) \
+	while (toMap) \
+	{ \
+		to = pop_lsb(toMap); \
+		if (legal && (legalcond) ) continue; \
+		set_from_to((moveBuf++)->move, from, to); \
+	}
 
 ScoredMove MoveBuffer[4096];
 int MoveBufEnds[64];
@@ -87,15 +94,8 @@ ScoredMove* Position::gen_piece(ScoredMove* moveBuf, Bit target, Bit pinned) con
 	{
 		from = tmpSq[i];
 		toMap = attack_map<PT>(from) & target;
-		while (toMap)
-		{
-			to = pop_lsb(toMap);
-			if (legal && pinned && (pinned & setbit(from)) && 
-				(PT == KNIGHT || !is_aligned(from, to, king_sq(turn))) ) 
-				continue;
-			set_from_to(mv, from, to);
-			add_move(mv);
-		}
+		add_moves_map( pinned && (pinned & setbit(from)) && 
+			(PT == KNIGHT || !is_aligned(from, to, king_sq(turn))) );
 	}
 	return moveBuf;
 }
@@ -111,18 +111,10 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* moveBuf, Bit target, Bit pinned
 
 	if (GT != EVASION) // then generate king moves
 	{
-		Square from = king_sq(turn);
+		Square to, from = king_sq(turn);
 		Bit toMap = king_attack(from) & target;
 		Color opp = ~turn;
-		Square to;
-		Move mv;
-		while (toMap)
-		{
-			to = pop_lsb(toMap);
-			if (legal && is_sq_attacked(to, opp)) continue;
-			set_from_to(mv, from, to);
-			add_move(mv);
-		}
+		add_moves_map( is_sq_attacked(to, opp) );
 		
 		if (GT != CAPTURE) // generate castling
 		{
@@ -165,7 +157,7 @@ ScoredMove* Position::gen_evasion(ScoredMove* moveBuf, Bit pinned) const
 	Bit ck = checker_map();
 	Bit sliderAttack = 0;  
 	int ckCount = 0;  // number of checkers - at least 1, at most 2
-	Square ksq = king_sq(turn);
+	Square to, from = king_sq(turn);
 	Square cksq;
 
 	// Remove squares attacked by sliders to skip illegal king evasions
@@ -181,7 +173,7 @@ ScoredMove* Position::gen_evasion(ScoredMove* moveBuf, Bit pinned) const
 		case QUEEN:
 			// If queen and king are far or not on a diagonal line we can safely
 			// remove all the squares attacked in the other direction because the king can't get there anyway.
-			if (between_mask(ksq, cksq) || !(ray_mask(BISHOP, cksq) & Kingmap[turn]))
+			if (between_mask(from, cksq) || !(ray_mask(BISHOP, cksq) & Kingmap[turn]))
 				sliderAttack |= ray_mask(QUEEN, cksq);
 			// Otherwise we need to use real rook attacks to check if king is safe
 			// to move in the other direction. e.g. king C2, queen B1, friendly bishop in C1, and we can safely move to D1.
@@ -193,20 +185,13 @@ ScoredMove* Position::gen_evasion(ScoredMove* moveBuf, Bit pinned) const
 	} while (ck);
 
 	// generate king flee
-	ck = king_attack(ksq) & ~piece_union(turn) & ~sliderAttack;
-	Move mv;
-	while (ck)  // routine add moves
-	{
-		Square to = pop_lsb(ck);
-		if (legal && is_sq_attacked(to, ~turn)) continue;
-		set_from_to(mv, ksq, to);
-		add_move(mv);
-	}
+	Bit toMap = king_attack(from) & ~piece_union(turn) & ~sliderAttack;
+	add_moves_map( is_sq_attacked(to, ~turn) );
 
 	if (ckCount > 1)  // double check. Only king flee's available. We're done
 		return moveBuf;
 
-	Bit target = between_mask(ksq, cksq) | checker_map();
+	Bit target = between_mask(from, cksq) | checker_map();
 	return gen_all_pieces<EVASION, legal>(moveBuf, target, pinned);
 }
 
@@ -222,6 +207,30 @@ ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* moveBuf) const
 		: gen_all_pieces<NON_EVASION, true>(moveBuf, ~piece_union(turn), pinned);
 }
 
+/* Deprecated version that generates pseudo-legals first and then test legality.
+template<>
+ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* moveBuf) const
+{
+	Bit pinned = pinned_map();
+	Square ksq = king_sq(turn);
+	ScoredMove *end, *m = moveBuf;
+	end = checker_map() ? gen_moves<EVASION>(moveBuf)
+							: gen_moves<NON_EVASION>(moveBuf);
+	while (m != end)
+	{
+		// only possible illegal moves: (1) when there're pins, 
+		// (2) when the king makes a non-castling move,
+		// (3) when it's EP - EP pin can't be detected by pinnedMap()
+		Move mv = m->move;
+		if ( (pinned || get_from(mv)==ksq || is_ep(mv))
+			&& !is_legal(mv, pinned) )
+			m->move = (--end)->move;  // throw the last moves to the first, because the first is checked to be illegal
+		else
+			m ++;
+	}
+	return end;
+};   */
+
 // 218 moves: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 int Position::count_legal() const
 { 
@@ -235,22 +244,22 @@ Bit Position::pinned_map() const
 {
 	Bit middle, pin = 0;
 	Color opp = ~turn;
-	Bit pinners = Colormap[opp];
-	Square kSq = king_sq(turn);
+	Bit pinners = piece_union(opp);
+	Square ksq = king_sq(turn);
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, kSq))
-		| (piece_union(opp, QUEEN, BISHOP) & ray_mask(BISHOP, kSq));
+	pinners &= (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, ksq))
+		| (piece_union(opp, QUEEN, BISHOP) & ray_mask(BISHOP, ksq));
 	while (pinners)
 	{
-		middle = between_mask(kSq, pop_lsb(pinners)) & Occupied;
+		middle = between_mask(ksq, pop_lsb(pinners)) & Occupied;
 		// one and only one in between, which must be a friendly piece
-		if (middle && !more_than_one_bit(middle) && (middle & Colormap[turn]))
+		if (!more_than_one_bit(middle) && (middle & piece_union(turn)))
 			pin |= middle;
 	}
 	return pin;
 }
 
-/* Check if a pseudo-legal move is actually legal */
+// Check if a pseudo-legal move is actually legal
 bool Position::is_legal(Move& mv, Bit& pinned) const
 {
 	Square from = get_from(mv);
@@ -276,35 +285,8 @@ bool Position::is_legal(Move& mv, Bit& pinned) const
 		( is_aligned(from, to, king_sq(turn)) );  // the ksq, from and to squares are aligned: move along the pin direction.
 }
 
-/* Generate strictly legal moves */
-// Old implementation that generates pseudo-legal move first and filter out one by one
-/*
-int Position::genLegal(int index) const
-{
-	Bit pinned = pinnedMap();
-	Square ksq = king_sq(turn);
-	int end =st->checkerMap ? genEvasions(index) : genNonEvasions(index);
-	while (index != end)
-	{
-		// only possible illegal moves: (1) when there're pins, 
-		// (2) when the king makes a non-castling move,
-		// (3) when it's EP - EP pin can't be detected by pinnedMap()
-		Move& mv = MoveBuffer[index];
-		if ( (pinned || mv.get_from()==ksq || mv.is_ep())
-			&& !is_legal(mv, pinned) )
-			mv = MoveBuffer[--end];  // throw the last moves to the first, because the first is checked to be illegal
-		else
-			index ++;
-	}
-	return end;
-} */
-// New implementation: generate legal evasions/ non-evasions directly, no filtering anymore
-// the new genLegal is inlined in position.h
-
-/*
- *	Move legality test to see if any '1' in Target is attacked by the specific color
- * for check detection and castling legality
- */
+// Move legality test to see if any '1' in Target is attacked by the specific color
+// for check detection and castling legality
 bool Position::is_bit_attacked(Bit Target, Color attacker) const
 {
 	Square to;
@@ -628,4 +610,3 @@ void Position::unmake_move(Move& mv)
 
 	st = st->st_prev; // recover the state from previous position
 }
-

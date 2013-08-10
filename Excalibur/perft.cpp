@@ -15,8 +15,7 @@ U64 Position::perft(int depth)
 	U64 nodeCount = 0;
 	Move m;
 	StateInfo si;
-	ScoredMove *it;
-	ScoredMove *end = gen_moves<LEGAL>(moveBuf);
+	ScoredMove *it, *end = gen_moves<LEGAL>(moveBuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
 	end->move = MOVE_NONE;
 	for (it = moveBuf; it != end; ++it)
