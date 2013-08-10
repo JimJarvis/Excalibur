@@ -211,6 +211,11 @@ DEF_OPERATOR(PieceType);
 #  define INLINE  inline
 #endif
 
+// disable windows macros min() and max()
+#ifndef NOMINMAX
+#  define NOMINMAX
+#endif
+
 // thrown when requested file can't be opened
 class FileNotFoundException : public exception
 {

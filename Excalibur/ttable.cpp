@@ -25,7 +25,7 @@ namespace Transposition
 		{
 			cerr << "Failed to allocate " << mbSize
 				<< "MB for the transposition table." << endl;
-			exit(1);  // fatal alloc error
+			throw bad_alloc();  // fatal alloc error
 		}
 	}
 

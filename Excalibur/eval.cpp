@@ -2,6 +2,7 @@
 #include "material.h"
 #include "pawnshield.h"
 #include "uci.h"
+#include "search.h"
 
 using namespace Board;
 

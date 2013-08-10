@@ -76,11 +76,11 @@ pawnshield.o: pawnshield.h
 
 kpkbase.o: endgame.h
 
-eval.o: eval.h material.h pawnshield.h
+eval.o: eval.h material.h pawnshield.h search.h uci.h
 
 search.o: search.h
 
-uci.o: uci.h
+uci.o: uci.h search.h thread.h
 
 thread.o: thread.h
 

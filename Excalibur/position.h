@@ -97,6 +97,7 @@ public:
 
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
+	template <bool UseHash>
 	U64 perft(int depth); // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
@@ -206,10 +207,17 @@ INLINE Bit Position::attackers_to(Square sq, Bit occ) const
 		| (piece_union(BISHOP, QUEEN) & Board::bishop_attack(sq, occ));
 }
 
-// perft verifier, with an epd data file. 
+
+// Perft verifier, with an epd data file. 
 // You can supply an optional "startID" to skip until the first test that matches the ID. The ID is the part after "id gentest-"
+template<bool UseHash>
 void perft_verifier(string filePath, string startID = "initial", bool verbose = false);
 // Do a perft with speedometer
+template<bool UseHash>
 void perft_verifier(Position& pos, int depth);
+
+// Resize the perft hash table (megabytes).
+// if mbSize is -1, clear all hash entries
+void perft_hash_resize(int mbSize);
 
 #endif // __position_h__

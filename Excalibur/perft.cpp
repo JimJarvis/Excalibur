@@ -3,6 +3,7 @@
 
 namespace
 {
+	// Stores perft hash results, using a position's Zobrist key
 	struct Entry
 	{
 		U64 store(U64 k, U64 cnt)
@@ -16,19 +17,19 @@ namespace
 	class Table
 	{
 	public:
-		Table(U64 mbSize);
 		~Table() { free(table); }
-		Entry* probe(U64 key, byte depth) const;
+		// Resize and clear all the hash entries
+		void set_size(int mbSize);
 
-		/// TranspositionTable::first_entry() returns a pointer to the first entry of
-		/// a cluster given a position. The lowest order bits of the key are used to
-		/// get the index of the cluster.
-		Entry* first_entry(U64 key, byte depth) const
-		{ return table + ((uint)key & hashMask) + depth; };
+		// Get the transposition location. Return a 0 key to indicate not found
+		Entry* probe(U64 key, byte depth) const
+		{
+			Entry *tte = table + ((uint)key & hashMask) + depth;
+			if (tte->key != key)
+				tte->key = 0;
+			return tte;
+		};
 
-		/// overwrites the entire transposition table
-		/// with zeros. It is called whenever the table is resized, or when the
-		/// user asks the program to clear the table (from the UCI interface).
 		void clear()
 		{ memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
 
@@ -37,10 +38,9 @@ namespace
 		uint hashMask;
 	};
 
-	// ctor
-	Table::Table(U64 mbSize)
+	void Table::set_size(int mbSize)
 	{
-		uint size = CLUSTER_SIZE << msb( (mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
+		uint size = CLUSTER_SIZE << msb( ((U64)mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
 		if (hashMask == size - CLUSTER_SIZE) // same. No resize request.
 			return;
 
@@ -52,30 +52,30 @@ namespace
 		{
 			cerr << "Failed to allocate " << mbSize
 				<< "MB for the perft hash table." << endl;
-			exit(1);  // fatal alloc error
+			throw bad_alloc();  // fatal alloc error
 		}
-	}
-
-	/// probe() looks up the current position in the
-	/// transposition table. Returns a pointer to an entry or NULL if
-	/// position is not found.
-	Entry* Table::probe(U64 key, byte depth) const
-	{
-		Entry* tte = first_entry(key, depth);
-		if (tte->key != key)
-			tte->key = 0;
-		return tte;
 	}
 }
 
-Table PerftHash(128);
+Table PerftHash;
+
+// External resize request by the engine IO command:
+// perft hash mbSize
+void perft_hash_resize(int mbSize)
+{
+	if (mbSize > 0)
+		PerftHash.set_size(mbSize);
+	else
+		PerftHash.clear();
+}
 
 // variables that might be used for debugging
 // uncomment some code to show more detailed debugging info
 const int DivideDepth = 2;
 
 /* Classical performance test. Return raw node count */
-U64 Position::perft(int depth)
+template<> // use hash
+U64 Position::perft<true>(int depth)
 {
 	Entry *tte = PerftHash.probe(st->key, depth);
 	if (tte->key)
@@ -95,18 +95,41 @@ U64 Position::perft(int depth)
 	{
 		m = it->move;
 		make_move(m, si);
-		//U64 count = perft(depth - 1);
+		//U64 count = perft<true>(depth - 1);
 		//if (depth == DivideDepth)
 		//{
 		//	cout << m2str(m) << ": ";
 		//	cout << count << endl;
 		//}
 		//nodeCount += count;
-		nodeCount += perft(depth - 1);
+		nodeCount += perft<true>(depth - 1);
 		unmake_move(m);
 	}
 	
 	return tte->store(st->key, nodeCount);
+}
+
+template<> // Don't use hash
+U64 Position::perft<false>(int depth)
+{
+	ScoredMove moveBuf[MAX_MOVES];
+	if (depth == 1)
+		return gen_moves<LEGAL>(moveBuf) - moveBuf; 
+
+	U64 nodeCount = 0;
+	Move m;
+	StateInfo si;
+	ScoredMove *it, *end = gen_moves<LEGAL>(moveBuf);
+	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
+	for (it = moveBuf, end->move = MOVE_NONE; it != end; ++it)
+	{
+		m = it->move;
+		make_move(m, si);
+		nodeCount += perft<false>(depth - 1);
+		unmake_move(m);
+	}
+
+	return nodeCount;
 }
 
 /* 
@@ -127,6 +150,7 @@ U64 Position::perft(int depth)
 	The speedometer displays only when depth 5 + depth 6 nodes exceed a certain limit, 
 	otherwise it's meaningless to test the speed because the denominator would be too small.
 */
+template<bool UseHash>
 void perft_verifier(string filePath, string startID /* ="initial" */, bool verbose /* =false */)
 {
 	static const int SPEEDOMETER = 250000000;
@@ -158,7 +182,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 				if (Search::Signal.stop)  // force stop by the user
 					{ cout << "perft aborted!" << endl; return; }
 				else
-					actual = ptest.perft(depth); 
+					actual = ptest.perft<UseHash>(depth); 
 				end = now();
 
 				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)
@@ -197,14 +221,19 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 	cout << "TOTAL NODES = " << totalNodes << endl;
 	cout << "AVERAGE SPEED = " << 1.0 * totalNodes / totalTime << endl;
 }
+// Explicit instantiation
+template void perft_verifier<true>(string filePath, string startID, bool verbose);
+template void perft_verifier<false>(string filePath, string startID, bool verbose);
 
-// Do a perft with speedometer
+
+// Perft one position with a speedometer
+template <bool UseHash>
 void perft_verifier(Position& pos, int depth)
 {
 	U64 ans, start, end, lapse;
 	
 	start = now();
-	ans = pos.perft(depth);
+	ans = pos.perft<UseHash>(depth);
 	end = now();
 	
 	cout << setw(10) << "Nodes = " << ans << endl;
@@ -214,3 +243,6 @@ void perft_verifier(Position& pos, int depth)
 	else
 		cout << setw(10) << "Speed = " << 1.0 * ans / lapse << " kn/s" << endl;
 }
+// Explicit instantiation
+template void perft_verifier<true>(Position& pos, int depth);
+template void perft_verifier<false>(Position& pos, int depth);

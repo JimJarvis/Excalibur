@@ -3,8 +3,10 @@
 #ifndef __uci_h__
 #define __uci_h__
 
-#include "position.h"
-#include "search.h"
+#include "utils.h"
+
+const string engine_name = "Excalibur 1.0";
+const string engine_author = "Jim Fan";
 
 // Try to display the copyright (c) unicode symbol
 #ifdef _WIN32  // Windows
@@ -22,9 +24,9 @@
 
 // Display the engine info at program startup
 #define display_info \
-	cout << "Excalibur 1.0" << endl; \
+	cout << engine_name << endl; \
 	display_copyright_symbol; \
-	cout << "2013 Jim Fan - jimfanspire@gmail.com\n\n" \
+	cout << "2013 " + engine_author + "\n\n" \
 		<< "The silent war storms the enchanted board\n" \
 			"The lonely warrior wields the sacred sword\n" \
 			"Behold! A symphony of black and white\n" \
@@ -36,7 +38,8 @@
 namespace UCI
 {
 	// Reports engine id to UCI
-	const string engine_id = "id name Excalibur 1.0\nid author Jim Fan\n";
+	const string engine_id = "id name " + engine_name + 
+			"\nid author " + engine_author + "\n";
 
 	class Option
 	{
@@ -78,8 +81,10 @@ namespace UCI
 		ChangeListener changer; // a function pointer
 	};
 
-	void init(); // init default options
-	void process();  // main stdin processor (infinite loop)
+	// Init default options
+	void init();
+	// Main stdin processor (infinite loop)
+	void process();
 }
 
 // global UCI option map

@@ -2,7 +2,7 @@
 
 namespace Search
 {
-	// instantiate the extern'ed variables
+	// instantiate the extern variables
 	volatile SignalListener Signal;
 	LimitListener Limit;
 	vector<RootMove> RootMoveList;

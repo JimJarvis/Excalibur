@@ -161,12 +161,20 @@ inline string int2str(int i)
 	ss << i; ss >> str; 
 	return str; 
 }
-inline int str2int(string str)
+inline int str2int(const string& str)
 { 
 	stringstream ss(str); int i; 
 	ss >> i; 
 	return i; 
 }
+inline bool is_int(const string& str)
+{
+	// using a lambda
+	return !str.empty() && 
+		std::find_if(str.begin(), str.end(), 
+		[](char c) { return !std::isdigit(c); }) == str.end();
+}
+
 // ugly workaround wrapper for gcc
 typedef int (*UnaryFn)(int);
 inline string str2lower(string str)  // lower case transformation
