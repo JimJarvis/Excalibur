@@ -197,7 +197,8 @@ do
 	// go: main game driver
 	else if (cmd == "go")
 	{
-		Signal.stop = false;
+		Signal.stopOnPonderhit = Signal.firstRootMove
+			= Signal.stop = Signal.failedLowAtRoot = false;
 		wait_until_main_finish();
 		Main->running = true;
 		Main->signal();
@@ -338,7 +339,8 @@ do
 
 } while (cmd != "quit"); // infinite stdin loop
 
-	ThreadPool::wait_until_main_finish(); // Cannot quit while search is running
+	// Cannot quit while search is running
+	ThreadPool::wait_until_main_finish();
 
 } // main UCI::process() function
 

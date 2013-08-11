@@ -2,13 +2,13 @@
 using namespace Board;
 using namespace Moves;
 
-#define add_move(mv) (moveBuf++)->move = mv
+#define add_move(mv) (mbuf++)->move = mv
 #define add_moves_map(legalcond) \
 	while (toMap) \
 	{ \
 		to = pop_lsb(toMap); \
 		if (legal && (legalcond) ) continue; \
-		set_from_to((moveBuf++)->move, from, to); \
+		set_from_to((mbuf++)->move, from, to); \
 	}
 
 ScoredMove MoveBuffer[4096];
@@ -16,7 +16,7 @@ int MoveBufEnds[64];
 
 // Helper functions for the main gen_moves()
 template<bool legal>
-ScoredMove* Position::gen_pawn(ScoredMove* moveBuf, Bit& target, Bit pinned) const
+ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned) const
 {
 	Color opp = ~turn;
 	const Square *tmpSq = pieceList[turn][PAWN];
@@ -80,11 +80,11 @@ ScoredMove* Position::gen_pawn(ScoredMove* moveBuf, Bit& target, Bit pinned) con
 			}
 		}
 	}
-	return moveBuf;
+	return mbuf;
 }
 
 template<PieceType PT, bool legal>
-ScoredMove* Position::gen_piece(ScoredMove* moveBuf, Bit& target, Bit pinned) const
+ScoredMove* Position::gen_piece(ScoredMove* mbuf, Bit& target, Bit pinned) const
 {
 	const Square *tmpSq = pieceList[turn][PT];
 	Square from, to;
@@ -97,17 +97,17 @@ ScoredMove* Position::gen_piece(ScoredMove* moveBuf, Bit& target, Bit pinned) co
 		add_moves_map( pinned && (pinned & setbit(from)) && 
 			(PT == KNIGHT || !is_aligned(from, to, king_sq(turn))) );
 	}
-	return moveBuf;
+	return mbuf;
 }
 
 template<GenType GT, bool legal>
-ScoredMove* Position::gen_all_pieces(ScoredMove* moveBuf, Bit target, Bit pinned) const
+ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned) const
 {
-	moveBuf = gen_pawn<legal>(moveBuf, target, pinned);
-	moveBuf = gen_piece<KNIGHT, legal>(moveBuf, target, pinned);
-	moveBuf = gen_piece<BISHOP, legal>(moveBuf, target, pinned);
-	moveBuf = gen_piece<ROOK, legal>(moveBuf, target, pinned);
-	moveBuf = gen_piece<QUEEN, legal>(moveBuf, target, pinned);
+	mbuf = gen_pawn<legal>(mbuf, target, pinned);
+	mbuf = gen_piece<KNIGHT, legal>(mbuf, target, pinned);
+	mbuf = gen_piece<BISHOP, legal>(mbuf, target, pinned);
+	mbuf = gen_piece<ROOK, legal>(mbuf, target, pinned);
+	mbuf = gen_piece<QUEEN, legal>(mbuf, target, pinned);
 
 	if (GT != EVASION) // then generate king moves
 	{
@@ -134,25 +134,25 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* moveBuf, Bit target, Bit pinned
 		}
 	}
 
-	return moveBuf;
+	return mbuf;
 }
 
 template<GenType GT>
-ScoredMove* Position::gen_moves(ScoredMove* moveBuf) const
+ScoredMove* Position::gen_moves(ScoredMove* mbuf) const
 {
 	Bit target = GT == CAPTURE ? piece_union(~turn) :
 		GT == QUIET ? ~Occupied : 
 		GT == NON_EVASION ? ~piece_union(turn) : 0;
-	return gen_all_pieces<GT, false>(moveBuf, target);
+	return gen_all_pieces<GT, false>(mbuf, target);
 }
 
 // explicit template instantiation
-template ScoredMove* Position::gen_moves<CAPTURE>(ScoredMove* moveBuf) const;
-template ScoredMove* Position::gen_moves<QUIET>(ScoredMove* moveBuf) const;
-template ScoredMove* Position::gen_moves<NON_EVASION>(ScoredMove* moveBuf) const;
+template ScoredMove* Position::gen_moves<CAPTURE>(ScoredMove* mbuf) const;
+template ScoredMove* Position::gen_moves<QUIET>(ScoredMove* mbuf) const;
+template ScoredMove* Position::gen_moves<NON_EVASION>(ScoredMove* mbuf) const;
 
 template<bool legal>
-ScoredMove* Position::gen_evasion(ScoredMove* moveBuf, Bit pinned) const
+ScoredMove* Position::gen_evasion(ScoredMove* mbuf, Bit pinned) const
 {
 	Bit ck = checker_map();
 	Bit sliderAttack = 0;  
@@ -189,33 +189,33 @@ ScoredMove* Position::gen_evasion(ScoredMove* moveBuf, Bit pinned) const
 	add_moves_map( is_sq_attacked(to, ~turn) );
 
 	if (ckCount > 1)  // double check. Only king flee's available. We're done
-		return moveBuf;
+		return mbuf;
 
 	Bit target = between_mask(from, cksq) | checker_map();
-	return gen_all_pieces<EVASION, legal>(moveBuf, target, pinned);
+	return gen_all_pieces<EVASION, legal>(mbuf, target, pinned);
 }
 
 template<>
-ScoredMove* Position::gen_moves<EVASION>(ScoredMove* moveBuf) const
-	{ return gen_evasion<false>(moveBuf); }
+ScoredMove* Position::gen_moves<EVASION>(ScoredMove* mbuf) const
+	{ return gen_evasion<false>(mbuf); }
 
 template<>
-ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* moveBuf) const
+ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* mbuf) const
 {
 	Bit pinned = pinned_map();
-	return checker_map() ? gen_evasion<true>(moveBuf, pinned)
-		: gen_all_pieces<NON_EVASION, true>(moveBuf, ~piece_union(turn), pinned);
+	return checker_map() ? gen_evasion<true>(mbuf, pinned)
+		: gen_all_pieces<NON_EVASION, true>(mbuf, ~piece_union(turn), pinned);
 }
 
 /* Deprecated version that generates pseudo-legals first and then test legality.
 template<>
-ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* moveBuf) const
+ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* mbuf) const
 {
 	Bit pinned = pinned_map();
 	Square ksq = king_sq(turn);
-	ScoredMove *end, *m = moveBuf;
-	end = checker_map() ? gen_moves<EVASION>(moveBuf)
-							: gen_moves<NON_EVASION>(moveBuf);
+	ScoredMove *end, *m = mbuf;
+	end = checker_map() ? gen_moves<EVASION>(mbuf)
+							: gen_moves<NON_EVASION>(mbuf);
 	while (m != end)
 	{
 		// only possible illegal moves: (1) when there're pins, 
@@ -234,8 +234,8 @@ ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* moveBuf) const
 // 218 moves: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 int Position::count_legal() const
 { 
-	ScoredMove moveBuf[MAX_MOVES];
-	return int(gen_moves<LEGAL>(moveBuf) - moveBuf);
+	ScoredMove mbuf[MAX_MOVES];
+	return int(gen_moves<LEGAL>(mbuf) - mbuf);
 }
 
 

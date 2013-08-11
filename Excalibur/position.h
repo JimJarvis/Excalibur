@@ -77,7 +77,7 @@ public:
 	// Except for <LEGAL>, generates pseudo-legal moves.
 	// Pseudos can be illegal iff: (1) pinned  (2) king move  (3) enpassant
 	template<GenType>
-	ScoredMove* gen_moves(ScoredMove* moveBuf) const;
+	ScoredMove* gen_moves(ScoredMove* mbuf) const;
 
 	bool is_legal(Move& mv, Bit& pinned) const;  // judge if a pseudo-legal move is legal, given the pinned map.
 	int count_legal() const; // count the number of legal moves
@@ -98,7 +98,7 @@ public:
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
 	template <bool UseHash>
-	U64 perft(int depth); // start recursion from root
+	U64 perft(Depth depth); // start recursion from root
 
 	// Get the attack masks, based on precalculated tables and current board status
 	// Use explicit template instantiation
@@ -144,6 +144,9 @@ private:
 	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0) const; 
 	template<bool legal>
 	ScoredMove* gen_evasion(ScoredMove*, Bit pinned = 0) const;
+
+	// Helps perft<false>() save a level of recursion calls.
+	U64 perft_helper(Depth depth);
 };
 
 

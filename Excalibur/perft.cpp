@@ -67,7 +67,7 @@ bool perft_hash_resize(int mbSize)
 		catch (bad_alloc e)
 		{
 			cerr << "Failed to allocate " << mbSize
-				<< "MB for the perft hash table." << endl;
+				<< " MB for the perft hash table." << endl;
 			return false;
 		}
 	}
@@ -82,23 +82,23 @@ const int DivideDepth = 2;
 
 /* Classical performance test. Return raw node count */
 template<> // use hash
-U64 Position::perft<true>(int depth)
+U64 Position::perft<true>(Depth depth)
 {
 	Entry *tte = PerftHash.probe(st->key, depth);
 	if (tte->key)
 		return tte->count;
 
-	ScoredMove moveBuf[MAX_MOVES];
+	ScoredMove mbuf[MAX_MOVES];
 	if (depth == 1)
-		return tte->store(st->key, gen_moves<LEGAL>(moveBuf) - moveBuf);
-		//return gen_moves<LEGAL>(moveBuf) - moveBuf; 
+		return tte->store(st->key, gen_moves<LEGAL>(mbuf) - mbuf);
+	//return gen_moves<LEGAL>(mbuf) - mbuf; 
 
 	U64 nodeCount = 0;
 	Move m;
 	StateInfo si;
-	ScoredMove *it, *end = gen_moves<LEGAL>(moveBuf);
+	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
-	for (it = moveBuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);
@@ -112,32 +112,67 @@ U64 Position::perft<true>(int depth)
 		nodeCount += perft<true>(depth - 1);
 		unmake_move(m);
 	}
-	
+
 	return tte->store(st->key, nodeCount);
 }
 
-template<> // Don't use hash
-U64 Position::perft<false>(int depth)
+// No hash: helps perft<false> save a level of recursion calls.
+U64 Position::perft_helper(int depth)
 {
-	ScoredMove moveBuf[MAX_MOVES];
-	if (depth == 1)
-		return gen_moves<LEGAL>(moveBuf) - moveBuf; 
+	ScoredMove mbuf[MAX_MOVES];
+	const bool isLeaf = depth == 2;
 
 	U64 nodeCount = 0;
 	Move m;
 	StateInfo si;
-	ScoredMove *it, *end = gen_moves<LEGAL>(moveBuf);
+	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
-	for (it = moveBuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+	{
+		m = it->move;
+		make_move(m, si);
+		if (isLeaf)
+		{
+			ScoredMove mbufLeaf[MAX_MOVES];
+			nodeCount += gen_moves<LEGAL>(mbufLeaf) - mbufLeaf;
+		}
+		else
+			nodeCount += perft_helper(depth - 1);
+		unmake_move(m);
+	}
+
+	return nodeCount;
+}
+
+template<> // Don't use hash
+U64 Position::perft<false>(Depth depth)
+{
+	ScoredMove mbuf[MAX_MOVES];
+	return depth > 1 ? perft_helper(depth)
+		: gen_moves<LEGAL>(mbuf) - mbuf;
+}
+/* Naive version: requires an extra level of recursion call.
+template<> // Don't use hash
+U64 Position::perft<false>(Depth depth)
+{
+	ScoredMove mbuf[MAX_MOVES];
+	if (depth == 1)
+		return gen_moves<LEGAL>(mbuf) - mbuf; 
+
+	U64 nodeCount = 0;
+	Move m;
+	StateInfo si;
+	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
+	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);
 		nodeCount += perft<false>(depth - 1);
 		unmake_move(m);
 	}
-
 	return nodeCount;
-}
+} */
+
 
 // If the perft takes too little time, the speedometer would be meaningless.
 // If exceed the timer threshold in ms, we calculate the speed.

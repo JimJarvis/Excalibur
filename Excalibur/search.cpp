@@ -15,14 +15,18 @@ namespace Search
 using Eval::evaluate;
 using namespace Search;
 
+// This is the minimum interval in ms between two check_time() calls
+const int TimerResolution = 5;
+
+// Different node types, used as template parameter
+enum NodeType { Root, PV, NonPV};
+
+// Dynamic razoring margin based on depth
+inline Value razor_margin(Depth d)	{ return 512 + 16 * d; }
+
+
+
 void Search::think()
 {
-	U64 t2, t = now();
-	int cnt = 0;
-	while (!Signal.stop && cnt < 10)
-	{
-		t2 = now();
-		if ((t2 - t)%1000 == 0)
-			cout << "think disp " << ++cnt << endl;
-	}
+	
 }

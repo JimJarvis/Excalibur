@@ -8,7 +8,6 @@ namespace ThreadPool
 	// Instantiate externs
 	MainThread *Main;
 	TimerThread *Timer;
-	ConditionVar poolSleepCond;
 
 	// will be called at program startup
 	void init()
@@ -23,11 +22,12 @@ namespace ThreadPool
 		del_thread<MainThread>(Main);
 	}
 
+	ConditionVar mainWaitCond;
 	void wait_until_main_finish()
 	{
 		Main->mutex.lock();
 		while (Main->running)
-			poolSleepCond.wait(Main->mutex);
+			mainWaitCond.wait(Main->mutex);
 		Main->mutex.unlock();
 	}
 
@@ -63,7 +63,9 @@ void MainThread::execute()
 		running = false;
 		while (!running && exist)
 		{
-			ThreadPool::poolSleepCond.signal();
+			// Main has finished searching. Return to IO
+			// ask wait_until_main_finish() to stop waiting
+			ThreadPool::mainWaitCond.signal();
 			sleepCond.wait(mutex);
 		}
 		mutex.unlock();

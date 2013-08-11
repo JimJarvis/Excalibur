@@ -138,12 +138,13 @@ namespace ThreadPool
 	extern MainThread *Main;
 	extern TimerThread *Timer;
 
-	extern ConditionVar poolSleepCond;
 	// will be called at program startup
 	void init();
 	// will be called at program exit
 	void terminate();
+
 	// Waits for the main thread to sleep/ exit search and then returns
+	extern ConditionVar mainWaitCond;
 	void wait_until_main_finish();
 }
 
