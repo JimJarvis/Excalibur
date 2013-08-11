@@ -2,10 +2,10 @@
 using namespace Board;
 
 #ifdef DEBUG
-#define DEBUG_MSG_1(Endgame) \
+#define DBG_MSG_1(Endgame) \
 	cout << "Endgame: " << #Endgame << endl
 #else // do nothing
-#define DEBUG_MSG_1(x1)
+#define DBG_MSG_1(x1)
 #endif // DEBUG
 
 /* A few predetermined tables */
@@ -138,7 +138,7 @@ namespace Endgame
 template<>
 Value EndEvaluator<KXK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KXK);
+	DBG_MSG(KXK);
 	// Stalemate detection with lone king
 	if ( pos.turn == weakerSide && !pos.checker_map()
 		&& pos.count_legal() == 0)
@@ -167,7 +167,7 @@ Value EndEvaluator<KXK>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KBNK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KBNK);
+	DBG_MSG(KBNK);
 	Square winnerKSq = pos.king_sq(strongerSide);
 	Square loserKSq = pos.king_sq(weakerSide);
 	Square bishopSq = pos.pieceList[strongerSide][BISHOP][0];
@@ -193,7 +193,7 @@ Value EndEvaluator<KBNK>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KPK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KPK);
+	DBG_MSG(KPK);
 	Square wksq, bksq, wpsq;
 	Color us;
 
@@ -238,7 +238,7 @@ Value EndEvaluator<KPK>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KRKP>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KRKP);
+	DBG_MSG(KRKP);
 	Square wksq, wrsq, bksq, bpsq;
 	int tempo = (pos.turn == strongerSide);
 
@@ -290,7 +290,7 @@ Value EndEvaluator<KRKP>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KRKB>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KRKB);
+	DBG_MSG(KRKB);
 	Value result = MateTable[pos.king_sq(weakerSide)];
 	return strongerSide == pos.turn ? result : -result;
 }
@@ -300,7 +300,7 @@ Value EndEvaluator<KRKB>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KRKN>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KRKN);
+	DBG_MSG(KRKN);
 	const int penalty[8] = { 0, 10, 14, 20, 30, 42, 58, 80 };
 
 	Square bksq = pos.king_sq(weakerSide);
@@ -316,7 +316,7 @@ Value EndEvaluator<KRKN>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KQKP>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KQKP);
+	DBG_MSG(KQKP);
 	Square winnerKSq = pos.king_sq(strongerSide);
 	Square loserKSq = pos.king_sq(weakerSide);
 	Square pawnSq = pos.pieceList[weakerSide][PAWN][0];
@@ -344,7 +344,7 @@ Value EndEvaluator<KQKP>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KQKR>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KQKR);
+	DBG_MSG(KQKR);
 	Square winnerKSq = pos.king_sq(strongerSide);
 	Square loserKSq = pos.king_sq(weakerSide);
 
@@ -360,7 +360,7 @@ Value EndEvaluator<KQKR>::operator()(const Position& pos) const
 template<>
 Value EndEvaluator<KBBKN>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KBBKN);
+	DBG_MSG(KBBKN);
 	Value result = EG_BISHOP;
 	Square wksq = pos.king_sq(strongerSide);
 	Square bksq = pos.king_sq(weakerSide);
@@ -380,15 +380,15 @@ Value EndEvaluator<KBBKN>::operator()(const Position& pos) const
 
 /// Trivial draws
 template<>
-Value EndEvaluator<KK>::operator()(const Position&) const { DEBUG_MSG(KK); return VALUE_DRAW; }
+Value EndEvaluator<KK>::operator()(const Position&) const { DBG_MSG(KK); return VALUE_DRAW; }
 template<>
-Value EndEvaluator<KBK>::operator()(const Position&) const { DEBUG_MSG(KBK); return VALUE_DRAW; }
+Value EndEvaluator<KBK>::operator()(const Position&) const { DBG_MSG(KBK); return VALUE_DRAW; }
 template<>
-Value EndEvaluator<KNK>::operator()(const Position&) const { DEBUG_MSG(KNK); return VALUE_DRAW; }
+Value EndEvaluator<KNK>::operator()(const Position&) const { DBG_MSG(KNK); return VALUE_DRAW; }
 template<>
-Value EndEvaluator<KNNK>::operator()(const Position&) const { DEBUG_MSG(KNNK); return VALUE_DRAW; }
+Value EndEvaluator<KNNK>::operator()(const Position&) const { DBG_MSG(KNNK); return VALUE_DRAW; }
 template<>
-Value EndEvaluator<KmmKm>::operator()(const Position&) const { DEBUG_MSG(KmmKm); return VALUE_DRAW; }
+Value EndEvaluator<KmmKm>::operator()(const Position&) const { DBG_MSG(KmmKm); return VALUE_DRAW; }
 
 
 /* 
@@ -402,7 +402,7 @@ Value EndEvaluator<KmmKm>::operator()(const Position&) const { DEBUG_MSG(KmmKm);
 template<>
 ScaleFactor EndEvaluator<KBPsK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KBPsK);
+	DBG_MSG(KBPsK);
 	Bit pawns = pos.Pawnmap[strongerSide];
 	int pawnFile = sq2file( pos.pieceList[strongerSide][PAWN][0] );
 
@@ -467,7 +467,7 @@ ScaleFactor EndEvaluator<KBPsK>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KQKRPs>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KQKRPs);
+	DBG_MSG(KQKRPs);
 	Square kingSq = pos.king_sq(weakerSide);
 	if (   relative_rank(weakerSide, kingSq) <= RANK_2
 		&& relative_rank(weakerSide, pos.king_sq(strongerSide)) >= RANK_4
@@ -488,7 +488,7 @@ ScaleFactor EndEvaluator<KQKRPs>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KRPKR>::operator()(const Position& pos) const
 {
-	DEBUG_MSG(KRPKR);
+	DBG_MSG(KRPKR);
 	Square wksq = pos.king_sq(strongerSide);
 	Square wrsq = pos.pieceList[strongerSide][ROOK][0];
 	Square wpsq = pos.pieceList[strongerSide][PAWN][0];
@@ -601,7 +601,7 @@ ScaleFactor EndEvaluator<KRPKR>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KRPPKRP>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KRPPKRP);
+	DBG_MSG(KRPPKRP);
 	Square wpsq1 = pos.pieceList[strongerSide][PAWN][0];
 	Square wpsq2 = pos.pieceList[strongerSide][PAWN][1];
 	Square bksq = pos.king_sq(weakerSide);
@@ -634,7 +634,7 @@ ScaleFactor EndEvaluator<KRPPKRP>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KPsK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KPsK);
+	DBG_MSG(KPsK);
 	Square ksq = pos.king_sq(weakerSide);
 	Bit pawns = pos.Pawnmap[strongerSide];
 
@@ -666,7 +666,7 @@ ScaleFactor EndEvaluator<KPsK>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KBPKB>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KBPKB);
+	DBG_MSG(KBPKB);
 	Square pawnSq = pos.pieceList[strongerSide][PAWN][0];
 	Square strongerBishopSq = pos.pieceList[strongerSide][BISHOP][0];
 	Square weakerBishopSq = pos.pieceList[weakerSide][BISHOP][0];
@@ -714,7 +714,7 @@ ScaleFactor EndEvaluator<KBPKB>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KBPPKB>::operator()(const Position& pos) const
 {
-	DEBUG_MSG(KBPPKB);
+	DBG_MSG(KBPPKB);
 	Square wbsq = pos.pieceList[strongerSide][BISHOP][0];
 	Square bbsq = pos.pieceList[weakerSide][BISHOP][0];
 
@@ -782,7 +782,7 @@ ScaleFactor EndEvaluator<KBPPKB>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KBPKN>::operator()(const Position& pos) const
 {
-	DEBUG_MSG(KBPKN);
+	DBG_MSG(KBPKN);
 	Square pawnSq = pos.pieceList[strongerSide][PAWN][0];
 	Square strongerBishopSq = pos.pieceList[strongerSide][BISHOP][0];
 	Square weakerKingSq = pos.king_sq(weakerSide);
@@ -802,7 +802,7 @@ ScaleFactor EndEvaluator<KBPKN>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KNPK>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KNPK);
+	DBG_MSG(KNPK);
 	Square pawnSq = pos.pieceList[strongerSide][PAWN][0];
 	Square weakerKingSq = pos.king_sq(weakerSide);
 
@@ -822,7 +822,7 @@ ScaleFactor EndEvaluator<KNPK>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KNPKB>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KNPKB);
+	DBG_MSG(KNPKB);
 	Square pawnSq = pos.pieceList[strongerSide][PAWN][0];
 	Square bishopSq = pos.pieceList[weakerSide][BISHOP][0];
 	Square weakerKingSq = pos.king_sq(weakerSide);
@@ -843,7 +843,7 @@ ScaleFactor EndEvaluator<KNPKB>::operator()(const Position& pos) const
 template<>
 ScaleFactor EndEvaluator<KPKP>::operator()(const Position& pos) const 
 {
-	DEBUG_MSG(KPKP);
+	DBG_MSG(KPKP);
 	Square wksq = pos.king_sq(strongerSide);
 	Square bksq = pos.king_sq(weakerSide);
 	Square wpsq = pos.pieceList[strongerSide][PAWN][0];

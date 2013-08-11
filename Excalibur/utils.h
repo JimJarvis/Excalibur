@@ -255,17 +255,17 @@ inline U64 now()
 #define VARARG(base, ...) VARARG_HELPER(base, VARARG_COUNT(__VA_ARGS__), __VA_ARGS__)
 // Define DEBUG_MSG_1 or _2 or _n to define a debug message printout macro with n args
 // Warning: intelliSense might underline this as syntax error. Ignore it and compile. 
-#define DEBUG_MSG(...) VARARG(DEBUG_MSG,	 __VA_ARGS__)
+#define DBG_MSG(...) VARARG(DBG_MSG,	 __VA_ARGS__)
 
 // More debugging info
 #ifdef DEBUG
 #define C(c) (c==W ? "W" : "B") // color name
 #define P(pt) PIECE_FULL_NAME[pt]
-#define DEBUG_DO(command) command
-#define DEBUG_DISP(msg) cout << msg << endl
+#define DBG_DO(command) command
+#define DBG_DISP(msg) cout << msg << endl
 #else
-#define DEBUG_DO(command) 
-#define DEBUG_DISP(msg)
+#define DBG_DO(command) 
+#define DBG_DISP(msg)
 #endif
 
 // concatenate char* arguments into a single string delimited by space

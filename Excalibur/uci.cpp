@@ -110,6 +110,7 @@ void PerftThread::execute()
 #define start_perft(typ) \
 	PH.type = typ; \
 	pth = new_thread<PerftThread>()
+#define kill_perft del_thread<PerftThread>(pth)
 
 
 /*
@@ -152,7 +153,7 @@ do
 	if (!getline(cin, str))  // waiting for input. EOF means quit
 		str = "quit";
 	if (str == ".") // repeat the last command
-	{	sync_cout << strlast << sync_endl; str = strlast; }
+	{	sync_print(strlast); str = strlast; }
 	 strlast = str;  // holds the last command line
 	istringstream iss(str);
 
@@ -162,6 +163,9 @@ do
 	/////// stop signals
 	if (cmd == "quit" || cmd == "stop" || cmd == "ponderhit")
 	{
+		if (pth && !Signal.stop) // Show abort perft message
+			sync_print("aborting perft ...");
+
 		// In case Signal.stopOnPonderhit is set we are
 		// waiting for 'ponderhit' to stop the search (for instance because we
 		// already ran out of time), otherwise we should continue searching but
@@ -170,18 +174,14 @@ do
 			Signal.stop = true;
 		else
 			Limit.ponder = false;
-		if (exists(pth))
-		{
-			sync_cout << "aborting perft ..." << sync_endl;
-			del_thread(pth);
-		}
+
+		if (pth)	kill_perft;  // Kill the perft thread
 	}
 
 
 	/////// Indicate our support of UCI protocol
 	else if (cmd == "uci")
-		sync_cout << engine_id << options2str<true>()
-			<< "uciok" << sync_endl;
+		sync_print(engine_id << options2str<true>() << "uciok");
 
 	
 	/////// new game
@@ -189,15 +189,15 @@ do
 		TT.clear();
 
 	else if (cmd == "isready")
-		sync_cout << "readyok" << sync_endl;
+		sync_print("readyok");
 
 
 	/////// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
-		if (exists(pth)) // never run 2 perfts at the same time
-			if (!Signal.stop) { sync_cout << "perft is running" << sync_endl; continue; }
-			else { del_thread(pth); }
+		if (pth) // never run 2 perfts at the same time
+			if (!Signal.stop) { sync_print("perft is running"); continue; }
+			else kill_perft;
 
 		PH.posperft = pos; // Shared "pos"
 		vector<string> args;
@@ -208,14 +208,14 @@ do
 		if (size == 0)
 		{
 			string response;
-			sync_cout << "Enter any non-number to quit perft." << sync_endl;
+			sync_print("Enter any non-number to quit perft.");
 			bool again = true, first = true;
 			while (again)
 			{
 				cout << "depth: ";
 				getline(cin, response);
-				if ( !exists(pth) && ((!first && response.empty()) || istringstream(response) >> PH.depth) )
-					{ start_perft(0); del_thread(pth); } // blocks here
+				if ( !pth && ((!first && response.empty()) || istringstream(response) >> PH.depth) )
+					{ start_perft(0); kill_perft; } // blocks here
 				else
 					again = false;
 				if (first)  first = false;
@@ -237,7 +237,7 @@ do
 			// Run epd test suite
 			else if (opt == "suite")
 			{
-				sync_cout << "Reading " << PH.epdFile << sync_endl;
+				sync_print("Reading " << PH.epdFile);
 				// Run from the beginning of epd file
 				if (size == 1)	{ start_perft(1); }
 				// Run from a specific id-gentest
@@ -284,7 +284,7 @@ do
 
 	/////// shows all option current value
 	else if (cmd == "option")
-		sync_cout << options2str<false>() << sync_endl;
+		sync_print(options2str<false>());
 
 	/////// Updates UCI options 
 	else if (cmd == "setoption")
@@ -300,25 +300,25 @@ do
 		if (OptMap.count(optname))
 			OptMap[optname] = optval;
 		else
-			sync_cout << "Option not supported: " << optname << sync_endl;
+			sync_print("Option not supported: " << optname);
 	} // cmd 'setoption'
 
 	/////// Display the board as an ASCII graph
 	else if (cmd == "d" || cmd == "disp")  // full display
-		sync_cout << pos.print<true>() << sync_endl;
+		sync_print(pos.print<true>());
 	else if (cmd == "md" || cmd == "mdisp") // minimum display
-		sync_cout << pos.print<false>() << sync_endl;
+		sync_print(pos.print<false>());
 
 	/////// Generate Rook/Bishop magic bitboard hash keys
 	else if (cmd == "magics")
 	{
-		sync_cout << Board::magicU64_generate<ROOK>() << sync_endl;
-		sync_cout << Board::magicU64_generate<BISHOP>() << sync_endl;
+		sync_print(Board::magicU64_generate<ROOK>());
+		sync_print(Board::magicU64_generate<BISHOP>());
 	}
 
 	/////// politely rejects the command
 	else
-		sync_cout << "Command not supported: " << cmd << sync_endl;
+		sync_print("Command not supported: " << cmd);
 
 } while (cmd != "quit"); // infinite stdin loop
 

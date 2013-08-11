@@ -7,19 +7,19 @@
 using namespace Board;
 
 #ifdef DEBUG
-#define DEBUG_MSG_1(msg) DEBUG_DISP(msg)
-#define DEBUG_MSG_2(msg, score) \
+#define DBG_MSG_1(msg) DBG_DISP(msg)
+#define DBG_MSG_2(msg, score) \
 	cout << fixed << setprecision(2) << setw(15) << msg << ": MG = "\
 	<< centi_pawn(mg_value(score)) \
 	<< "  EG = " << centi_pawn(eg_value(score)) << endl
-#define DEBUG_MSG_3(msg, mgscore, egscore) \
+#define DBG_MSG_3(msg, mgscore, egscore) \
 	cout << fixed << setprecision(2) <<setw(15) << msg << ": MG = "\
 	<< centi_pawn(mgscore) \
 	<< "  EG = " << centi_pawn(egscore) <<  endl
 #else // do nothing
-#define DEBUG_MSG_1(x1)
-#define DEBUG_MSG_2(x1, x2)
-#define DEBUG_MSG_3(x1, x2, x3)
+#define DBG_MSG_1(x1)
+#define DBG_MSG_2(x1, x2)
+#define DBG_MSG_3(x1, x2, x3)
 #endif // DEBUG
 
 #define S(mg, eg) make_score(mg, eg)
@@ -361,17 +361,17 @@ namespace Eval
 		Value v = interpolate(score, ei.mi->gamePhase, scalor);
 
 		// Show a few lines of debugging info
-		DEBUG_MSG("Material", pos.psq_score());
-		DEBUG_MSG("Imbalance", ei.mi->material_score());
-		DEBUG_MSG("Pawnshield", ei.pi->pawnshield_score());
-		DEBUG_MSG("Space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
-		DEBUG_MSG("Space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
-		DEBUG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
-		DEBUG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
-		DEBUG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->gamePhase / 128.0 << "% MG, "
+		DBG_MSG("Material", pos.psq_score());
+		DBG_MSG("Imbalance", ei.mi->material_score());
+		DBG_MSG("Pawnshield", ei.pi->pawnshield_score());
+		DBG_MSG("Space B", make_score(evaluate_space<B>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DBG_MSG("Space W", make_score(evaluate_space<W>(pos, ei) * ei.mi->spaceWeight *46/0x100, 0));
+		DBG_MSG("Margin " << C(B) << " " << centi_pawn(margins[B]));
+		DBG_MSG("Margin " << C(W) << " " << centi_pawn(margins[W]));
+		DBG_MSG("Scaling: "<< setw(6) << 100.0 * (double)ei.mi->gamePhase / 128.0 << "% MG, "
 			<< setw(6) << 100.0 * (1.0 - (double)ei.mi->gamePhase / 128.0) << "% * "
 			<< setw(6) << (100.0 * scalor) / SCALE_FACTOR_NORMAL << "% EG.\n");
-		DEBUG_MSG("Total: " << centi_pawn(v));
+		DBG_MSG("Total: " << centi_pawn(v));
 
 		return pos.turn == W ? v : -v;
 	}
@@ -441,7 +441,7 @@ namespace Eval
 
 				attackers &= occ;
 			}
-			DEBUG_MSG((us ? "B" : "W") << " " << PIECE_FULL_NAME[capt]);
+			DBG_MSG((us ? "B" : "W") << " " << PIECE_FULL_NAME[capt]);
 
 			us = ~us;
 			usAttackers = attackers & pos.piece_union(us);
@@ -521,7 +521,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 			bonus += bonus / 2;
 	}
 
-	DEBUG_MSG("Outposts " << C(us), bonus, bonus);
+	DBG_MSG("Outposts " << C(us), bonus, bonus);
 	return make_score(bonus, bonus);
 }
 
@@ -620,7 +620,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 
 	} // while iterate through all the square pieceList
 
-	DEBUG_MSG("Piece " << C(us) << setw(7) << P(PT), score);
+	DBG_MSG("Piece " << C(us) << setw(7) << P(PT), score);
 	return score;
 }
 
@@ -646,7 +646,7 @@ Score evaluate_pieces_of_color(const Position& pos, EvalInfo& ei, Score& mobilit
 	| ei.attackedBy[us][BISHOP] | ei.attackedBy[us][ROOK]
 	| ei.attackedBy[us][QUEEN]  | ei.attackedBy[us][KING];
 	
-	DEBUG_MSG("Mobility " << C(us), apply_weight(mobility, Weights[Mobility]));
+	DBG_MSG("Mobility " << C(us), apply_weight(mobility, Weights[Mobility]));
 	return score;
 }
 
@@ -756,7 +756,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		margins[us] += mg_value(KingDanger[us == Search::RootColor][attackUnits]);
 	}
 
-	DEBUG_MSG("King " << C(us), score);
+	DBG_MSG("King " << C(us), score);
 	return score;
 }
 
@@ -796,7 +796,7 @@ Score evaluate_threats(const Position& pos, EvalInfo& ei)
 						score += Threat[pt1][pt2];
 		}
 
-	DEBUG_MSG("Threats " << C(us), score);
+	DBG_MSG("Threats " << C(us), score);
 	return score;
 }
 
@@ -892,7 +892,7 @@ Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
 	}  // while (bpassed)
 
 
-	DEBUG_MSG("Passed pawn " << C(us), 
+	DBG_MSG("Passed pawn " << C(us), 
 					apply_weight(score, make_score(221, 273)));
 	// Add the scores to the middle game and endgame eval
 	return apply_weight(score,  make_score(221, 273));
@@ -1052,7 +1052,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 
 	// Winning pawn is unstoppable and will promote as first, return big score
 	Score score = make_score(0, 1280 - 32 * pliesToQueen[winnerSide]);
-	DEBUG_MSG("Unstoppable " << C(winnerSide), 
+	DBG_MSG("Unstoppable " << C(winnerSide), 
 					winnerSide == W ? score : -score);
 	return winnerSide == W ? score : -score;
 }

@@ -1,7 +1,7 @@
 #include "position.h"
 #include "search.h"
 
-namespace
+namespace // The perft table class will only be used here. 
 {
 	// Stores perft hash results, using a position's Zobrist key
 	struct Entry
@@ -57,9 +57,10 @@ namespace
 	}
 }
 
+// Global: can be resized in the main UCI processor. 
 Table PerftHash;
 
-// External resize request by the engine IO command:
+// External resize request by the UCI IO:
 // perft hash mbSize
 void perft_hash_resize(int mbSize)
 {
@@ -132,6 +133,9 @@ U64 Position::perft<false>(int depth)
 	return nodeCount;
 }
 
+// If the perft takes too little time, the speedometer would be meaningless.
+// If exceed the timer threshold in ms, we calculate the speed.
+const unsigned long TIMER_THRESH = 500;
 /* 
 	For bulk testing: reads an epd file and steps through all the tests 
 	The epd we're using looks like:
@@ -153,13 +157,12 @@ U64 Position::perft<false>(int depth)
 template<bool UseHash>
 void perft_verifier(string filePath, string startID /* ="initial" */, bool verbose /* =false */)
 {
-	static const int SPEEDOMETER = 250000000;
 	ifstream fin(filePath.c_str());
 	if (!fin.is_open())  // MUST new and throw an exception pointer
 		throw FileNotFoundException(filePath);
 	Position ptest;
 	string str, FEN;
-	U64 ans, actual, roundTime, roundNodes, start, end, totalTime = 0, totalNodes = 0;
+	U64 ans, actual, time, nodes, start, end, totalTime = 0, totalNodes = 0;
 	bool pass = true;
 	while (getline(fin, str))
 	{
@@ -168,7 +171,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 		{
 			if (pass && str.substr(11, 100) != startID) continue; else pass = false;
 			cout << str << endl;
-			roundTime = roundNodes = 0;
+			time = nodes = 0;
 			getline(fin, str, ' ');  // consume the "epd" that precedes the FEN string
 			getline(fin, str); // the FEN string
 			FEN = str;
@@ -195,8 +198,8 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 
 				if (5 <= depth && depth <=6)
 				{
-					roundNodes += actual;
-					roundTime += end - start;
+					nodes += actual;
+					time += end - start;
 				}
 				totalTime += end - start;
 				totalNodes += actual;
@@ -204,22 +207,23 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 				// display speed info at depth 6. If nodes too few, the speedometer's meaningless
 				if (depth == 6)
 				{
-					cout << "Passed:" << std::setw(6) << roundTime << " ms.  ";
-					if (roundNodes > SPEEDOMETER)
-						cout << "Speed = " << 1.0 * roundNodes / roundTime << " kn/s" << endl;
+					cout << "Passed:" << std::setw(6) << time << " ms.  ";
+					if (time > TIMER_THRESH)
+						cout << "Speed = " << nodes / time << " kn/s" << endl;
 					else
-						cout << "Speed N/A, too few nodes" << endl;
+						cout << "Speed #" << endl;
 				}
 			}
 			cout << endl;
 		}
 	}
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-	cout << "CONGRATULATIONS!!!!!! ALL TESTS PASSED" << endl;
-	cout << "TOTAL NODES = " << totalNodes << endl;
-	cout << "AVERAGE SPEED = " << 1.0 * totalNodes / totalTime << endl;
+	cout << "Congratulations! All Tests Passed." << endl;
+	cout << "Total Nodes = " << totalNodes << endl;
+	if ( totalTime > TIMER_THRESH )
+		cout << "Average Speed = " << totalNodes / totalTime << endl;
+	else
+		cout << "Average Speed # " << endl;
 }
 // Explicit instantiation
 template void perft_verifier<true>(string filePath, string startID, bool verbose);
@@ -230,18 +234,18 @@ template void perft_verifier<false>(string filePath, string startID, bool verbos
 template <bool UseHash>
 void perft_verifier(Position& pos, int depth)
 {
-	U64 ans, start, end, lapse;
+	U64 ans, start, end, time;
 	
 	start = now();
 	ans = pos.perft<UseHash>(depth);
 	end = now();
 	
 	cout << setw(10) << "Nodes = " << ans << endl;
-	cout << setw(10) << "Time = " << (lapse = end - start) << " ms" << endl;
-	if (lapse < 500L)
-		cout << "Too few nodes. Speed N/A." << endl;
+	cout << setw(10) << "Time = " << (time = end - start) << " ms" << endl;
+	if (time > TIMER_THRESH)
+		cout << setw(10) << "Speed = " << ans / time << " kn/s" << endl;
 	else
-		cout << setw(10) << "Speed = " << 1.0 * ans / lapse << " kn/s" << endl;
+		cout << "Speed #" << endl;
 }
 // Explicit instantiation
 template void perft_verifier<true>(Position& pos, int depth);

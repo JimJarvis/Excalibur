@@ -50,7 +50,7 @@ Excalibur: utils.o board.o position.o perft.o movegen.o\
 	zobrist.o ttable.o endgame.o material.o pawnshield.o\
 	kpkbase.o eval.o search.o uci.o thread.o
 
-Excalibur.o: search.h uci.h
+Excalibur.o: search.h uci.h thread.h
 
 utils.o: utils.h
 
@@ -86,8 +86,10 @@ thread.o: thread.h
 
 .PHONY: clean
 clean:
-	@rm -rf *~ *.o Excalibur 
+	@rm -rf *~ *.o Excalibur
+	@echo "cleaned"
 
 .PHONY: all
 all: clean Excalibur
+	@echo
 	@echo "Forged the sacred sword"

@@ -1,7 +1,7 @@
-#include "utils.h"
 #include "position.h"
 #include "search.h"
 #include "uci.h"
+#include "thread.h"
 
 /* Excalibur engine entry point */
 int main(int argc, char **argv)
@@ -13,12 +13,12 @@ int main(int argc, char **argv)
 	Zobrist::init_keys_psqt();
 	UCI::init();
 	Eval::init();
-
-	// set transposition table size
-	TT.set_size((int) OptMap["Hash"]);
+	ThreadPool::init();
+	TT.set_size((int) OptMap["Hash"]); // set transposition table size
 
 	UCI::process();
 
+	ThreadPool::clean();
 	// Static evaluation debugging
 	/*string fen = concat_args(argc, argv);
 	Position pos(fen);

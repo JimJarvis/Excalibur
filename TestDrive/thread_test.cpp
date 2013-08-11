@@ -54,6 +54,7 @@ void BadThread::execute()
 
 // The termination is signaled when there're exactly 3 "good" printed
 // Before the termination signal, "bad" will be printed every 100 ms
+/*
 TEST(Thread, Signal)
 {
 	GoodThread *th_good = new_thread<GoodThread>();
@@ -61,3 +62,4 @@ TEST(Thread, Signal)
 	del_thread(th_good);
 	del_thread(th_bad);
 }
+*/

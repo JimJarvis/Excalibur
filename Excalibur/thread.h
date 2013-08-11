@@ -1,7 +1,7 @@
 /* Multithreading utilities */
 #ifndef __thread_h__
 #define __thread_h__
-#include "globals.h"
+#include "utils.h"
 
 #ifdef _WIN32  // windows
 
@@ -71,9 +71,23 @@ public:
 	~ConditionVar() { cond_destroy(c); }
 
 	void wait(Mutex& m) { cond_wait(c, m.lk); }
-	//void wait_for(Mutex& m, int ms) { timed_wait(c, m.l, ms); }
+	// Place an upper limit on wait time.
+	void timed_wait(Mutex& m, int ms)
+	{
+#ifdef _WIN32
+		int tm = ms;
+#else
+		timespec ts, *tm = &ts;
+		U64 time = now() + ms;
+
+		ts.tv_sec = time / 1000;
+		ts.tv_nsec = (time % 1000) * 1000000LL;
+#endif
+		cond_timedwait(c, m.lk, tm);
+	}
+
 	// restarts one of the threads waiting for signal c
-	void notify() { cond_signal(c); }
+	void signal() { cond_signal(c); }
 
 private:
 	ConditionSignal c;
@@ -82,15 +96,15 @@ private:
 // Thread wrapper
 struct Thread
 {
-	Thread() : exist(false) {};
+	//Thread() : exist(false) {};
 	virtual void execute() = 0;
-	void notify();
+	void signal();
 	void wait(volatile bool cond);
 
 	Mutex mutex;
 	ConditionVar sleepCond;
 	ThreadHandle handle;
-	volatile bool exist;  // monitor if the thread is already dead
+	//volatile bool exist;  // monitor if the thread is already dead
 };
 
 // Main thread
@@ -111,9 +125,17 @@ struct TimerThread : public Thread
 	int ms;
 };
 
-// Global threads employed throughout the engine
-extern MainThread Mainth;
-extern TimerThread Timer;
+/* External interface that takes care of 2 global threads */
+namespace ThreadPool
+{
+	extern MainThread *Main;
+	extern TimerThread *Timer;
+	// will be called at program startup
+	void init();
+	// will be called at program exit
+	void clean();
+}
+
 
 // A necessary wrapper for the thread execution function
 inline long launch_helper(Thread* th) { th->execute(); return 0; }
@@ -122,28 +144,26 @@ template<typename ThreadType>
 ThreadType* new_thread()
 {
 	ThreadType* th = new ThreadType();
-	th->exist = true;
+	//th->exist = true;
 	thread_create(th->handle, launch_helper, th); // Will go to sleep
 	return th;
 }
-
 // external thread dtor
-inline void del_thread(Thread* th)
+template<typename ThreadType>
+inline void del_thread(ThreadType*& th)
 {
-	th->exist = false;
-	th->notify();
+	th->signal();
+	//th->exist = false;
 	thread_join(th->handle);
 	delete th;
+	th = nullptr;
 }
-
-// test if a thread exists
-inline bool exists(Thread* th) { return th && th->exist; }
 
 /* Synchronized IO */
 enum SyncIO { io_lock, io_unlock };
 std::ostream& operator<<(std::ostream&, SyncIO);
 
-#define sync_cout cout << io_lock
-#define sync_endl endl << io_unlock
+#define sync_print(msg) \
+	cout << io_lock << msg << endl << io_unlock
 
 #endif // __thread_h__
