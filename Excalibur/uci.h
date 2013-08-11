@@ -23,7 +23,7 @@ const string engine_author = "Jim Fan";
 #endif // _WIN32
 
 // Display the engine info at program startup
-#define display_info \
+#define display_engine_info \
 	cout << engine_name << endl; \
 	display_copyright_symbol; \
 	cout << "2013 " + engine_author + "\n\n" \

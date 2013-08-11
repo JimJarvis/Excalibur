@@ -82,7 +82,7 @@ search.o: search.h
 
 uci.o: uci.h search.h thread.h
 
-thread.o: thread.h
+thread.o: thread.h search.h
 
 .PHONY: clean
 clean:

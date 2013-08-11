@@ -1,4 +1,5 @@
 #include "thread.h"
+#include "search.h"
 #include <climits>
 
 // External interface to 2 global threads
@@ -7,6 +8,7 @@ namespace ThreadPool
 	// Instantiate externs
 	MainThread *Main;
 	TimerThread *Timer;
+	ConditionVar poolSleepCond;
 
 	// will be called at program startup
 	void init()
@@ -15,10 +17,18 @@ namespace ThreadPool
 		Main = new_thread<MainThread>();
 	}
 	// will be called at program exit
-	void clean()
+	void terminate()
 	{
 		del_thread<TimerThread>(Timer);
 		del_thread<MainThread>(Main);
+	}
+
+	void wait_until_main_finish()
+	{
+		Main->mutex.lock();
+		while (Main->running)
+			poolSleepCond.wait(Main->mutex);
+		Main->mutex.unlock();
 	}
 
 } // namespace ThreadPool
@@ -33,28 +43,38 @@ void Thread::signal()
 }
 
 // Set the thread to sleep until condition turns true
-void Thread::wait(volatile bool cond)
+// We wrap up wait() in a while-loop
+// because we want to wait until a cond becomes true, 
+// EVEN WHEN we receive a cond_signal telling us to 
+// wake up else where, which might be a false signal.
+void Thread::wait_until(volatile bool cond)
 {
 	mutex.lock();
 	while (!cond) sleepCond.wait(mutex);
 	mutex.unlock();
 }
 
-// Synchronized IO
-ostream& operator<<(std::ostream& os, SyncIO sync)
-{
-	static Mutex m;
-	if (sync == io_lock)
-		m.lock();
-	else
-		m.unlock();
-	return os;
-}
-
-// MainThread execution method
+// MainThread wakes up when there's a new search
 void MainThread::execute()
 {
+	while (true)
+	{
+		mutex.lock();
+		running = false;
+		while (!running && exist)
+		{
+			ThreadPool::poolSleepCond.signal();
+			sleepCond.wait(mutex);
+		}
+		mutex.unlock();
 
+		if (!exist)	return;
+
+		searching = true;
+		// Main search engine starts. 
+		Search::think();
+		searching = false;
+	}
 }
 
 
@@ -64,19 +84,18 @@ void check_time()
 
 }
 
-// MainThread execution method
+// TimerThread 
 void TimerThread::execute()
 {
-	//while (exist)
-	while (true)
+	while (exist) // will stop at program termination.
 	{
 		mutex.lock();
 		// If ms is 0, the timer waits indefinitely until woken up again
-		//if (exist)
+		if (exist)
 			sleepCond.timed_wait(mutex, ms != 0 ? ms : INT_MAX);
 		mutex.unlock();
 
-		if (ms)
+		if (ms) // if not 0, check time regularly
 			check_time();
 	}
 }

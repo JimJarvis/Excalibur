@@ -2,6 +2,7 @@
 #include "thread.h"
 #include "search.h"
 using namespace Search;
+using namespace ThreadPool;
 
 // instantiate global option map
 map<string, UCI::Option> OptMap;
@@ -160,7 +161,8 @@ do
 	iss >> cmd;
 	cmd = str2lower(cmd);  // case insensitive parsing
 
-	/////// stop signals
+	/**********************************************/
+	// stop signals
 	if (cmd == "quit" || cmd == "stop" || cmd == "ponderhit")
 	{
 		if (pth && !Signal.stop) // Show abort perft message
@@ -178,21 +180,31 @@ do
 		if (pth)	kill_perft;  // Kill the perft thread
 	}
 
-
-	/////// Indicate our support of UCI protocol
+	/**********************************************/
+	// Indicate our support of UCI protocol
 	else if (cmd == "uci")
 		sync_print(engine_id << options2str<true>() << "uciok");
 
-	
-	/////// new game
+	/**********************************************/
+	// New game
 	else if (cmd == "ucinewgame")
 		TT.clear();
 
 	else if (cmd == "isready")
 		sync_print("readyok");
 
+	/**********************************************/
+	// go: main game driver
+	else if (cmd == "go")
+	{
+		Signal.stop = false;
+		wait_until_main_finish();
+		Main->running = true;
+		Main->signal();
+	}
 
-	/////// Debug command perft (interactive)
+	/**********************************************/
+	// Debug command perft (interactive)
 	else if (cmd == "perft")
 	{
 		if (pth) // never run 2 perfts at the same time
@@ -249,10 +261,11 @@ do
 				if (is_int(args[1]))
 				{
 					int hashSize = str2int(args[1]);
-					// Disable hash
-					if (hashSize == 0)	PH.useHash = false;
-					// Resize. Maximum 4096 mb
-					else {PH.useHash = true; perft_hash_resize(min(4096, hashSize));}
+					// Disable hash and clear all existing entries
+					if (hashSize == 0)
+						{PH.useHash = false; perft_hash_resize(-1); }
+					// Resize. Maximum 4096 mb. If alloc fails, useHash = false
+					else {PH.useHash = perft_hash_resize(min(4096, hashSize));}
 				}
 				else if (PH.useHash && args[1] == "clear")
 					perft_hash_resize(-1);
@@ -260,8 +273,8 @@ do
 		}
 	}  // cmd 'perft'
 
-
-	/////// Sets the position. Syntax: position [startpos | fen] XXX [move]
+	/**********************************************/
+	// Sets the position. Syntax: position [startpos | fen] XXX [move]
 	else if (cmd == "position")
 	{
 		iss >> str;
@@ -281,12 +294,8 @@ do
 
 	}  // cmd 'position'
 
-
-	/////// shows all option current value
-	else if (cmd == "option")
-		sync_print(options2str<false>());
-
-	/////// Updates UCI options 
+	/**********************************************/
+	// Updates UCI options 
 	else if (cmd == "setoption")
 	{
 		string optname, optval;
@@ -303,24 +312,33 @@ do
 			sync_print("Option not supported: " << optname);
 	} // cmd 'setoption'
 
-	/////// Display the board as an ASCII graph
+	// shows all option current value
+	else if (cmd == "option")
+		sync_print(options2str<false>());
+
+	/**********************************************/
+	// Display the board as an ASCII graph
 	else if (cmd == "d" || cmd == "disp")  // full display
 		sync_print(pos.print<true>());
 	else if (cmd == "md" || cmd == "mdisp") // minimum display
 		sync_print(pos.print<false>());
 
-	/////// Generate Rook/Bishop magic bitboard hash keys
+	/**********************************************/
+	// Generate Rook/Bishop magic bitboard hash keys
 	else if (cmd == "magics")
 	{
 		sync_print(Board::magicU64_generate<ROOK>());
 		sync_print(Board::magicU64_generate<BISHOP>());
 	}
 
-	/////// politely rejects the command
+	/**********************************************/
+	// politely rejects the command
 	else
 		sync_print("Command not supported: " << cmd);
 
 } while (cmd != "quit"); // infinite stdin loop
+
+	ThreadPool::wait_until_main_finish(); // Cannot quit while search is running
 
 } // main UCI::process() function
 

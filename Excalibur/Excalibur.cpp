@@ -6,19 +6,21 @@
 /* Excalibur engine entry point */
 int main(int argc, char **argv)
 {
-	display_info;
+	display_engine_info;
 
 	Utils::init();
 	Board::init_tables();
 	Zobrist::init_keys_psqt();
 	UCI::init();
 	Eval::init();
-	ThreadPool::init();
 	TT.set_size((int) OptMap["Hash"]); // set transposition table size
+
+	ThreadPool::init();
 
 	UCI::process();
 
-	ThreadPool::clean();
+	ThreadPool::terminate();
+
 	// Static evaluation debugging
 	/*string fen = concat_args(argc, argv);
 	Position pos(fen);

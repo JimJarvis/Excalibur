@@ -218,6 +218,7 @@ void perft_verifier(Position& pos, int depth);
 
 // Resize the perft hash table (megabytes).
 // if mbSize is -1, clear all hash entries
-void perft_hash_resize(int mbSize);
+// return true if hash resize request is successful
+bool perft_hash_resize(int mbSize);
 
 #endif // __position_h__

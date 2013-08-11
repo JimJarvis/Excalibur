@@ -31,7 +31,7 @@ namespace // The perft table class will only be used here.
 		};
 
 		void clear()
-		{ memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
+		{ if (table)	memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
 
 	private:
 		Entry* table;  // size on MB scale
@@ -41,19 +41,15 @@ namespace // The perft table class will only be used here.
 	void Table::set_size(int mbSize)
 	{
 		uint size = CLUSTER_SIZE << msb( ((U64)mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
-		if (hashMask == size - CLUSTER_SIZE) // same. No resize request.
-			return;
+		if (table && hashMask == size - CLUSTER_SIZE)
+			return; // Same size and last table alloc successful. No resize request.
 
 		hashMask = size - CLUSTER_SIZE;
 		free(table);
 		table = (Entry*) calloc(1, size * sizeof(Entry));
 
 		if (table == nullptr)
-		{
-			cerr << "Failed to allocate " << mbSize
-				<< "MB for the perft hash table." << endl;
-			throw bad_alloc();  // fatal alloc error
-		}
+			throw bad_alloc();  // handled by perft_hash_resize()
 	}
 }
 
@@ -62,12 +58,22 @@ Table PerftHash;
 
 // External resize request by the UCI IO:
 // perft hash mbSize
-void perft_hash_resize(int mbSize)
+// return true if hash resize request is successful
+bool perft_hash_resize(int mbSize)
 {
 	if (mbSize > 0)
-		PerftHash.set_size(mbSize);
+	{
+		try {PerftHash.set_size(mbSize); }
+		catch (bad_alloc e)
+		{
+			cerr << "Failed to allocate " << mbSize
+				<< "MB for the perft hash table." << endl;
+			return false;
+		}
+	}
 	else
 		PerftHash.clear();
+	return true;
 }
 
 // variables that might be used for debugging

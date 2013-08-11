@@ -70,7 +70,12 @@ public:
 	ConditionVar() { cond_init(c); }
 	~ConditionVar() { cond_destroy(c); }
 
+	// wait() should always be wrapped up in a while-loop.
+	// This is because we want to check wake-up condition, 
+	// EVEN WHEN we receive a cond_signal telling us to 
+	// wake up else where, which might be a false signal.
 	void wait(Mutex& m) { cond_wait(c, m.lk); }
+
 	// Place an upper limit on wait time.
 	void timed_wait(Mutex& m, int ms)
 	{
@@ -96,25 +101,27 @@ private:
 // Thread wrapper
 struct Thread
 {
-	//Thread() : exist(false) {};
+	Thread() : exist(false) {};
 	virtual void execute() = 0;
 	void signal();
-	void wait(volatile bool cond);
+	// wait until the condition becomes true
+	void wait_until(volatile bool cond);
 
 	Mutex mutex;
 	ConditionVar sleepCond;
 	ThreadHandle handle;
-	//volatile bool exist;  // monitor if the thread is already dead
+	volatile bool exist;  // monitor if the thread is already dead
 };
 
 // Main thread
 struct MainThread : public Thread
 {
-	MainThread() : thinking(true) {}
+	MainThread() : running(true) {}
 	virtual void execute();
 	int maxPly;
 	volatile bool searching;
-	volatile bool thinking;
+	// avoid a race condition with 'searching'
+	volatile bool running;
 };
 
 // Timer
@@ -130,30 +137,34 @@ namespace ThreadPool
 {
 	extern MainThread *Main;
 	extern TimerThread *Timer;
+
+	extern ConditionVar poolSleepCond;
 	// will be called at program startup
 	void init();
 	// will be called at program exit
-	void clean();
+	void terminate();
+	// Waits for the main thread to sleep/ exit search and then returns
+	void wait_until_main_finish();
 }
 
 
 // A necessary wrapper for the thread execution function
-inline long launch_helper(Thread* th) { th->execute(); return 0; }
+inline long launch_routine(Thread* th) { th->execute(); return 0; }
 // external ctor of Thread class, otherwise invalid pure function call
 template<typename ThreadType>
 ThreadType* new_thread()
 {
 	ThreadType* th = new ThreadType();
-	//th->exist = true;
-	thread_create(th->handle, launch_helper, th); // Will go to sleep
+	th->exist = true;
+	thread_create(th->handle, launch_routine, th);
 	return th;
 }
 // external thread dtor
 template<typename ThreadType>
-inline void del_thread(ThreadType*& th)
+inline void del_thread(ThreadType*& th) // ref to pointer
 {
 	th->signal();
-	//th->exist = false;
+	th->exist = false;
 	thread_join(th->handle);
 	delete th;
 	th = nullptr;
@@ -161,7 +172,12 @@ inline void del_thread(ThreadType*& th)
 
 /* Synchronized IO */
 enum SyncIO { io_lock, io_unlock };
-std::ostream& operator<<(std::ostream&, SyncIO);
+inline ostream& operator<<(ostream& os, SyncIO sync)
+{
+	static Mutex m;
+	sync == io_lock ? m.lock() : m.unlock();
+	return os;
+}
 
 #define sync_print(msg) \
 	cout << io_lock << msg << endl << io_unlock
