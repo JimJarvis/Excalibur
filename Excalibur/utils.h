@@ -24,8 +24,6 @@ namespace RKiss
 	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
 }
 
-#define setbit(n) (1ULL << (n))
-
 /* Bit Scan */
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 

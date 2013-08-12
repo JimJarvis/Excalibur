@@ -205,3 +205,12 @@ TEST(Move, KeyInvariant)
 		//cout << "Case " <<  i+1 << " passed" << endl;
 	}
 }
+
+// Test pinned and discovered check maps.
+TEST(Move, Pinned)
+{
+	Position p1("3q2q1/3n1k2/8/1rpK2pr/4n3/3b4/3r2b1/8 b - - 0 1");
+	Position p2("3Q2Q1/3N1K2/8/1RPk2PR/4N3/3B4/3R2B1/8 w - - 0 1");
+	ASSERT_EQ(11259291395162112, p2.discv_map());
+	ASSERT_EQ(p1.discv_map(), p2.discv_map());
+}

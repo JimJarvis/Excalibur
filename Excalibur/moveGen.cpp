@@ -3,26 +3,185 @@ using namespace Board;
 using namespace Moves;
 
 #define add_move(mv) (mbuf++)->move = mv
-#define add_moves_map(legalcond) \
+#define add_piece_moves(illegalcond) \
 	while (toMap) \
 	{ \
 		to = pop_lsb(toMap); \
-		if (legal && (legalcond) ) continue; \
+		if (legal && (illegalcond) ) continue; \
 		set_from_to((mbuf++)->move, from, to); \
 	}
 
-ScoredMove MoveBuffer[4096];
-int MoveBufEnds[64];
+// Pawn move's illegal condition
+#define pawn_illegalcond \
+	pinned && (pinned & setbit(from)) && !is_aligned(from, to, ksq)
 
+#define add_pawn_moves(toMap, shift) \
+	while (toMap) \
+{ \
+	to = pop_lsb(toMap); \
+	from = to - (shift); \
+	if (legal && pawn_illegalcond) continue; \
+	set_from_to((mbuf++)->move, from, to); \
+}
+
+// Helper for gen_pawn: generates promotions
+template<GenType GT, int Delta, bool legal>
+ScoredMove* Position::gen_promo(ScoredMove* mbuf, Bit& target, Bit& pawnsPromo, Bit pinned) const
+{
+	// Pawn destination squares on RANK_8
+	Move mv;
+	Square from, to, ksq;	if (legal) ksq = king_sq(turn);
+
+	Bit toMap = shift_board<Delta>(pawnsPromo) & target;
+	while (toMap)
+	{
+		to = pop_lsb(toMap);
+		from = to - Delta;
+		if (legal && pawn_illegalcond)
+			continue;
+		set_from_to(mv, from, to);
+
+		// Queen promotion counts as capture
+		if (GT == CAPTURE || GT == EVASION || GT == NON_EVASION)
+			{ set_promo(mv, QUEEN); add_move(mv); }
+		if (GT == QUIET || GT == EVASION || GT == NON_EVASION)
+		{
+			set_promo(mv, ROOK); add_move(mv);
+			set_promo(mv, BISHOP); add_move(mv);
+			set_promo(mv, KNIGHT); add_move(mv);
+		}
+
+		// Knight-promotion is the only one that can give a direct check not
+		// already included in the queen-promotion.
+		if (GT == QUIET_CHECK && (knight_attack(to) & setbit(king_sq(~turn))))
+		{ set_promo(mv, KNIGHT); add_move(mv); }
+	}
+	return mbuf;
+}
+
+// Generates pawn moves. Template parameter 'us' is the side-to-move (turn)
+template<GenType GT, Color us, bool legal>
+ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned, Bit discv) const
+{
+	// Compile time decisions at white's point of view
+	const Color opp = (us  == W ? B : W);
+	// promotion masks
+	const Bit rank7B = rank_mask(us == W ? RANK_7 : RANK_2);
+	const Bit rank8B = rank_mask(us == W ? RANK_8 : RANK_1);
+	// double push mask
+	const Bit rank3B = rank_mask(us == W ? RANK_3 : RANK_6);
+	const int UP = (us == W ? DELTA_N  : DELTA_S);
+	const int UP2 = UP + UP;
+	const int DOWN = (us == W ? DELTA_S  : DELTA_N);
+	const int RIGHT = (us == W ? DELTA_NE : DELTA_SW);
+	const int LEFT = (us == W ? DELTA_NW : DELTA_SE);
+
+	Square from, to, ksq, epsq;	if (legal) ksq = king_sq(us);
+	Move mv;
+	Bit push1, push2, discv1, discv2, captL, captR;
+	Bit unocc = ~Occupied;
+
+	// Pawns that have or don't have the potential to promote
+	Bit pawnsPromo = Pawnmap[us] & rank7B;
+	Bit pawnsNonPromo = Pawnmap[us] & ~rank7B;
+
+	// All targeted opponent pieces
+	Bit oppMap = ( GT == EVASION ? piece_union(opp) & target : piece_union(opp) );
+
+	// Single and double pawn push, no promo
+	if (GT != CAPTURE)
+	{
+		push1  = shift_board<UP>(pawnsNonPromo) & unocc;
+		push2  = shift_board<UP>(push1 & rank3B) & unocc;
+
+		if (GT == EVASION) // only blocking square
+		{
+			push1 &= target;
+			push2 &= target;
+		}
+		else if (GT == QUIET_CHECK)
+		{
+			Bit pawnCheckMap = pawn_attack(opp, king_sq(opp));
+			push1 &= pawnCheckMap;
+			push2 &= pawnCheckMap;
+			// Add pawn push that gives discovered check.
+			// can only occur when the pawn is on a different file from the king
+			Bit pawnDiscvMap = pawnsNonPromo & discv;
+			if (pawnDiscvMap)
+			{
+				discv1 = shift_board<UP>(pawnDiscvMap) & unocc;
+				discv2 = shift_board<UP>(discv1 & rank3B) & unocc;
+				push1 |= discv1;
+				push2 |= discv2;
+			}
+		}
+		// Add the moves to move buffer
+		add_pawn_moves(push1, UP);
+		add_pawn_moves(push2, UP2);
+	}
+
+	// Promotions (with capture)
+	if (pawnsPromo && (GT != EVASION || target & rank8B))
+	{
+		if (GT == EVASION) unocc &= target;
+		// Promotion and capture
+		mbuf = gen_promo<GT, RIGHT, legal>(mbuf, oppMap, pawnsPromo, pinned);
+		mbuf = gen_promo<GT, LEFT, legal>(mbuf, oppMap, pawnsPromo, pinned);
+		// Promotion without capture
+		mbuf = gen_promo<GT, UP, legal>(mbuf, unocc, pawnsPromo, pinned);
+	}
+
+	// Non-promo capture and enpassant
+	if (GT == CAPTURE || GT == EVASION || GT == NON_EVASION)
+	{
+		captL = shift_board<LEFT>(pawnsNonPromo) & oppMap;
+		captR = shift_board<RIGHT>(pawnsNonPromo) & oppMap;
+		add_pawn_moves(captL, LEFT);
+		add_pawn_moves(captR, RIGHT);
+
+		if ((epsq = st->epSquare) != SQ_NONE)
+		{
+			// An en passant capture can be an evasion only if the checking piece
+			// is the double pushed pawn and so is in the target. Otherwise this
+			// is a discovered check and we are forced to do otherwise.
+			if (GT == EVASION && !(target & setbit(epsq - UP)))
+				return mbuf;
+
+			Bit epMap = pawnsNonPromo & pawn_attack(opp, epsq);
+
+			bool jug = true; // legality check
+			while (epMap) // add ep moves
+			{
+				from = pop_lsb(epMap);
+				if (legal)  // we check legality by actually playing the ep move
+				{
+					// Occupied ^ (from | to_ep | capt)
+					Bit newOccup = Occupied ^ ( setbit(from) | setbit(epsq) | setbit(epsq - UP) );
+					// only slider "pins" are possible
+					jug = !(rook_attack(ksq, newOccup) & piece_union(opp, QUEEN, ROOK))
+						&& !(bishop_attack(ksq, newOccup) & piece_union(opp, QUEEN, BISHOP));
+				}
+				if (jug)
+				{
+					set_from_to(mv, from, epsq);
+					set_ep(mv); add_move(mv);
+				}
+			}
+		}
+	}
+	return mbuf;
+}
+
+/*
 // Helper functions for the main gen_moves()
-template<bool legal>
-ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned) const
+template<GenType GT, bool legal>
+ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned, Bit discv) const
 {
 	Color opp = ~turn;
-	const Square *tmpSq = pieceList[turn][PAWN];
 	Square from, to;
 	Bit toMap;
-	Move mv = MOVE_NONE;
+	Move mv;
+	const Square *tmpSq = pieceList[turn][PAWN];
 	Bit unocc = ~Occupied;
 	const Square ksq = legal ? king_sq(turn) : SQ_NONE;
 	for (int i = 0; i < pieceCount[turn][PAWN]; i ++)
@@ -39,9 +198,7 @@ ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned) const
 			if (legal && pinned && (pinned & setbit(from)) && 
 				!is_aligned(from, to, ksq) ) 
 				continue;
-			//DEBUG_DISP("from " << sq2str(from) << " - to " << sq2str(to));
 			set_from_to(mv, from, to);
-			//DEBUG_DISP(m2str(mv));
 			if (relative_rank(turn, to) == RANK_8) // We reach the last rank
 			{
 				set_promo(mv, QUEEN); add_move(mv);
@@ -81,40 +238,57 @@ ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned) const
 		}
 	}
 	return mbuf;
-}
+} */
 
-template<PieceType PT, bool legal>
-ScoredMove* Position::gen_piece(ScoredMove* mbuf, Bit& target, Bit pinned) const
+// Gen-helper: generates moves for knights, bishops, rooks and queens
+template<PieceType PT, bool check, bool legal>
+ScoredMove* Position::gen_piece(ScoredMove* mbuf, Bit& target, Bit pinned, Bit discv) const
 {
 	const Square *tmpSq = pieceList[turn][PT];
-	Square from, to;
-	Bit toMap;
-	Move mv = MOVE_NONE;
+	Square from, to, ksq;	if (legal) ksq = king_sq(turn);
+	Bit toMap, ptCheckMap;
 	for (int i = 0; i < pieceCount[turn][PT]; i++)
 	{
 		from = tmpSq[i];
+		// Generate quiet checks
+		if (check)
+		{
+			ptCheckMap = attack_map<PT>(king_sq(~turn));
+			if ( (PT==BISHOP || PT==ROOK || PT==QUEEN)
+				&& !(ray_mask(PT, from) & target & ptCheckMap) )
+				continue;
+			if ( discv && (discv & setbit(from)) ) // very unlikely
+				continue;
+		}
 		toMap = attack_map<PT>(from) & target;
-		add_moves_map( pinned && (pinned & setbit(from)) && 
-			(PT == KNIGHT || !is_aligned(from, to, king_sq(turn))) );
+
+		if (check) toMap &= ptCheckMap;
+
+		add_piece_moves( pinned && (pinned & setbit(from)) && 
+			(PT == KNIGHT || !is_aligned(from, to, ksq)) );
 	}
 	return mbuf;
 }
 
 template<GenType GT, bool legal>
-ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned) const
+ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned, Bit discv) const
 {
-	mbuf = gen_pawn<legal>(mbuf, target, pinned);
-	mbuf = gen_piece<KNIGHT, legal>(mbuf, target, pinned);
-	mbuf = gen_piece<BISHOP, legal>(mbuf, target, pinned);
-	mbuf = gen_piece<ROOK, legal>(mbuf, target, pinned);
-	mbuf = gen_piece<QUEEN, legal>(mbuf, target, pinned);
+	const bool check = GT == QUIET_CHECK;
+
+	mbuf = (turn == W ? gen_pawn<GT, W, legal>(mbuf, target, pinned, discv)
+		: gen_pawn<GT, B, legal>(mbuf, target, pinned, discv));
+
+	mbuf = gen_piece<KNIGHT, check, legal>(mbuf, target, pinned, discv);
+	mbuf = gen_piece<BISHOP, check, legal>(mbuf, target, pinned, discv);
+	mbuf = gen_piece<ROOK, check, legal>(mbuf, target, pinned, discv);
+	mbuf = gen_piece<QUEEN, check, legal>(mbuf, target, pinned, discv);
 
 	if (GT != EVASION) // then generate king moves
 	{
 		Square to, from = king_sq(turn);
 		Bit toMap = king_attack(from) & target;
 		Color opp = ~turn;
-		add_moves_map( is_sq_attacked(to, opp) );
+		add_piece_moves( is_sq_attacked(to, opp) );
 		
 		if (GT != CAPTURE) // generate castling
 		{
@@ -136,20 +310,6 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned) c
 
 	return mbuf;
 }
-
-template<GenType GT>
-ScoredMove* Position::gen_moves(ScoredMove* mbuf) const
-{
-	Bit target = GT == CAPTURE ? piece_union(~turn) :
-		GT == QUIET ? ~Occupied : 
-		GT == NON_EVASION ? ~piece_union(turn) : 0;
-	return gen_all_pieces<GT, false>(mbuf, target);
-}
-
-// explicit template instantiation
-template ScoredMove* Position::gen_moves<CAPTURE>(ScoredMove* mbuf) const;
-template ScoredMove* Position::gen_moves<QUIET>(ScoredMove* mbuf) const;
-template ScoredMove* Position::gen_moves<NON_EVASION>(ScoredMove* mbuf) const;
 
 template<bool legal>
 ScoredMove* Position::gen_evasion(ScoredMove* mbuf, Bit pinned) const
@@ -186,7 +346,7 @@ ScoredMove* Position::gen_evasion(ScoredMove* mbuf, Bit pinned) const
 
 	// generate king flee
 	Bit toMap = king_attack(from) & ~piece_union(turn) & ~sliderAttack;
-	add_moves_map( is_sq_attacked(to, ~turn) );
+	add_piece_moves( is_sq_attacked(to, ~turn) );
 
 	if (ckCount > 1)  // double check. Only king flee's available. We're done
 		return mbuf;
@@ -198,6 +358,33 @@ ScoredMove* Position::gen_evasion(ScoredMove* mbuf, Bit pinned) const
 template<>
 ScoredMove* Position::gen_moves<EVASION>(ScoredMove* mbuf) const
 	{ return gen_evasion<false>(mbuf); }
+
+template<GenType GT>
+ScoredMove* Position::gen_moves(ScoredMove* mbuf) const
+{
+	Bit target = GT == CAPTURE ? piece_union(~turn) :
+		GT == QUIET ? ~Occupied : 
+		GT == NON_EVASION ? ~piece_union(turn) : 0;
+	return gen_all_pieces<GT, false>(mbuf, target);
+}
+
+// Explicit template instantiation. All pseudo-legal
+// CAPTURE: all capts and queen promotions
+template ScoredMove* Position::gen_moves<CAPTURE>(ScoredMove* mbuf) const;
+// QUIET: all non-capts and underpromotions
+template ScoredMove* Position::gen_moves<QUIET>(ScoredMove* mbuf) const;
+// NON_EVASION: all capts and non-capts
+template ScoredMove* Position::gen_moves<NON_EVASION>(ScoredMove* mbuf) const;
+
+// Generates all pseudo non-capture and knight underpromotion that gives check.
+template<>
+ScoredMove* Position::gen_moves<QUIET_CHECK>(ScoredMove* mbuf) const
+{
+	// Discovered check (the pieces that blocks a ray checker)
+	Bit discv = discv_map();
+
+	return gen_all_pieces<QUIET_CHECK, false>(mbuf, ~Occupied, discv);
+}
 
 template<>
 ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* mbuf) const
@@ -240,14 +427,15 @@ int Position::count_legal() const
 
 
 // Get a bitmap of all pinned pieces
-Bit Position::pinned_map() const
+template<bool UsInCheck>
+Bit Position::hidden_check_map() const
 {
-	Bit middle, pin = 0;
-	Color opp = ~turn;
-	Bit pinners = piece_union(opp);
-	Square ksq = king_sq(turn);
+	const Color opp = UsInCheck ? ~turn : turn;
+	const Color us = UsInCheck ? turn : ~turn;
+	Bit middle, pinners, pin = 0;
+	Square ksq = king_sq(us);
 	// Pinners must be sliders. Use pseudo-attack maps
-	pinners &= (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, ksq))
+	pinners = (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, ksq))
 		| (piece_union(opp, QUEEN, BISHOP) & ray_mask(BISHOP, ksq));
 	while (pinners)
 	{
@@ -258,6 +446,10 @@ Bit Position::pinned_map() const
 	}
 	return pin;
 }
+// Explicit instantiation
+template Bit Position::hidden_check_map<true>() const;
+template Bit Position::hidden_check_map<false>() const;
+
 
 // Check if a pseudo-legal move is actually legal
 bool Position::is_legal(Move& mv, Bit& pinned) const
@@ -327,10 +519,10 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	key ^= Zobrist::turn;  // update side-to-move
 	key ^= Zobrist::psq[turn][piece][from] ^ Zobrist::psq[turn][piece][to];
 	st->psqScore += PieceSquareTable[turn][piece][to] - PieceSquareTable[turn][piece][from];
-	if (st->epSquare != 0)  // reset epSquare and its hash key
+	if (st->epSquare != SQ_NONE)  // reset epSquare and its hash key
 	{
 		key ^=Zobrist::ep[sq2file(st->epSquare)];
-		st->epSquare = 0;
+		st->epSquare = SQ_NONE;
 	}
 
 

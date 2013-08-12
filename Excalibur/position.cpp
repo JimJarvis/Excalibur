@@ -101,7 +101,7 @@ void Position::parse_fen(string fenstr)
 	if (ep != "-")
 		st->epSquare = str2sq(ep);
 	else
-		st->epSquare = 0;
+		st->epSquare = SQ_NONE;
 	// Now supports optional fiftyMove / fullMove
 	string str;
 	while (std::getline(fen, str, ' '))  // trim white space
@@ -166,7 +166,7 @@ string Position::to_fen() const
 			<< (can_castle<CASTLE_OO>(st->castleRights[B]) ? "k":"") 
 			<< (can_castle<CASTLE_OOO>(st->castleRights[B]) ? "q":"");  
 
-	fen << " " << (st->epSquare == 0 ? "-" : sq2str(st->epSquare)); // enpassant
+	fen << " " << (st->epSquare == SQ_NONE ? "-" : sq2str(st->epSquare)); // enpassant
 	fen << " " << st->fiftyMove << " " << st->fullMove;
 
 	return fen.str();
@@ -194,7 +194,7 @@ U64 Position::calc_key() const
 		if ((pt = boardPiece[sq]) != NON)
 			key ^= Zobrist::psq[boardColor[sq]][pt][sq];
 
-	if ( st->epSquare != 0)
+	if ( st->epSquare != SQ_NONE)
 		key ^= Zobrist::ep[sq2file(st->epSquare)];
 
 	if (turn == B)

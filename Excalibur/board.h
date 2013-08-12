@@ -34,6 +34,9 @@ extern Bit inFrontMask[COLOR_N][RANK_N];
 extern Bit forwardMask[COLOR_N][SQ_N];
 extern Bit rayMask[PIECE_TYPE_N][SQ_N];
 
+
+#define setbit(n) (1ULL << (n))
+
 namespace Board
 {
 	// Initialize all tables or constants. Called once at program start. 

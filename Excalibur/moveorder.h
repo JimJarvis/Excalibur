@@ -1,15 +1,19 @@
 #ifndef __moveorder_h__
 #define __moveorder_h__
 
-#include "position.h"
 #include "search.h"
 
 /// The Stats struct stores moves statistics. According to the template parameter
-/// the class can store History, Gains and Refutations. History records how often
-/// different moves have been successful or unsuccessful during the current search
-/// and is used for reduction and move ordering decisions. Gains records the move's
-/// best evaluation gain from one ply to the next and is used for pruning decisions.
-/// Refutation store the move that refute a previous one. Entries are stored
+/// the class can store History, Gains and Refutations. 
+/// 
+/// History records how often different moves have been 
+/// successful or unsuccessful during the current search
+/// and is used for reduction and move ordering decisions. 
+/// 
+/// Gains records the move's best evaluation gain from 
+/// one ply to the next and is used for pruning decisions.
+/// 
+/// Refutations store the move that refute a previous one. Entries are stored
 /// according only to moving piece and to square, hence two moves with
 /// different origin but same destination and piece will be considered identical.
 template<bool Gain, typename T>
@@ -33,7 +37,7 @@ struct Stats
 	void update(Color c, PieceType pt, Square to, Value v)
 	{
 		if (Gain)
-			table[c][pt][to] = std::max(v, table[c][pt][to] - 1);
+			table[c][pt][to] = max(v, table[c][pt][to] - 1);
 
 		else if (abs(table[c][pt][to] + v) < MAX)
 			table[c][pt][to] +=  v;
@@ -45,7 +49,7 @@ private:
 
 typedef Stats< true, Value> GainStats;
 typedef Stats<false, Value> HistoryStats;
-typedef Stats<false, std::pair<Move, Move> > RefutationStats;
+typedef Stats<false, pair<Move, Move> > RefutationStats;
 
 /// MoveSorter class is used to pick one pseudo legal move at a time from the
 /// current position. The most important method is next_move(), which returns a

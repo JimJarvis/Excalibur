@@ -146,13 +146,15 @@ enum Phase // endgame or midgame
 };
 
 // Scale factors used in endgames
-const ScaleFactor SCALE_FACTOR_DRAW = 0,
+const ScaleFactor
+	SCALE_FACTOR_DRAW = 0,
 	SCALE_FACTOR_NORMAL = 64,
 	SCALE_FACTOR_MAX    = 128,
 	SCALE_FACTOR_NONE   = 255;
 
 // Values
-const Value VALUE_ZERO  = 0,
+const Value
+	VALUE_ZERO  = 0,
 	VALUE_DRAW    = 0,
 	VALUE_KNOWN_WIN = 15000,
 	VALUE_MATE      = 30000,
@@ -165,16 +167,17 @@ const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] = {
 	// EG (end game)
 	{ 0, 258, 846, 857, 1278, 2558, 0 }
 };
-const Value MG_PAWN = PIECE_VALUE[MG][PAWN];
-const Value MG_KNIGHT = PIECE_VALUE[MG][KNIGHT];
-const Value MG_BISHOP = PIECE_VALUE[MG][BISHOP];
-const Value MG_ROOK = PIECE_VALUE[MG][ROOK];
-const Value MG_QUEEN = PIECE_VALUE[MG][QUEEN];
-const Value EG_PAWN = PIECE_VALUE[EG][PAWN];
-const Value EG_KNIGHT = PIECE_VALUE[EG][KNIGHT];
-const Value EG_BISHOP = PIECE_VALUE[EG][BISHOP];
-const Value EG_ROOK = PIECE_VALUE[EG][ROOK];
-const Value EG_QUEEN = PIECE_VALUE[EG][QUEEN];
+const Value
+	MG_PAWN = PIECE_VALUE[MG][PAWN],
+	MG_KNIGHT = PIECE_VALUE[MG][KNIGHT],
+	MG_BISHOP = PIECE_VALUE[MG][BISHOP],
+	MG_ROOK = PIECE_VALUE[MG][ROOK],
+	MG_QUEEN = PIECE_VALUE[MG][QUEEN],
+	EG_PAWN = PIECE_VALUE[EG][PAWN],
+	EG_KNIGHT = PIECE_VALUE[EG][KNIGHT],
+	EG_BISHOP = PIECE_VALUE[EG][BISHOP],
+	EG_ROOK = PIECE_VALUE[EG][ROOK],
+	EG_QUEEN = PIECE_VALUE[EG][QUEEN];
 
 // for transposition table bound type
 enum BoundType : byte
@@ -184,6 +187,15 @@ enum BoundType : byte
 	BOUND_LOWER,
 	BOUND_EXACT // = UPPER | LOWER
 };
+
+// For search depth. ONE_PLY stands for a full ply
+const Depth
+	ONE_PLY = 2,
+	DEPTH_ZERO = 0 * ONE_PLY,
+	DEPTH_QS_CHECKS = -1 * ONE_PLY,
+	DEPTH_QS_NO_CHECKS = -2 * ONE_PLY,
+	DEPTH_QS_RECAPTURES = -7 * ONE_PLY,
+	DEPTH_NONE = -127 * ONE_PLY;
 
 #define DEF_OPERATOR(T)                                         \
 	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \

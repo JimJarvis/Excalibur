@@ -81,7 +81,9 @@ public:
 
 	bool is_legal(Move& mv, Bit& pinned) const;  // judge if a pseudo-legal move is legal, given the pinned map.
 	int count_legal() const; // count the number of legal moves
-	Bit pinned_map() const; // a bitmap of all pinned pieces
+	Bit checker_map() const { return st->checkerMap; }
+	Bit pinned_map() const { return hidden_check_map<true>(); }; // a bitmap of all pinned pieces
+	Bit discv_map() const { return hidden_check_map<false>(); }; // a bitmap of all discovered checkers
 	
 	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
@@ -127,7 +129,6 @@ public:
 	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
 
 	// More getter methods
-	Bit checker_map() const { return st->checkerMap; }
 	byte castle_rights(Color c) const { return st->castleRights[c]; }
 	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
 	Bit piece_union(Color c) const { return Colormap[c]; }
@@ -136,14 +137,21 @@ public:
 		{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
 private:
-	template<PieceType, bool legal>
-	ScoredMove* gen_piece(ScoredMove*, Bit& target, Bit pinned = 0) const;
-	template<bool legal>
-	ScoredMove* gen_pawn(ScoredMove*, Bit& target, Bit pinned = 0) const;
+	// A checking move or not. 'discv' is the discovered check map
+	// 'discv' is needed by checking move generation. 'pinned' for legal move generation
+	template<PieceType, bool check, bool legal>
+	ScoredMove* gen_piece(ScoredMove*, Bit& target, Bit pinned = 0, Bit discv = 0) const;
+	template<GenType, int Delta, bool legal>
+	ScoredMove* gen_promo(ScoredMove*, Bit& target, Bit& pawnsPromo, Bit pinned = 0) const;
+	template<GenType, Color us, bool legal>
+	ScoredMove* gen_pawn(ScoredMove*, Bit& target, Bit pinned = 0, Bit discv = 0) const;
 	template<GenType, bool legal>
-	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0) const; 
+	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0, Bit discv = 0) const; 
 	template<bool legal>
 	ScoredMove* gen_evasion(ScoredMove*, Bit pinned = 0) const;
+
+	// Used for pinned_map() [UsInCheck=true] and discv_map()[UsInCheck=false]
+	template<bool UsInCheck> Bit hidden_check_map() const;
 
 	// Helps perft<false>() save a level of recursion calls.
 	U64 perft_helper(Depth depth);
