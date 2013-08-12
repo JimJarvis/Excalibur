@@ -91,7 +91,6 @@ U64 Position::perft<true>(Depth depth)
 	ScoredMove mbuf[MAX_MOVES];
 	if (depth == 1)
 		return tte->store(st->key, gen_moves<LEGAL>(mbuf) - mbuf);
-	//return gen_moves<LEGAL>(mbuf) - mbuf; 
 
 	U64 nodeCount = 0;
 	Move m;
@@ -199,10 +198,10 @@ template<bool UseHash>
 void perft_verifier(string filePath, string startID /* ="initial" */, bool verbose /* =false */)
 {
 	ifstream fin(filePath.c_str());
-	if (!fin.is_open())  // MUST new and throw an exception pointer
+	if (!fin.is_open())
 		throw FileNotFoundException(filePath);
 	Position ptest;
-	string str, FEN;
+	string str, fen;
 	U64 ans, actual, time, nodes, start, end, totalTime = 0, totalNodes = 0;
 	bool pass = true;
 	while (getline(fin, str))
@@ -214,9 +213,8 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 			cout << str << endl;
 			time = nodes = 0;
 			getline(fin, str, ' ');  // consume the "epd" that precedes the FEN string
-			getline(fin, str); // the FEN string
-			FEN = str;
-			ptest.parse_fen(FEN);
+			getline(fin, fen); // the FEN string
+			ptest.parse_fen(fen);
 			if (verbose)	cout << "FEN parsed: " << str << endl;
 			for (int depth = 1; depth <= 6; depth++)  // the epd file always counts up to 6 plies
 			{
@@ -232,7 +230,7 @@ void perft_verifier(string filePath, string startID /* ="initial" */, bool verbo
 				if (actual != ans)  // Test perft validity. We can also use assert(actual == ans)
 				{
 					cout << "FATAL ERROR at depth " << depth << endl;
-					cout << FEN << endl;
+					cout << fen << endl;
 					cout << "Expected = " << ans << "    Actual = " << actual << endl;
 					throw exception();
 				}

@@ -79,7 +79,8 @@ public:
 	template<GenType>
 	ScoredMove* gen_moves(ScoredMove* mbuf) const;
 
-	bool is_legal(Move& mv, Bit& pinned) const;  // judge if a pseudo-legal move is legal, given the pinned map.
+	bool is_pseudo(Move mv) const;
+	bool pseudo_is_legal(Move mv, Bit pinned) const;  // test if a pseudo-legal move is legal, given the pinned map.
 	int count_legal() const; // count the number of legal moves
 	Bit checker_map() const { return st->checkerMap; }
 	Bit pinned_map() const { return hidden_check_map<true>(); }; // a bitmap of all pinned pieces
@@ -92,7 +93,7 @@ public:
 	bool is_sq_attacked(Square sq, Color opp) const;  // return if the specified square is attacked. Inlined.
 	bool is_own_king_attacked() const { return is_sq_attacked(king_sq(turn), ~turn); } // legality check
 	bool is_opp_king_attacked() const { return is_sq_attacked(king_sq(~turn), turn); }
-	Bit attackers_to(Square sq, Color opp, Bit occ) const;  // inlined
+	Bit attackers_to(Square sq, Color opp, Bit occ) const;  // inlined outside
 	Bit attackers_to(Square sq, Color opp) const { return attackers_to(sq, opp, Occupied); };
 	Bit attackers_to(Square sq, Bit occ) const;  // regardless of color: records all attackers and defenders
 	Bit attackers_to(Square sq) const { return attackers_to(sq, Occupied); };  // regardless of color: records all attackers and defenders
@@ -105,6 +106,7 @@ public:
 	// Get the attack masks, based on precalculated tables and current board status
 	// Use explicit template instantiation
 	template<PieceType> Bit attack_map(Square sq) const;
+	Bit attack_map(PieceType, Square) const; // non-template version
 
 	// Pawn push masks
 	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
@@ -139,7 +141,7 @@ public:
 private:
 	// A checking move or not. 'discv' is the discovered check map
 	// 'discv' is needed by checking move generation. 'pinned' for legal move generation
-	template<PieceType, bool check, bool legal>
+	template<PieceType, bool qcheck, bool legal>
 	ScoredMove* gen_piece(ScoredMove*, Bit& target, Bit pinned = 0, Bit discv = 0) const;
 	template<GenType, int Delta, bool legal>
 	ScoredMove* gen_promo(ScoredMove*, Bit& target, Bit& pawnsPromo, Bit pinned = 0) const;
@@ -173,6 +175,16 @@ template<>
 INLINE Bit Position::attack_map<BISHOP>(Square sq) const { return Board::bishop_attack(sq, Occupied); }
 template<>
 INLINE Bit Position::attack_map<QUEEN>(Square sq) const { return Board::rook_attack(sq, Occupied) | Board::bishop_attack(sq, Occupied); }
+// non-template version
+INLINE Bit Position::attack_map(PieceType pt, Square sq) const
+{
+	return pt == BISHOP ? attack_map<BISHOP>(sq) :
+		pt == ROOK ? attack_map<ROOK>(sq) :
+		pt == QUEEN ? attack_map<QUEEN>(sq) :
+		pt == KNIGHT ? attack_map<KNIGHT>(sq) :
+		pt == PAWN ? attack_map<PAWN>(sq) :
+								attack_map<KING>(sq);
+}
 
 
 inline ostream& operator<<(ostream& os, Position pos)

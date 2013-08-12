@@ -15,33 +15,34 @@ const int MAX_MOVES = 256;
 
 namespace Moves
 {
-	inline void clear(Move& mov) { mov = Move(0); }  // clear all except the color bit
+	inline void clear(Move& mv) { mv = Move(0); }  // clear all except the color bit
 
 	// bits 0 to 5 and 6 to 11 for from/to
 	// set_from_to clears any special flags
-	inline Move set_from_to(Move& mov, Square from, Square to) 	{ return mov = Move(from | (to << 6)); }
-	inline Square get_from(Move& mov) {  return mov & 0x3f;  }
-	inline Square get_to(Move& mov) { return (mov >> 6) & 0x3f; }
+	inline Move set_from_to(Move& mv, Square from, Square to) 	{ return mv = Move(from | (to << 6)); }
+	inline Square get_from(Move& mv) {  return mv & 0x3f;  }
+	inline Square get_to(Move& mv) { return (mv >> 6) & 0x3f; }
 	// bits 12 to 13, 2 bits 00 to 11 for promoted pieces, if any: N-00, B-01, R-10, Q-11
-	inline void set_promo(Move& mov, PieceType pt) { mov = Move(mov & 0x0fff | (0xc000 |  PROMO_MASK[pt])); }
-	inline PieceType get_promo(Move& mov) { return PIECE_PROMO[(mov >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo
-	inline bool is_promo(Move& mov) { return (mov & 0xc000) == 0xc000; }
+	inline void set_promo(Move& mv, PieceType pt) { mv = Move(mv & 0x0fff | (0xc000 |  PROMO_MASK[pt])); }
+	inline PieceType get_promo(Move& mv) { return PIECE_PROMO[(mv >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo
+	inline bool is_promo(Move& mv) { return (mv & 0xc000) == 0xc000; }
 	// bits 14-15: 01 for castling, 10 for EP, 11 for promotion
-	inline void set_castle(Move& mov) { mov = Move(mov | 0x4000); }
-	inline bool is_castle(Move& mov) { return (mov & 0xc000) == 0x4000; }
-	inline void set_ep(Move& mov) { mov = Move(mov | 0x8000); }
-	inline bool is_ep(Move& mov) { return (mov & 0xc000) == 0x8000; }
+	inline void set_castle(Move& mv) { mv = Move(mv | 0x4000); }
+	inline bool is_castle(Move& mv) { return (mv & 0xc000) == 0x4000; }
+	inline void set_ep(Move& mv) { mv = Move(mv | 0x8000); }
+	inline bool is_ep(Move& mv) { return (mv & 0xc000) == 0x8000; }
+	inline bool is_normal(Move& mv) { return (mv & 0xc000) == 0x0; }
 
-	inline string mv2str(Move& mov)
+	inline string mv2str(Move& mv)
 	{
 		ostringstream ostr; 
-		if (is_castle(mov))
-			ostr << (sq2file(get_to(mov))==6 ? "O-O" : "O-O-O");
-		else if (is_ep(mov))
-			ostr << sq2str(get_from(mov)) << "-" << sq2str(get_to(mov)) << "[EP]";
+		if (is_castle(mv))
+			ostr << (sq2file(get_to(mv))==6 ? "O-O" : "O-O-O");
+		else if (is_ep(mv))
+			ostr << sq2str(get_from(mv)) << "-" << sq2str(get_to(mv)) << "[EP]";
 		else
-			ostr << sq2str(get_from(mov)) << "-" << sq2str(get_to(mov))
-				<< (is_promo(mov) ? string("=")+PIECE_NOTATION[get_promo(mov)] : "" );
+			ostr << sq2str(get_from(mv)) << "-" << sq2str(get_to(mv))
+				<< (is_promo(mv) ? string("=")+PIECE_NOTATION[get_promo(mv)] : "" );
 	
 		return ostr.str();
 	}

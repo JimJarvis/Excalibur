@@ -172,6 +172,9 @@ inline bool is_int(const string& str)
 		std::find_if(str.begin(), str.end(), 
 		[](char c) { return !std::isdigit(c); }) == str.end();
 }
+// resets the ostringstream
+inline void clear_osstr(ostringstream& ss)
+	{ ss.str(""); ss.clear(); }
 
 // ugly workaround wrapper for gcc
 typedef int (*UnaryFn)(int);
