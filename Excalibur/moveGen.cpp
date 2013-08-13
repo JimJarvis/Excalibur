@@ -599,7 +599,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 	Pieces[piece][turn] ^= FromToMap;
 	Colormap[turn] ^= FromToMap;
-	boardPiece[from] = NON;  boardColor[from] = NON_COLOR;
+	boardPiece[from] = NON;  boardColor[from] = COLOR_NULL;
 	boardPiece[to] = piece;  boardColor[to] = turn;
 
 	// hash keys and incremental score
@@ -637,7 +637,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		if (is_ep(mv)) 
 		{
 			captSq = backward_sq(turn, st->st_prev->epSquare);
-			boardPiece[captSq] = NON; boardColor[captSq] = NON_COLOR;
+			boardPiece[captSq] = NON; boardColor[captSq] = COLOR_NULL;
 			ToMap = setbit(captSq);
 		}
 			else captSq = to;
@@ -732,7 +732,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 				rfrom = RookCastleSq[turn][CASTLE_OOO][0];
 				rto = RookCastleSq[turn][CASTLE_OOO][1];
 			}
-			boardPiece[rfrom] = NON; boardColor[rfrom] = NON_COLOR;  // from
+			boardPiece[rfrom] = NON; boardColor[rfrom] = COLOR_NULL;  // from
 			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 
 			// move the rook in pieceList
@@ -789,7 +789,7 @@ void Position::unmake_move(Move& mv)
 	Pieces[piece][turn] ^= FromToMap;
 	Colormap[turn] ^= FromToMap;
 	boardPiece[from] = piece; boardColor[from] = turn; // restore
-	boardPiece[to] = NON; boardColor[to] = NON_COLOR;
+	boardPiece[to] = NON; boardColor[to] = COLOR_NULL;
 
 	// Promotion
 	if (is_promo(mv))
@@ -830,7 +830,7 @@ void Position::unmake_move(Move& mv)
 			rto = RookCastleSq[turn][CASTLE_OOO][1];
 		}
 		boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
-		boardPiece[rto] = NON;  boardColor[rto] = NON_COLOR; // to
+		boardPiece[rto] = NON;  boardColor[rto] = COLOR_NULL; // to
 
 		// un-move the rook in pieceList
 		plistIndex[rfrom] = plistIndex[rto];

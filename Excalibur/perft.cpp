@@ -13,7 +13,7 @@ namespace // The perft table class will only be used here.
 	};
 
 	// Optimal cluster size by experimentation
-	const uint CLUSTER_SIZE = 4;
+	const uint ClusterSize = 4;
 	class Table
 	{
 	public:
@@ -31,7 +31,7 @@ namespace // The perft table class will only be used here.
 		};
 
 		void clear()
-		{ if (table)	memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
+		{ if (table)	memset(table, 0, (hashMask + ClusterSize) * sizeof(Entry)); }
 
 	private:
 		Entry* table;  // size on MB scale
@@ -40,11 +40,11 @@ namespace // The perft table class will only be used here.
 
 	void Table::set_size(int mbSize)
 	{
-		uint size = CLUSTER_SIZE << msb( ((U64)mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
-		if (table && hashMask == size - CLUSTER_SIZE)
+		uint size = ClusterSize << msb( ((U64)mbSize << 20) / (sizeof(Entry) * ClusterSize) );
+		if (table && hashMask == size - ClusterSize)
 			return; // Same size and last table alloc successful. No resize request.
 
-		hashMask = size - CLUSTER_SIZE;
+		hashMask = size - ClusterSize;
 		free(table);
 		table = (Entry*) calloc(1, size * sizeof(Entry));
 

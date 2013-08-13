@@ -40,8 +40,8 @@ namespace Transposition
 
 
 	/// A Transposition Table consists of a power of 2 number of clusters (buckets)
-	/// Hash strategy: separate chaining. Each chain has max CLUSTER_SIZE positions.
-	const uint CLUSTER_SIZE = 4; // A cluster is 64 Bytes
+	/// Hash strategy: separate chaining. Each chain has max ClusterSize positions.
+	const uint ClusterSize = 4; // A cluster is 64 Bytes
 
 	class Table
 	{
@@ -67,7 +67,7 @@ namespace Transposition
 		/// with zeros. It is called whenever the table is resized, or when the
 		/// user asks the program to clear the table (from the UCI interface).
 		void clear()
-			{ memset(table, 0, (hashMask + CLUSTER_SIZE) * sizeof(Entry)); }
+			{ memset(table, 0, (hashMask + ClusterSize) * sizeof(Entry)); }
 
 		void store(U64 key, Value v, BoundType type, int d, Move m, Value s_val, Value s_margin);
 

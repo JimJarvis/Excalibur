@@ -115,13 +115,13 @@ public:
 	Bit piece_union(PieceType pt1, PieceType pt2) const 
 	{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
-	bool is_draw() const; // doesn't detect stalemate because Search takes care of it. 
+	template<bool Do3RepCheck> bool is_draw() const;
 	bool is_checkmate() const { return st->checkerMap && count_legal() == 0; }
 	bool is_stalemate() const { return !st->checkerMap && count_legal() == 0; }
 
 	/**********************************************/
 	// movegen.cpp: 
-	// generate moves, store them and make/unmake them to update the Position internal states.
+	// Generate moves, store them and make/unmake them to update the Position internal states.
 	// All move and gen-related functions go into movegen.cpp
 	// Except for <LEGAL>, generates pseudo-legal moves.
 	// Pseudos can be illegal iff: (1) pinned  (2) king move  (3) enpassant

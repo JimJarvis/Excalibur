@@ -97,9 +97,9 @@ namespace Search
 		bool operator==(const Move& m) const { return pv[0] == m; }
 
 		// Extract PV from a transposition entry
-		void ttable2pv(Position pos);
+		void ttable2pv(Position& pos);
 		// Store a PV
-		void pv2ttable(Position pos);
+		void pv2ttable(Position& pos);
 
 		Value score;
 		Value prevScore;

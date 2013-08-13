@@ -1,7 +1,6 @@
 /* Move tests */
 #include "tests.h"
 
-
 /**********************************************
 Some useful test positions.
 "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"  // Immortal game 
@@ -67,7 +66,7 @@ const string name = "evasions";
 const GenType GT = EVASION;
 const bool showTitle = false;  // show test title
 
-TEST(Move, PseudoPerft)
+TEST(Moves, PseudoPerft)
 {
 	string str, fen, title;
 
@@ -97,7 +96,7 @@ TEST(Move, PseudoPerft)
 	if (showTitle)	 cout << "ALL PASSED" << endl;
 }
 
-TEST(Move, Checks)
+TEST(Moves, Checks)
 {
 	bool verbose = false;
 	// This position contains a lot of checks by the white side. Turn on 'verbose' to see the result.
@@ -118,7 +117,7 @@ TEST(Move, Checks)
 	ASSERT_EQ(43, quiet);
 }
 
-TEST(Move, Judgement)
+TEST(Moves, Judgement)
 {
 	Move m;
 	RKiss::init_seed(107);
@@ -164,7 +163,7 @@ bool is_piece_list_invariant(Position& pos)
 	for (int i = 0; i < SQ_N; i++)
 	{
 		Color c = pos.boardColor[i];
-		if (c == NON_COLOR) continue;
+		if (c == COLOR_NULL) continue;
 		PieceType pt = pos.boardPiece[i];
 		pieceListStd[c][pt][index[c][pt]++] = i;
 	}
@@ -186,7 +185,7 @@ bool is_piece_list_invariant(Position& pos)
 }
 
 // test board internal state consistency after make/unmake
-TEST(Move, MakeUnmake)
+TEST(Moves, MakeUnmake)
 {
 	Position pos_orig;
 	for (int i = 0; i < TEST_SIZE; i++)
@@ -251,7 +250,7 @@ void test_key_invariant(Position& pos, int depth, int ply) // recursion helper
 }
 
 // Test incrementally updated hash keys and scores. Recursive version
-TEST(Move, KeyInvariant)
+TEST(Moves, KeyInvariant)
 {
 	int depth = 3;  // how deep shall we verify
 	for (int i = 0; i < TEST_SIZE; i++)
@@ -264,10 +263,72 @@ TEST(Move, KeyInvariant)
 }
 
 // Test pinned and discovered check maps.
-TEST(Move, Pinned)
+TEST(Moves, Pinned)
 {
 	Position p1("3q2q1/3n1k2/8/1rpK2pr/4n3/3b4/3r2b1/8 b - - 0 1");
 	Position p2("3Q2Q1/3N1K2/8/1RPk2PR/4N3/3B4/3R2B1/8 w - - 0 1");
 	ASSERT_EQ(11259291395162112, p2.discv_map());
 	ASSERT_EQ(p1.discv_map(), p2.discv_map());
+}
+
+// Test repetition draw.
+#define Rep3Assert(ans) pp.make_move(mv, *sbuf++); \
+	ASSERT_EQ(bool(ans), pp.is_draw<true>())
+#define Rep2Assert(ans) ASSERT_EQ(bool(ans), pp.is_draw<false>())
+TEST(Moves, RepetitionDraw)
+{
+	StateBuffer sb; StateInfo *sbuf = sb;
+	// The rook and bishop goes back and forth to force repeitition
+	Position pp("8/8/2p2K1B/1pq5/3k2P1/5P1P/1r6/8 w - - 10 23");
+	Move mv;
+	set_from_to(mv, 47, 29); // rep 1
+	Rep3Assert(0); Rep2Assert(0); 
+	set_from_to(mv, 9, 14);
+	Rep3Assert(0); Rep2Assert(0);
+
+	set_from_to(mv, 29, 47);
+	Rep3Assert(0); Rep2Assert(0);
+	set_from_to(mv, 14, 9);
+	Rep3Assert(0); Rep2Assert(1);
+
+	set_from_to(mv, 47, 29); // rep 2
+	Rep3Assert(0); Rep2Assert(1);
+	set_from_to(mv, 9, 14);
+	Rep3Assert(0); Rep2Assert(1);
+
+	set_from_to(mv, 29, 47);
+	Rep3Assert(0); Rep2Assert(1);
+	set_from_to(mv, 14, 9);
+	Rep3Assert(1); Rep2Assert(1);
+
+	set_from_to(mv, 47, 29);  // rep 3
+	Rep3Assert(1); Rep2Assert(1);
+	set_from_to(mv, 9, 14);
+	Rep3Assert(1); Rep2Assert(1);
+
+	set_from_to(mv, 29, 47); 
+	Rep3Assert(1); Rep2Assert(1);
+	set_from_to(mv, 14, 9);
+	Rep3Assert(1); Rep2Assert(1);
+}
+
+// Test lsb, msb and bit_count
+TEST(Misc, BitScan)
+{
+	for (int i = 5; i < 60; i++)
+	{
+		ASSERT_EQ(lsb((1ULL << i) + (3ULL << 61)), i);
+		ASSERT_EQ(msb((1ULL << i) + 3), i);
+	}
+	Position p;
+	for (int i = 0; i < TEST_SIZE; i++)
+	{
+		p.parse_fen(fenList[i]);
+		for (Color c : COLORS)
+			for (PieceType pt : PIECE_TYPES)
+			{
+				ASSERT_EQ(p.pieceCount[c][pt], bit_count(p.Pieces[pt][c]));
+				ASSERT_EQ(p.pieceCount[c][pt], bit_count<CNT_FULL>(p.Pieces[pt][c]));
+			}
+	}
 }

@@ -80,7 +80,7 @@ enum Color : byte
 {
 	W = 0,
 	B = 1,
-	NON_COLOR = 2
+	COLOR_NULL = 2
 };
 const Color COLORS[COLOR_N] = {W, B}; // iterator
 
@@ -161,7 +161,7 @@ const Value
 	VALUE_KNOWN_WIN = 15000,
 	VALUE_MATE      = 30000,
 	VALUE_INFINITE  = 30001,
-	VALUE_NONE      = 30002;
+	VALUE_NULL      = 30002;
 
 const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] = {
 	// MG (middle game): 0, pawn, knight, bishop, rook ,queen, king
@@ -184,7 +184,7 @@ const Value
 // for transposition table bound type
 enum BoundType : byte
 {
-	BOUND_NON,
+	BOUND_NULL,
 	BOUND_UPPER,
 	BOUND_LOWER,
 	BOUND_EXACT // = UPPER | LOWER
@@ -198,7 +198,7 @@ const Depth
 	DEPTH_QS_CHECKS = -1 * ONE_PLY,
 	DEPTH_QS_NO_CHECKS = -2 * ONE_PLY,
 	DEPTH_QS_RECAPTURES = -7 * ONE_PLY,
-	DEPTH_NONE = -127 * ONE_PLY;
+	DEPTH_NULL = -127 * ONE_PLY;
 
 #define DEF_OPERATOR(T)                                         \
 	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \

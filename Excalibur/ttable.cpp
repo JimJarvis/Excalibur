@@ -12,12 +12,12 @@ namespace Transposition
 	// only when mbSize fall in another range 2^n to 2^(n+1)-1 will the table be resized
 	void Table::set_size(U64 mbSize)
 	{
-		uint size = CLUSTER_SIZE << msb( (mbSize << 20) / (sizeof(Entry) * CLUSTER_SIZE) );
+		uint size = ClusterSize << msb( (mbSize << 20) / (sizeof(Entry) * ClusterSize) );
 
-		if (hashMask == size - CLUSTER_SIZE) // same. No resize request.
+		if (hashMask == size - ClusterSize) // same. No resize request.
 			return;
 
-		hashMask = size - CLUSTER_SIZE;
+		hashMask = size - ClusterSize;
 		free(table);
 		table = (Entry*) calloc(1, size * sizeof(Entry));
 
@@ -37,7 +37,7 @@ namespace Transposition
 		Entry* tte = first_entry(key);
 		uint key0 = key >> 32;
 
-		for (int i = 0; i < CLUSTER_SIZE; ++i, ++tte)
+		for (int i = 0; i < ClusterSize; ++i, ++tte)
 			if (tte->key == key0)
 				return tte;
 
@@ -61,7 +61,7 @@ namespace Transposition
 		uint key0 = key >> 32; // Use the high 32 bits as key inside the cluster
 		tte = replace = first_entry(key);  // locate the cluster
 
-		for (int i = 0; i < CLUSTER_SIZE; ++i, ++tte)
+		for (int i = 0; i < ClusterSize; ++i, ++tte)
 		{
 			if (!tte->key || tte->key == key0) // Empty or overwrite old
 			{

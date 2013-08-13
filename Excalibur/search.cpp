@@ -189,19 +189,19 @@ void Search::think()
 // there'd be a cutoff and no RootMove.pv[1] would exist) and a
 // long PV to print that is important for position analysis.
 
-void RootMove::ttable2pv(Position pos)
+void RootMove::ttable2pv(Position& pos)
 {
 	StateBuffer stbuf; StateInfo *st = stbuf;
 
-	const Entry *tte; // transpos entry
+	const Entry *tte; // TT entry
 	int ply = 0;
 	Move mv = pv[0]; // preserve the first move
 	pv.clear();
 
 	do 
 	{
-		pv.push_back(mv);
 		ply ++;
+		pv.push_back(mv);
 		pos.make_move(mv, *st++);
 		tte = TT.probe(pos.key());
 
@@ -209,9 +209,34 @@ void RootMove::ttable2pv(Position pos)
 		&& pos.is_pseudo(mv = tte->move) // must maintain a local copy. TT can change
 		&& pos.pseudo_is_legal(mv, pos.pinned_map())
 		&& ply < MAX_PLY
-		&& (!pos.is_draw() || ply < 2) );
+		&& (!pos.is_draw<false>() || ply < 2) );
 	
 	pv.push_back(MOVE_NULL); // must be null-terminated
 
-	// Undo move if pass-by-reference ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
+}
+
+// Called at the end of a search iteration, and
+// puts the PV back into the TT. This makes sure the old PV moves are searched
+// first, even if the old TT entries have been overwritten.
+void RootMove::pv2ttable(Position& pos)
+{
+	StateBuffer stbuf; StateInfo *st = stbuf;
+
+	const Entry *tte; // TT entry
+	int ply = 0;
+
+	do 
+	{
+		tte = TT.probe(pos.key());
+
+		if (!tte || tte->move != pv[ply]) // Overwrite bad entries
+			TT.store(pos.key(), VALUE_NULL, BOUND_NULL, 
+					DEPTH_NULL, pv[ply], VALUE_NULL, VALUE_NULL);
+		
+		pos.make_move(pv[ply++], *st++);
+
+	} while (pv[ply] != MOVE_NULL);
+	
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
 }

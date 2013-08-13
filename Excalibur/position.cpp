@@ -31,7 +31,7 @@ void Position::parse_fen(string fen)
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
 		boardPiece[sq] = NON;
-		boardColor[sq] = NON_COLOR;
+		boardColor[sq] = COLOR_NULL;
 	}
 
 	string str;
@@ -268,10 +268,13 @@ Value Position::calc_non_pawn_material(Color c) const
 }
 
 // Decide whether the current position is a draw.
-// consider draw condition:
+// Consider draw condition:
 // Insufficient material, repetition, 50 move rule.
-// Stalemate isn't handled because the search engine takes care of it
-// case like KNNK is judged by the EndgameEvaluator
+// Stalemate isn't handled because Search takes care of it.
+// Cases like KNNK is judged by the EndgameEvaluator.
+// If Do3RepCheck, we perform a full 3-fold rep check
+// otherwise 2-fold fast check instead. Set to true only at RootNode
+template<bool Do3RepCheck>
 bool Position::is_draw() const
 {
 	// Insufficient material
@@ -284,7 +287,7 @@ bool Position::is_draw() const
 		return true;
 
 	// Repetition: check every even half-move
-	Depth start = 6;  // 3-fold repetition must have at least 6 previous half-move states
+	Depth start = 4;  // 3-fold repetition must have at least 4 previous half-move states
 		// number of previous states that might contain repetition
 	Depth end = min(st->cntFiftyMove, st->cntInternalFiftyMove);
 	int cntRep = 1; // when == 3, it's a threefold draw
@@ -297,18 +300,21 @@ bool Position::is_draw() const
 			stemp = stemp->st_prev->st_prev;
 
 			if (stemp->key == st->key)
-				cntRep ++;
+				if (!Do3RepCheck || ++cntRep == 3)
+					return true;
 
 			start += 2; // every 2 half moves
-
-		} while (start <= end && cntRep < 3);
+		} while (start <= end);
 	}
 
-	return cntRep == 3;
+	return false;
 }
+// Explicit template instantiation
+template bool Position::is_draw<true>() const;
+template bool Position::is_draw<false>() const;
 
 
-// for debugging purpose
+// For debugging purpose
 bool operator==(const Position& pos1, const Position& pos2)
 {
 	if (pos1.turn != pos2.turn) 

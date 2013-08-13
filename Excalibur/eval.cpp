@@ -62,9 +62,6 @@ struct EvalInfo
 	int kingAdjacentAttacksCount[COLOR_N];
 };
 
-// Evaluation grain size, must be a power of 2
-const int GrainSize = 4;
-
 
 /* Bonus arrays */
 
@@ -226,8 +223,20 @@ int evaluate_space(const Position& pos, EvalInfo& ei);
 
 Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei);
 
-// Interpolates the final evaluation result by MG and EG parts of 'Score'
-Value interpolate(const Score& v, Phase ph, ScaleFactor scalor);
+// Evaluation resolution (for rounding the value), must be a power of 2
+const int EvalResolution = 4;
+
+// Interpolates the final evaluation result between midgame and endgame:
+// MG and EG parts of 'Score'
+// based on game phase. It also scales the return value by a ScaleFactor array.
+Value interpolate(const Score& v, Phase ph, ScaleFactor scalor)
+{
+	int ev = (eg_value(v) * scalor) / SCALE_FACTOR_NORMAL;
+	// weighted average with respect to phase
+	int result = (mg_value(v) * int(ph) + ev * int(128 - ph)) / 128;
+	return (result / EvalResolution) * EvalResolution; // sign independent rounding
+}
+
 
 
 // KingDanger[Color][attackUnits] contains the actual king danger
@@ -580,9 +589,16 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 			score -= BishopPawns * ei.pi->pawns_on_same_color_sq(us, sq);
 
 		// Bishop and knight outposts squares
-		if ( (PT == BISHOP || PT == KNIGHT)
-			&& !(pos.Pawnmap[opp] & pawn_attack_span(us, sq)))
-			score += evaluate_outposts<PT, us>(pos, ei, sq);
+		if (PT == BISHOP || PT == KNIGHT)
+		{
+			if (!(pos.Pawnmap[opp] & pawn_attack_span(us, sq)))
+				score += evaluate_outposts<PT, us>(pos, ei, sq);
+
+			// Bonus for pawns in front of knight/bishop
+			if ( relative_rank(us, sq) < RANK_5
+				&& (pos.piece_union(PAWN) & pawn_push(us, sq)) )
+				score += make_score(16, 0);
+		}
 
 		if (  (PT == ROOK || PT == QUEEN)
 			&& relative_rank(us, sq) >= RANK_5)
@@ -1088,13 +1104,3 @@ int evaluate_space(const Position& pos, EvalInfo& ei)
 	return bit_count<CNT_FULL>((us == W ? safe << 32 : safe >> 32) | (behind & safe));
 }
 
-
-// Always interpolates between a middle game and an endgame score,
-// based on game phase. It also scales the return value by a ScaleFactor array.
-Value interpolate(const Score& v, Phase ph, ScaleFactor scalor)
-{
-	int ev = (eg_value(v) * scalor) / SCALE_FACTOR_NORMAL;
-	// weighted average with respect to phase
-	int result = (mg_value(v) * int(ph) + ev * int(128 - ph)) / 128;
-	return (result + GrainSize / 2) & ~(GrainSize - 1);
-}
