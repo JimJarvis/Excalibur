@@ -54,6 +54,10 @@ struct ScoredMove
 	Value val;
 };
 
+// MoveBuffer: used as a local variable for move generation and perft
+typedef ScoredMove MoveBuffer[MAX_MOVES];
+
+
 // Constants for castling
 const Move MOVE_CASTLING[COLOR_N][CASTLE_TYPES_N] = 
 {{Move(0x4184), Move(0x4084)}, {Move(0x4fbc), Move(0x4ebc)}};

@@ -383,7 +383,7 @@ ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* mbuf) const
 // 218 moves: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 int Position::count_legal() const
 { 
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	return int(gen_moves<LEGAL>(mbuf) - mbuf);
 }
 
@@ -420,7 +420,7 @@ bool Position::is_pseudo(Move mv) const
 	// If it's a special move, test in the naive way: generate all legals and check one-by-one
 	if (!is_normal(mv))
 	{
-		ScoredMove mbuf[MAX_MOVES];
+		MoveBuffer mbuf;
 		ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 		for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
 			if (it->move == mv) return true;

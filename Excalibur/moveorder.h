@@ -66,7 +66,7 @@ class MoveSorter
 public:
 	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Square);
 	MoveSorter(const Position&, Move, const HistoryStats&, PieceType);
-	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Move*, Search::Stack*);
+	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Move*, Search::SearchStack*);
 
 	Move next_move();
 
@@ -76,7 +76,7 @@ private:
 
 	const Position& pos;
 	const HistoryStats& history;
-	Search::Stack* ss;
+	Search::SearchStack* ss;
 	Move* refutations;
 	Depth depth;
 	Move ttMove;
@@ -84,7 +84,7 @@ private:
 	Square recaptureSq;
 	int captThresh, stage;
 	ScoredMove *cur, *end, *endQuiet, *endBadCapt;
-	ScoredMove moveBuf[MAX_MOVES];
+	MoveBuffer mbuf;
 };
 
 #endif // __moveorder_h__

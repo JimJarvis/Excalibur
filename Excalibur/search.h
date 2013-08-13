@@ -7,10 +7,10 @@
 
 namespace Search
 {
-	/// The Stack struct keeps track of the information we need to remember from
+	/// The SearchStack keeps track of the information we need to remember from
 	/// nodes shallower and deeper in the tree during the search. Each search thread
-	/// has its own array of Stack objects, indexed by the current ply.
-	struct Stack
+	/// has its own array of SearchStack objects, indexed by the current ply.
+	struct SearchStack
 	{
 		int ply;
 		Move currentMove;
@@ -93,8 +93,10 @@ namespace Search
 		bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
 		bool operator==(const Move& m) const { return pv[0] == m; }
 
-		void get_pv_ttable(Position& pos);
-		void store_pv_ttable(Position& pos);
+		// Extract PV from a transposition entry
+		void ttable2pv(Position& pos);
+		// Store a PV
+		void pv2ttable(Position& pos);
 
 		Value score;
 		Value prevScore;
@@ -109,6 +111,9 @@ namespace Search
 	extern Color RootColor;
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime;
+
+	typedef stack<StateInfo> StateStack;
+	extern StateStack SetupStates;
 
 	void init();
 	void think(); // external main interface

@@ -88,7 +88,7 @@ U64 Position::perft<true>(Depth depth)
 	if (tte->key)
 		return tte->count;
 
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	if (depth == 1)
 		return tte->store(st->key, gen_moves<LEGAL>(mbuf) - mbuf);
 
@@ -118,7 +118,7 @@ U64 Position::perft<true>(Depth depth)
 // No hash: helps perft<false> save a level of recursion calls.
 U64 Position::perft_helper(int depth)
 {
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	const bool isLeaf = depth == 2;
 
 	U64 nodeCount = 0;
@@ -132,7 +132,7 @@ U64 Position::perft_helper(int depth)
 		make_move(m, si);
 		if (isLeaf)
 		{
-			ScoredMove mbufLeaf[MAX_MOVES];
+			MoveBuffer mbufLeaf;
 			nodeCount += gen_moves<LEGAL>(mbufLeaf) - mbufLeaf;
 		}
 		else
@@ -146,7 +146,7 @@ U64 Position::perft_helper(int depth)
 template<> // Don't use hash
 U64 Position::perft<false>(Depth depth)
 {
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	return depth > 1 ? perft_helper(depth)
 		: gen_moves<LEGAL>(mbuf) - mbuf;
 }
@@ -154,7 +154,7 @@ U64 Position::perft<false>(Depth depth)
 template<> // Don't use hash
 U64 Position::perft<false>(Depth depth)
 {
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	if (depth == 1)
 		return gen_moves<LEGAL>(mbuf) - mbuf; 
 

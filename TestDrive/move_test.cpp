@@ -21,7 +21,7 @@ public:
 	Move operator*() const { return it->move; }
 	size_t size() const { return end - mbuf; }
 private:
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 	ScoredMove *it, *end;
 };
 
@@ -30,7 +30,7 @@ const int DD = 0; // divide depth
 template<GenType GT>
 static U64 pseudo_perft(Position& pos, int depth)
 {
-	ScoredMove mbuf[MAX_MOVES];
+	MoveBuffer mbuf;
 
 	U64 nodeCount = 0;
 	Move m;
@@ -75,7 +75,7 @@ TEST(Move, PseudoPerft)
 	//cout << "LAST  " <<  pseudo_perft<GT>(pp, DD) << endl;
 	//return;
 
-	ifstream fin(("pseudo_" + name + ".epd").c_str());
+	ifstream fin(("../../TestDrive/perft/pseudo_" + name + ".epd").c_str());
 	U64 ans;
 	int depth;
 	fin >> str >> depth; // Read the depth from the file. "DEPTH 2"
@@ -94,7 +94,7 @@ TEST(Move, PseudoPerft)
 				<< title << " at depth " << d << "\n" << fen;
 		}
 	}
-	cout << "ALL PASSED" << endl;
+	if (showTitle)	 cout << "ALL PASSED" << endl;
 }
 
 TEST(Move, Checks)

@@ -15,6 +15,7 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
+#include <stack>
 #include <unordered_set>
 #include <memory>
 #include "stddef.h"
