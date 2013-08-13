@@ -11,9 +11,10 @@ namespace UCI
 {
 
 // on-demand ChangeListeners
-void changer_hash_size(const Option& opt) { TT.set_size(int(opt));  }
-void changer_clear_hash(const Option& opt) { TT.clear(); }
-void changer_eval_weights(const Option& opt) { Eval::init(); } // refresh weights
+void changer_hash_size() { TT.set_size((int)OptMap["Hash"]); }
+void changer_clear_hash() { TT.clear(); }
+void changer_eval_weights() { Eval::init(); } // refresh weights
+void changer_contempt_factor() { Search::update_contempt_factor(); }
 
 // initialize default UCI options
 void init()
@@ -21,7 +22,7 @@ void init()
 	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner
 	OptMap["Clear Hash"] = Option(changer_clear_hash); // button
 	OptMap["Ponder"] = Option(true); // checkbox
-	OptMap["Contempt Factor"] = Option(0, -50, 50); // spinner. Measured in centipawn
+	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
 	// Evaluation weights 
 	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
@@ -43,7 +44,7 @@ Option& Option::operator=(const string& newval)
 		currentVal = newval;
 
 	if (changer) // there exists a ChangeListener
-		(*changer)(*this);  // apply the changer
+		(*changer)();  // apply the changer
 
 	return *this;
 }

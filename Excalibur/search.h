@@ -3,14 +3,15 @@
 
 #include "position.h"
 #include "eval.h"
+#include "material.h"
 #include "ttable.h"
 
 namespace Search
 {
-	/// The SearchStack keeps track of the information we need to remember from
+	/// The SearchInfo keeps track of the information we need to remember from
 	/// nodes shallower and deeper in the tree during the search. Each search thread
-	/// has its own array of SearchStack objects, indexed by the current ply.
-	struct SearchStack
+	/// has its own array of SearchInfo objects, indexed by the current ply.
+	struct SearchInfo
 	{
 		int ply;
 		Move currentMove;
@@ -19,9 +20,11 @@ namespace Search
 		Depth reduction;
 		Value staticEval;
 		Value staticMargin;
-		int skipNullMove;
+		bool skipNullMove;
 		int futilityMoveCount;
 	};
+
+	typedef SearchInfo SearchBuffer[MAX_PLY + 3];
 
 	/// The struct stores information sent by GUI 'go' command about available time
 	/*  copied from UCI protocol:
@@ -88,19 +91,19 @@ namespace Search
 	struct RootMove
 	{
 		RootMove(Move m) : score(-VALUE_INFINITE), prevScore(-VALUE_INFINITE)
-			{ pv.push_back(m); pv.push_back(MOVE_NONE); }
+			{ pv.push_back(m); pv.push_back(MOVE_NULL); }
 
 		bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
 		bool operator==(const Move& m) const { return pv[0] == m; }
 
 		// Extract PV from a transposition entry
-		void ttable2pv(Position& pos);
+		void ttable2pv(Position pos);
 		// Store a PV
-		void pv2ttable(Position& pos);
+		void pv2ttable(Position pos);
 
 		Value score;
 		Value prevScore;
-		vector<Move> pv;
+		vector<Move> pv; // will be null terminated (MOVE_NULL).
 	};
 
 	extern LimitListener Limit;
@@ -112,10 +115,15 @@ namespace Search
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime;
 
-	typedef stack<StateInfo> StateStack;
-	extern StateStack SetupStates;
+	typedef StateInfo StateBuffer[MAX_PLY + 3];
+
+	extern stack<StateInfo> SetupStates;
 
 	void init();
+	// Updates contempt factor collected by UCI OptMap
+	// Contempt factor that determines when we should consider draw
+	// unit: centi-pawn. Normally a good CF is -50 for opening, -25 general, and 0 engame.
+	void update_contempt_factor();
 	void think(); // external main interface
 }
 

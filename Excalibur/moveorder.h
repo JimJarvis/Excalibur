@@ -66,7 +66,7 @@ class MoveSorter
 public:
 	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Square);
 	MoveSorter(const Position&, Move, const HistoryStats&, PieceType);
-	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Move*, Search::SearchStack*);
+	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Move*, Search::SearchInfo*);
 
 	Move next_move();
 
@@ -76,7 +76,7 @@ private:
 
 	const Position& pos;
 	const HistoryStats& history;
-	Search::SearchStack* ss;
+	Search::SearchInfo* ss;
 	Move* refutations;
 	Depth depth;
 	Move ttMove;

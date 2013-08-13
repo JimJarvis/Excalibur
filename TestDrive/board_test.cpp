@@ -10,7 +10,7 @@ Position pos;
 #define ppush(str, color) pawn_push(color, str2sq(str))
 #define ppush2(str, color) pawn_push2(color, str2sq(str))
 
-string fenList[TEST_SIZE];  // 200 FEN literals
+string fenList[TEST_SIZE];  // 204 FEN literals
 
 TEST(Misc, Setup)
 {
@@ -130,14 +130,13 @@ TEST(Board, Between)
 
 TEST(Board, Init)
 {
-	pos.parse_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQq c6 21 33");
-	ASSERT_EQ(pos.Occupied, 0xfffb00041000efff);	
+	pos.parse_fen("rnbqkbnr/pp1ppppp/8/2pP4/4P3/8/PPP2PPP/RNBQKBNR w KQq c6 21 33");
 	ASSERT_TRUE(can_castle<CASTLE_OO>(pos.st->castleRights[W]));
 	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[W]));
 	ASSERT_FALSE(can_castle<CASTLE_OO>(pos.st->castleRights[B]));
 	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[B]));
-	ASSERT_EQ(pos.st->fiftyMove, 21);
-	ASSERT_EQ(pos.st->fullMove, 33);
+	ASSERT_EQ(pos.st->cntFiftyMove, 21);
+	ASSERT_EQ(pos.cntHalfMove, 64);
 	ASSERT_EQ(pos.st->epSquare, 42);
 	pos.parse_fen("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b - - 1 23"); 
 	ASSERT_EQ(pos.pieceCount[W][PAWN], 6);
@@ -160,9 +159,9 @@ TEST(Board, FEN)
 	for (int i = 0; i < TEST_SIZE; i++)
 	{
 		// The FEN's in the test suite does not have fiftyMove and fullMove components.
-		int a = RKiss::rand64() & 0xFF;
-		int b = RKiss::rand64() & 0xFF;
-		string fen = fenList[i] + " " + int2str(a) + " " + int2str(b);
+		int fiftyMove = RKiss::rand64() & 0xFF;
+		int fullMove = max(1, RKiss::rand64() & 0xFF); // mustn't be 0
+		string fen = fenList[i] + " " + int2str(fiftyMove) + " " + int2str(fullMove);
 		Position pp(fen);
 		ASSERT_EQ(fen, pp.to_fen());
 	}

@@ -19,7 +19,7 @@ using namespace std;
 #include "thread.h"
 using namespace Board;
 
-const int TEST_SIZE = 200;
+const int TEST_SIZE = 204;
 extern string fenList[TEST_SIZE];
 extern Position pos;
 

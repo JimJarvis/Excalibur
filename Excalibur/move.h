@@ -8,7 +8,7 @@ const ushort PROMO_MASK[PIECE_TYPE_N] = {0, 0, 0x0, 0x1000, 0x2000, 0x3000};
 const PieceType PIECE_PROMO[4] = { KNIGHT, BISHOP, ROOK, QUEEN};
 
 // Move is encoded as a 16-bit word. 
-enum Move : ushort { MOVE_NONE = 0 };
+enum Move : ushort { MOVE_NULL = 0 };
 
 // Maximum supported number of moves generated from a position
 const int MAX_MOVES = 256;

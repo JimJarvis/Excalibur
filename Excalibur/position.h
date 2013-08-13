@@ -12,11 +12,15 @@ struct StateInfo
 	U64 pawnKey, materialKey;
 	Value npMaterial[COLOR_N];  // non-pawn material
 	Score psqScore;
-	// additional important states
+	// Additional important states
 	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
 	Square epSquare; // en-passant square
-	int fiftyMove; // move since last pawn move or capture
-	int fullMove;  // starts at 1 and increments after black moves
+	int cntInternalFiftyMove; // The internal counter, records the real number of half moves actually made by the engine
+				// Every time we parse a new FEN this would be set to 0, regardless of cntFiftyMove (arbitrarily specified by FEN)
+				// Used in conjunction with the FEN cntFiftyMove to implement the 3-repetition draw
+				// Will be set to 0 when we do a null move. The StateInfo stack will be examined for hash key 3-repetition
+				// as deep as   min(cntFiftyMove, cntInternalFiftyMove)
+	int cntFiftyMove; // 50 move counter: since last pawn move or capture
 
 	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "key" excluded
 	U64 key;
@@ -59,11 +63,14 @@ public:
 	int plistIndex[SQ_N];  // helps update pieceList[][][]
 	PieceType boardPiece[SQ_N];  // records all piece types
 	Color boardColor[SQ_N];  // records all color distribution
-
-	// Internal states are stored in StateInfo class. Accessed externally
 	Color turn;
-	StateInfo startState;  // allocate on the stack, for initializing the state pointer
+	int cntHalfMove; // half move counter. starts at 1. The full move increments after black.
+
+	// Internal states are stored in StateInfo class. Accessed externally as a history stack
+	StateInfo startSt;  // allocate on stack memory, init the state pointer
 	StateInfo *st; // state pointer
+
+	U64 nodes;  // used to keep account of how many nodes have been searched. 
 
 	void parse_fen(string fen); // parse a FEN position
 	template<bool full> string print() const; // ASCII string graph representation of the board
@@ -71,9 +78,51 @@ public:
 	operator string() const { return to_fen(); }  // convert the current board state to an FEN string
 	string to_fen() const;
 	
+	// Get the attack masks, based on precalculated tables and current board status
+	// Use explicit template instantiation
+	template<PieceType> Bit attack_map(Square sq) const;
+	Bit attack_map(PieceType, Square) const; // non-template version
+
 	Square king_sq(Color c) const { return pieceList[c][KING][0]; }
 
-	/* movegen.cpp: generate moves, store them and make/unmake them to update the Position internal states. */
+	// Pawn push masks
+	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
+	Bit pawn_push2(int sq) const { return Board::pawn_push2(turn, sq); }
+	// a passed pawn?
+	bool is_pawn_passed(Color c, Square sq) const
+	{ return ! (Pawnmap[~c] & Board::passed_pawn_mask(c, sq)); }
+
+	/* Hash key computation */
+	// Calculate from scratch: used for initialization and debugging
+	U64 calc_key() const;
+	U64 calc_material_key() const;
+	U64 calc_pawn_key() const;
+	// Calculate incremental eval scores and material
+	Score calc_psq_score() const;
+	Value calc_non_pawn_material(Color c) const;
+	// Corresponding getter methods
+	U64 key() const { return st->key; }
+	U64 material_key() const { return st->materialKey; }
+	U64 pawn_key() const { return st->pawnKey; }
+	Score psq_score() const { return st->psqScore; }
+	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
+
+	// More getter methods
+	byte castle_rights(Color c) const { return st->castleRights[c]; }
+	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
+	Bit piece_union(Color c) const { return Colormap[c]; }
+	Bit piece_union(Color c, PieceType pt1, PieceType pt2) const { return Pieces[pt1][c] | Pieces[pt2][c]; }
+	Bit piece_union(PieceType pt1, PieceType pt2) const 
+	{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
+
+	bool is_draw() const; // doesn't detect stalemate because Search takes care of it. 
+	bool is_checkmate() const { return st->checkerMap && count_legal() == 0; }
+	bool is_stalemate() const { return !st->checkerMap && count_legal() == 0; }
+
+	/**********************************************/
+	// movegen.cpp: 
+	// generate moves, store them and make/unmake them to update the Position internal states.
+	// All move and gen-related functions go into movegen.cpp
 	// Except for <LEGAL>, generates pseudo-legal moves.
 	// Pseudos can be illegal iff: (1) pinned  (2) king move  (3) enpassant
 	template<GenType>
@@ -102,41 +151,6 @@ public:
 	// raw node number counting: strictly legal moves.
 	template <bool UseHash>
 	U64 perft(Depth depth); // start recursion from root
-
-	// Get the attack masks, based on precalculated tables and current board status
-	// Use explicit template instantiation
-	template<PieceType> Bit attack_map(Square sq) const;
-	Bit attack_map(PieceType, Square) const; // non-template version
-
-	// Pawn push masks
-	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
-	Bit pawn_push2(int sq) const { return Board::pawn_push2(turn, sq); }
-	// a passed pawn?
-	bool is_pawn_passed(Color c, Square sq) const
-		{ return ! (Pawnmap[~c] & Board::passed_pawn_mask(c, sq)); }
-
-	/* Hash key computation */
-	// Calculate from scratch: used for initialization and debugging
-	U64 calc_key() const;
-	U64 calc_material_key() const;
-	U64 calc_pawn_key() const;
-	// Calculate incremental eval scores and material
-	Score calc_psq_score() const;
-	Value calc_non_pawn_material(Color c) const;
-	// Corresponding getter methods
-	U64 key() const { return st->key; }
-	U64 material_key() const { return st->materialKey; }
-	U64 pawn_key() const { return st->pawnKey; }
-	Score psq_score() const { return st->psqScore; }
-	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
-
-	// More getter methods
-	byte castle_rights(Color c) const { return st->castleRights[c]; }
-	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
-	Bit piece_union(Color c) const { return Colormap[c]; }
-	Bit piece_union(Color c, PieceType pt1, PieceType pt2) const { return Pieces[pt1][c] | Pieces[pt2][c]; }
-	Bit piece_union(PieceType pt1, PieceType pt2) const 
-		{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
 private:
 	// A checking move or not. 'discv' is the discovered check map

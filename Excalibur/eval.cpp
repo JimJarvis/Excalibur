@@ -540,7 +540,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 
 	ei.attackedBy[us][PT] = 0;
 
-	while ((sq = *plist++) != SQ_NONE)
+	while ((sq = *plist++) != SQ_NULL)
 	{
 		// Find attacked squares, including x-ray attacks for bishops and rooks
 		battack = PT == BISHOP ? Board::bishop_attack(sq, pos.Occupied ^ pos.Queenmap[us])

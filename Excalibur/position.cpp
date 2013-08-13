@@ -4,42 +4,44 @@
 const Position& Position::operator=(const Position& another)
 {
 	memcpy(this, &another, sizeof(Position));  // the st pointer gets copied to us too. 
-	startState = *st;
-	st = &startState;
+	startSt = *st;
+	st = &startSt;
+	nodes = 0;
 	return *this;
 }
 
 /* 
  * Parse an FEN string
  * FEN format:
- * positions active_color castle_status en_passant halfMoves fullMoves
+ * positions active_color castle_status en_passant cntFiftyMove cntFullMove
  */
-void Position::parse_fen(string fenstr)
+void Position::parse_fen(string fen)
 {
-	st = &startState;
+	memset(this, 0, sizeof(Position)); // Sets everything, including startSt to 0
+	startSt.epSquare = SQ_NULL; // but a null ep square isn't 0
+	st = &startSt;
+
 	for (Color c : COLORS)
-	{
 		for (PieceType pt : PIECE_TYPES)
-		{
-			Pieces[pt][c] = 0;
-			pieceCount[c][pt] = 0;
+			//Pieces[pt][c] = 0;   // already set to 0 by memset
+			//pieceCount[c][pt] = 0;
 			for (int idx = 0; idx < 16; idx++)
-				pieceList[c][pt][idx] = SQ_NONE;
-		}
-	}
+				pieceList[c][pt][idx] = SQ_NULL;
+
 	for (int sq = 0; sq < SQ_N; sq++)
 	{
 		boardPiece[sq] = NON;
 		boardColor[sq] = NON_COLOR;
 	}
 
-	istringstream fen(fenstr);
+	string str;
+	istringstream iss(fen);
 	// Read up until the first space
 	int rank = 7; // FEN starts from the top rank
 	int file = 0;  // leftmost file
 	char ch;
 	Bit mask;
-	while ((ch = fen.get()) != ' ')
+	while ((ch = iss.get()) != ' ')
 	{
 		if (ch == '/') // move down a rank
 		{
@@ -81,10 +83,11 @@ void Position::parse_fen(string fenstr)
 	}
 	Occupied = Colormap[W] | Colormap[B];
 
-	turn =  fen.get()=='w' ? W : B;  // indicate active part
-	fen.get(); // consume the space
+	turn =  iss.get()=='w' ? W : B;  // indicate active side color
+
+	iss.get(); // consume the space
 	st->castleRights[W] = st->castleRights[B] = 0;
-	while ((ch = fen.get()) != ' ')  // castle status. '-' if none available
+	while ((ch = iss.get()) != ' ')  // castle status. '-' if none available
 	{
 		Color c;
 		if (isupper(ch)) c = W; else c = B;
@@ -96,26 +99,32 @@ void Position::parse_fen(string fenstr)
 		case '-': continue;
 		}
 	}
-	string ep; // en passant square
-	fen >> ep;  // see if there's an en passant square. '-' if none.
-	if (ep != "-")
-		st->epSquare = str2sq(ep);
-	else
-		st->epSquare = SQ_NONE;
-	// Now supports optional fiftyMove / fullMove
-	string str;
-	while (std::getline(fen, str, ' '))  // trim white space
-		if (!str.empty()) break;
-	if (str.empty())  // fill in default
+
+	iss >> str;  // see if there's an en passant square. '-' if none.
+	Square ep = (str != "-") ? str2sq(str) : SQ_NULL;
+		// we check en passant validity on the spot
+	if (ep != SQ_NULL && (sq2rank(ep) == RANK_3 || sq2rank(ep) == RANK_6)
+		&& (Board::pawn_attack(~turn, ep) & Pawnmap[turn]) )
+		st->epSquare = ep;
+	else 
+		st->epSquare = SQ_NULL;
+
+	// Now supports optional cntFiftyMove / cntHalfMove
+	getline(iss, str);
+	istringstream isscount(str); // tmp
+	if (isscount >> st->cntFiftyMove)
 	{
-		st->fiftyMove = 0;
-		st->fullMove = 1;
+		// Convert cntFullMove (start 1) to cntHalfMove (start 0). 
+		// if cntFullMove is 0, correct it
+		isscount >> cntHalfMove;
+		cntHalfMove = max(2 * (cntHalfMove - 1), 0) + (turn == B);
 	}
-	else
+	else // cntFiftyMove and cntFullMove counts are omitted. Fille in default
 	{
-		istringstream(str) >> st->fiftyMove;
-		fen >> st->fullMove;
+		st->cntFiftyMove = 0;
+		cntHalfMove = (turn == B);
 	}
+
 	st->capt = NON;
 	st->checkerMap = attackers_to(king_sq(turn),  ~turn);
 
@@ -166,17 +175,20 @@ string Position::to_fen() const
 			<< (can_castle<CASTLE_OO>(st->castleRights[B]) ? "k":"") 
 			<< (can_castle<CASTLE_OOO>(st->castleRights[B]) ? "q":"");  
 
-	fen << " " << (st->epSquare == SQ_NONE ? "-" : sq2str(st->epSquare)); // enpassant
-	fen << " " << st->fiftyMove << " " << st->fullMove;
+	fen << " " << (st->epSquare == SQ_NULL ? "-" : sq2str(st->epSquare)); // enpassant
+		// convert cntHalfMove (start 0) back to cntFullMove (start 1) for FEN standard 
+	fen << " " << st->cntFiftyMove << " " << 1 + (cntHalfMove - (turn == B))/2;
 
 	return fen.str();
 }
+
 
 /*
  *	Hash key computations. Used at initialization and debugging, to verify 
  * the correctness of makeMove() and unmakeMove() pairs. 
  * Usually incrementally updated.
  */
+
 // Zobrist key for the position state
 U64 Position::calc_key() const
 {
@@ -194,7 +206,7 @@ U64 Position::calc_key() const
 		if ((pt = boardPiece[sq]) != NON)
 			key ^= Zobrist::psq[boardColor[sq]][pt][sq];
 
-	if ( st->epSquare != SQ_NONE)
+	if ( st->epSquare != SQ_NULL)
 		key ^= Zobrist::ep[sq2file(st->epSquare)];
 
 	if (turn == B)
@@ -240,9 +252,9 @@ Score Position::calc_psq_score() const
 	return score;
 }
 
-/* Calcs the total non-pawn middle game material value for the given side. Material values are updated
- incrementally during the search, this function is only used while initializing a new Position object. */
-
+// Calcs the total non-pawn middle game material value for the given side. 
+// Material values are updated incrementally during the search, 
+// this function is only used while initializing a new Position object. 
 Value Position::calc_non_pawn_material(Color c) const 
 {
 	Value value = 0;
@@ -255,6 +267,46 @@ Value Position::calc_non_pawn_material(Color c) const
 	return value;
 }
 
+// Decide whether the current position is a draw.
+// consider draw condition:
+// Insufficient material, repetition, 50 move rule.
+// Stalemate isn't handled because the search engine takes care of it
+// case like KNNK is judged by the EndgameEvaluator
+bool Position::is_draw() const
+{
+	// Insufficient material
+	if ( !piece_union(PAWN)  // no pawns left
+		&& (non_pawn_material(W) + non_pawn_material(B) <= MG_BISHOP))
+		return true;
+
+	// 50 move rule. Checkmate situation should be explicitly excluded
+	if (st->cntFiftyMove >= 100 && !is_checkmate())
+		return true;
+
+	// Repetition: check every even half-move
+	Depth start = 6;  // 3-fold repetition must have at least 6 previous half-move states
+		// number of previous states that might contain repetition
+	Depth end = min(st->cntFiftyMove, st->cntInternalFiftyMove);
+	int cntRep = 1; // when == 3, it's a threefold draw
+
+	if (start <= end)
+	{
+		StateInfo *stemp = st->st_prev->st_prev; // even
+		do 
+		{
+			stemp = stemp->st_prev->st_prev;
+
+			if (stemp->key == st->key)
+				cntRep ++;
+
+			start += 2; // every 2 half moves
+
+		} while (start <= end && cntRep < 3);
+	}
+
+	return cntRep == 3;
+}
+
 
 // for debugging purpose
 bool operator==(const Position& pos1, const Position& pos2)
@@ -263,10 +315,10 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false turn: " << pos1.turn << " != " << pos2.turn << endl;	return false;}
 	if (pos1.st->epSquare != pos2.st->epSquare) 
 		{ cout << "false state->epSquare: " << pos1.st->epSquare << " != " << pos2.st->epSquare << endl;	return false;}
-	if (pos1.st->fiftyMove != pos2.st->fiftyMove) 
-		{ cout << "false fiftyMove: " << pos1.st->fiftyMove << " != " << pos2.st->fiftyMove << endl;	return false;}
-	if (pos1.st->fullMove != pos2.st->fullMove) 
-		{ cout << "false fullMove: " << pos1.st->fullMove << " != " << pos2.st->fullMove << endl;	return false;}
+	if (pos1.st->cntFiftyMove != pos2.st->cntFiftyMove) 
+		{ cout << "false cntFiftyMove: " << pos1.st->cntFiftyMove << " != " << pos2.st->cntFiftyMove << endl;	return false;}
+	if (pos1.cntHalfMove != pos2.cntHalfMove) 
+		{ cout << "false cntHalfMove: " << pos1.cntHalfMove << " != " << pos2.cntHalfMove << endl;	return false;}
 	if (pos1.st->capt != pos2.st->capt)
 		{ cout << "false capt: " << PIECE_FULL_NAME[pos1.st->capt] << " != " << PIECE_FULL_NAME[pos2.st->capt] << endl;	return false;}
 

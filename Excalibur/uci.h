@@ -44,8 +44,8 @@ namespace UCI
 	class Option
 	{
 	 // a function that changes the engine state on demand
-	 // The ChangeListener will be applied on 'this'
-	typedef void (*ChangeListener)(const Option&); 
+	 // The ChangeListener will be applied at assignment operator=
+	typedef void (*ChangeListener)(); 
 
 	public:
 		// ctors for different types of options. Currently supports button, check and spin

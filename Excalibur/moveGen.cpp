@@ -24,40 +24,6 @@ using namespace Moves;
 	set_from_to((mbuf++)->move, from, to); \
 }
 
-// Helper for gen_pawn: generates promotions
-template<GenType GT, int Delta, bool legal>
-ScoredMove* Position::gen_promo(ScoredMove* mbuf, Bit& target, Bit& pawnsPromo, Bit pinned) const
-{
-	// Pawn destination squares on RANK_8
-	Move mv;
-	Square from, to, ksq;	if (legal) ksq = king_sq(turn);
-
-	Bit toMap = shift_board<Delta>(pawnsPromo) & target;
-	while (toMap)
-	{
-		to = pop_lsb(toMap);
-		from = to - Delta;
-		if (legal && pawn_illegalcond)
-			continue;
-		set_from_to(mv, from, to);
-
-		// Queen promotion counts as capture
-		if (GT == CAPTURE || GT == EVASION || GT == NON_EVASION)
-			{ set_promo(mv, QUEEN); add_move(mv); }
-		if (GT == QUIET || GT == EVASION || GT == NON_EVASION)
-		{
-			set_promo(mv, ROOK); add_move(mv);
-			set_promo(mv, BISHOP); add_move(mv);
-			set_promo(mv, KNIGHT); add_move(mv);
-		}
-
-		// Knight-promotion is the only one that can give a direct check not
-		// already included in the queen-promotion.
-		if (GT == QUIET_CHECK && (knight_attack(to) & Kingmap[~turn]))
-		{ set_promo(mv, KNIGHT); add_move(mv); }
-	}
-	return mbuf;
-}
 
 // Gen-helper: pawn moves. Template parameter 'us' is the side-to-move (turn)
 template<GenType GT, Color us, bool legal>
@@ -140,7 +106,7 @@ ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned, Bit di
 		add_pawn_moves(captL, LEFT);
 		add_pawn_moves(captR, RIGHT);
 
-		if ((epsq = st->epSquare) != SQ_NONE)
+		if ((epsq = st->epSquare) != SQ_NULL)
 		{
 			// An en passant capture can be an evasion only if the checking piece
 			// is the double pushed pawn and so is in the target. Otherwise this
@@ -169,6 +135,41 @@ ScoredMove* Position::gen_pawn(ScoredMove* mbuf, Bit& target, Bit pinned, Bit di
 				}
 			}
 		}
+	}
+	return mbuf;
+}
+
+// Helper for gen_pawn: generates promotions
+template<GenType GT, int Delta, bool legal>
+ScoredMove* Position::gen_promo(ScoredMove* mbuf, Bit& target, Bit& pawnsPromo, Bit pinned) const
+{
+	// Pawn destination squares on RANK_8
+	Move mv;
+	Square from, to, ksq;	if (legal) ksq = king_sq(turn);
+
+	Bit toMap = shift_board<Delta>(pawnsPromo) & target;
+	while (toMap)
+	{
+		to = pop_lsb(toMap);
+		from = to - Delta;
+		if (legal && pawn_illegalcond)
+			continue;
+		set_from_to(mv, from, to);
+
+		// Queen promotion counts as capture
+		if (GT == CAPTURE || GT == EVASION || GT == NON_EVASION)
+		{ set_promo(mv, QUEEN); add_move(mv); }
+		if (GT == QUIET || GT == EVASION || GT == NON_EVASION)
+		{
+			set_promo(mv, ROOK); add_move(mv);
+			set_promo(mv, BISHOP); add_move(mv);
+			set_promo(mv, KNIGHT); add_move(mv);
+		}
+
+		// Knight-promotion is the only one that can give a direct check not
+		// already included in the queen-promotion.
+		if (GT == QUIET_CHECK && (knight_attack(to) & Kingmap[~turn]))
+		{ set_promo(mv, KNIGHT); add_move(mv); }
 	}
 	return mbuf;
 }
@@ -422,7 +423,7 @@ bool Position::is_pseudo(Move mv) const
 	{
 		MoveBuffer mbuf;
 		ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
-		for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+		for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 			if (it->move == mv) return true;
 		return false;
 	}
@@ -583,6 +584,11 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	nextSt.st_prev = st;
 	st = &nextSt;
 
+	 cntHalfMove ++; // increments ply count
+	 nodes ++; // used to keep account of how many nodes have been searched. 
+	 st->cntFiftyMove ++;  // will be set to 0 later if it's a pawn move or capture
+	 st->cntInternalFiftyMove ++; // explained in the header comment
+
 	Square from = get_from(mv);
 	Square to = get_to(mv);
 	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
@@ -590,7 +596,6 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	PieceType piece = boardPiece[from];
 	PieceType capt = is_ep(mv) ? PAWN : boardPiece[to];
 	Color opp = ~turn;
-	if (turn == B)  st->fullMove ++;  // only increments after black moves
 
 	Pieces[piece][turn] ^= FromToMap;
 	Colormap[turn] ^= FromToMap;
@@ -601,17 +606,17 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	key ^= Zobrist::turn;  // update side-to-move
 	key ^= Zobrist::psq[turn][piece][from] ^ Zobrist::psq[turn][piece][to];
 	st->psqScore += PieceSquareTable[turn][piece][to] - PieceSquareTable[turn][piece][from];
-	if (st->epSquare != SQ_NONE)  // reset epSquare and its hash key
+	if (st->epSquare != SQ_NULL)  // reset epSquare and its hash key
 	{
 		key ^=Zobrist::ep[sq2file(st->epSquare)];
-		st->epSquare = SQ_NONE;
+		st->epSquare = SQ_NULL;
 	}
 
 
 	// Deal with all kinds of captures, including en-passant
 	if (capt)
 	{
-		st->fiftyMove = 0;  // clear fifty move counter
+		st->cntFiftyMove = 0;  // clear fifty move counter
 		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
 		{
 		 	if (to == RookCastleSq[opp][CASTLE_OO][0])  
@@ -649,7 +654,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		Square lastSq = pieceList[opp][capt][--pieceCount[opp][capt]];
 		plistIndex[lastSq] = plistIndex[captSq];
 		pieceList[opp][capt][plistIndex[lastSq]] = lastSq;
-		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_NONE;
+		pieceList[opp][capt][pieceCount[opp][capt]] = SQ_NULL;
 
 		// update hash keys and incremental scores
 		key ^= Zobrist::psq[opp][capt][captSq];
@@ -659,9 +664,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
 		st->materialKey ^= Zobrist::psq[opp][capt][pieceCount[opp][capt]];
 		st->psqScore -= PieceSquareTable[opp][capt][captSq];
-	}
-	else if (piece != PAWN)
-		st->fiftyMove ++;   // endif (capt)
+	} // end of captures
 
 
 	// Update pieceList, index[from] is not updated and becomes stale. This
@@ -672,7 +675,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	switch (piece)
 	{
 	case PAWN:
-		st->fiftyMove = 0;  // any pawn move resets the fifty-move clock
+		st->cntFiftyMove = 0;  // any pawn move resets the fifty-move clock
 		// update pawn structure key
 		st->pawnKey ^= Zobrist::psq[turn][PAWN][from] ^ Zobrist::psq[turn][PAWN][to];
 
@@ -693,7 +696,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			Square lastSq = pieceList[turn][PAWN][-- pieceCount[turn][PAWN]];
 			plistIndex[lastSq] = plistIndex[to];
 			pieceList[turn][PAWN][plistIndex[lastSq]] = lastSq;
-			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_NONE;
+			pieceList[turn][PAWN][pieceCount[turn][PAWN]] = SQ_NULL;
 			plistIndex[to] = pieceCount[turn][promo];
 			pieceList[turn][promo][plistIndex[to]] = to;
 
@@ -772,6 +775,8 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 /* Unmake move and restore the Position internal states */
 void Position::unmake_move(Move& mv)
 {
+	cntHalfMove --; // decrements the ply count
+
 	Square from = get_from(mv);
 	Square to = get_to(mv);
 	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
@@ -802,7 +807,7 @@ void Position::unmake_move(Move& mv)
 		Square lastSq = pieceList[turn][promo][--pieceCount[turn][promo]];
 		plistIndex[lastSq] = plistIndex[to];
 		pieceList[turn][promo][plistIndex[lastSq]] = lastSq;
-		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_NONE;
+		pieceList[turn][promo][pieceCount[turn][promo]] = SQ_NULL;
 		plistIndex[to] = pieceCount[turn][PAWN]++;
 		pieceList[turn][PAWN][plistIndex[to]] = to;
 	}

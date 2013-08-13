@@ -48,7 +48,7 @@ enum : uint
 	SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
 	SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
 	SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
-	SQ_NONE // a non-existent square
+	SQ_NULL // a non-existent square
 };
 
 const Bit DARK_SQUARES = 0xAA55AA55AA55AA55ULL;  // a bitboard of all dark squares
@@ -67,7 +67,8 @@ static const char* SQ_NAME[SQ_N] = {
 };
 
 // Square shift in 6 directions
-const int DELTA_N =  8, DELTA_E =  1,
+const int 
+	DELTA_N =  8, DELTA_E =  1,
 	DELTA_S = -8, DELTA_W = -1,
 	DELTA_NE = DELTA_N + DELTA_E,
 	DELTA_SE = DELTA_S + DELTA_E,
@@ -192,6 +193,7 @@ enum BoundType : byte
 // For search depth. ONE_PLY stands for a full ply
 const Depth
 	ONE_PLY = 2,
+	MAX_PLY = 100,
 	DEPTH_ZERO = 0 * ONE_PLY,
 	DEPTH_QS_CHECKS = -1 * ONE_PLY,
 	DEPTH_QS_NO_CHECKS = -2 * ONE_PLY,

@@ -16,7 +16,7 @@ class LegalIterator
 public:
 	LegalIterator(const Position& pos) : 
 		it(mbuf), end(pos.gen_moves<LEGAL>(mbuf))
-		{ end->move = MOVE_NONE; }
+		{ end->move = MOVE_NULL; }
 	void operator++() { it++; } // prefix version
 	Move operator*() const { return it->move; }
 	size_t size() const { return end - mbuf; }
@@ -37,7 +37,7 @@ static U64 pseudo_perft(Position& pos, int depth)
 	StateInfo si;
 	ScoredMove *it, *end = pos.gen_moves<GT>(mbuf);
 	const bool leaf = depth == 1;
-	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
 		m = it->move;
 		if (!pos.is_pseudo(m) || !pos.pseudo_is_legal(m, pos.pinned_map())) continue;

@@ -86,14 +86,14 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 	Bit oppPawns = pos.Pawnmap[opp];
 
 	ent->passedPawns[us] = 0;
-	ent->kingSquares[us] = SQ_NONE;
+	ent->kingSquares[us] = SQ_NULL;
 	ent->semiopenFiles[us] = 0xFF;
 	ent->pawnAttackmap[us] = shift_board<RIGHT>(ourPawns) | shift_board<LEFT>(ourPawns);
 	ent->pawnsOnSquares[us][B] = bit_count(ourPawns & DARK_SQUARES);
 	ent->pawnsOnSquares[us][W] = pos.pieceCount[us][PAWN] - ent->pawnsOnSquares[us][B];
 
 	// Loop through all pawns of the current color and score each pawn
-	while ((sq = *pawnl++) != SQ_NONE)
+	while ((sq = *pawnl++) != SQ_NULL)
 	{
 		f = sq2file(sq);
 		r = sq2rank(sq);

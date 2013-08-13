@@ -97,7 +97,7 @@ U64 Position::perft<true>(Depth depth)
 	StateInfo si;
 	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
-	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);
@@ -126,7 +126,7 @@ U64 Position::perft_helper(int depth)
 	StateInfo si;
 	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
-	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);
@@ -162,7 +162,7 @@ U64 Position::perft<false>(Depth depth)
 	Move m;
 	StateInfo si;
 	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
-	for (it = mbuf, end->move = MOVE_NONE; it != end; ++it)
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
 		m = it->move;
 		make_move(m, si);
