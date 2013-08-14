@@ -134,6 +134,25 @@ enum GenType : byte
 	LEGAL
 };
 
+// for transposition table bound type
+enum BoundType : byte
+{
+	BOUND_NULL,
+	BOUND_UPPER,
+	BOUND_LOWER,
+	BOUND_EXACT // = UPPER | LOWER
+};
+
+// For search depth. ONE_PLY stands for a full ply
+const Depth
+	ONE_PLY = 2,
+	MAX_PLY = 100,
+	DEPTH_ZERO = 0 * ONE_PLY,
+	DEPTH_QS_CHECKS = -1 * ONE_PLY,
+	DEPTH_QS_NO_CHECKS = -2 * ONE_PLY,
+	DEPTH_QS_RECAPTURES = -7 * ONE_PLY,
+	DEPTH_NULL = -127 * ONE_PLY;
+
 /// Score enum keeps a midgame and an endgame value in a single integer, first
 /// LSB 16 bits are used to store endgame value, while upper bits are used for
 /// midgame value.
@@ -161,9 +180,14 @@ const Value
 	VALUE_KNOWN_WIN = 15000,
 	VALUE_MATE      = 30000,
 	VALUE_INFINITE  = 30001,
-	VALUE_NULL      = 30002;
+	VALUE_NULL      = 30002,
 
-const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] = {
+	VALUE_MATE_IN_MAX_PLY  =  VALUE_MATE - MAX_PLY,
+	VALUE_MATED_IN_MAX_PLY = -VALUE_MATE + MAX_PLY;
+
+
+const Value PIECE_VALUE[PHASE_N][PIECE_TYPE_N] =
+{
 	// MG (middle game): 0, pawn, knight, bishop, rook ,queen, king
 	{ 0, 198, 817, 836, 1270, 2521, 0 },
 	// EG (end game)
@@ -181,24 +205,6 @@ const Value
 	EG_ROOK = PIECE_VALUE[EG][ROOK],
 	EG_QUEEN = PIECE_VALUE[EG][QUEEN];
 
-// for transposition table bound type
-enum BoundType : byte
-{
-	BOUND_NULL,
-	BOUND_UPPER,
-	BOUND_LOWER,
-	BOUND_EXACT // = UPPER | LOWER
-};
-
-// For search depth. ONE_PLY stands for a full ply
-const Depth
-	ONE_PLY = 2,
-	MAX_PLY = 100,
-	DEPTH_ZERO = 0 * ONE_PLY,
-	DEPTH_QS_CHECKS = -1 * ONE_PLY,
-	DEPTH_QS_NO_CHECKS = -2 * ONE_PLY,
-	DEPTH_QS_RECAPTURES = -7 * ONE_PLY,
-	DEPTH_NULL = -127 * ONE_PLY;
 
 #define DEF_OPERATOR(T)                                         \
 	inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \

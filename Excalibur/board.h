@@ -67,6 +67,14 @@ namespace Board
 	inline Bit pawn_push2(Color c, Square sq) { return pawnPush2Mask[c][sq]; }
 	inline Bit pawn_attack_span(Color c, Square sq) { return pawnAttackSpanMask[c][sq]; }
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
+	INLINE Bit piece_attack(PieceType pt, Color c, Square sq, Bit occ) // all PieceType
+	{
+		return pt == BISHOP ? bishop_attack(sq, occ) :
+			pt == ROOK ? rook_attack(sq, occ) :
+			pt == QUEEN ? queen_attack(sq, occ) :
+			pt == KNIGHT ? knight_attack(sq) :
+			pt == PAWN ? pawn_attack(c, sq) : king_attack(sq);
+	}
 
 	/* Other board info */
 	// get the mask between two squares: if not aligned diag or orthogonal, return 0

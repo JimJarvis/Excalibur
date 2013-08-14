@@ -679,10 +679,13 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		// update pawn structure key
 		st->pawnKey ^= Zobrist::psq[turn][PAWN][from] ^ Zobrist::psq[turn][PAWN][to];
 
-		if (ToMap == pawn_push2(from)) // if pawn double push
+		// Set enpassant only if the moved pawn can be attacked
+		Square ep;
+		if (ToMap == pawn_push2(from)
+			&& (pawn_attack(turn, ep = (from + to)/2) & Pawnmap[opp] ))
 		{
-			st->epSquare = forward_sq(turn, from);  // new ep square, directly ahead the 'from' square
-			key ^=Zobrist::ep[sq2file(st->epSquare)]; // update ep key
+			st->epSquare = ep;  // new ep square, directly ahead the 'from' square
+			key ^=Zobrist::ep[sq2file(ep)]; // update ep key
 		}
 		if (is_promo(mv))
 		{
