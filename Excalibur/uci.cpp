@@ -37,7 +37,7 @@ Option& Option::operator=(const string& newval)
 {
 	if ( (type != "button" && newval.empty()) // no appropriate input
 		|| (type == "check" && newval != "true" && newval != "false") // invalid checkbox
-		|| (type == "spin" && !(min <= str2int(newval) && str2int(newval) <= max)) ) // spinner out of range
+		|| (type == "spin" && !(minval <= str2int(newval) && str2int(newval) <= maxval)) ) // spinner out of range
 		return *this; // do nothing
 
 	if (type != "button")
@@ -66,8 +66,8 @@ string options2str()
 			else  oss << " current " << setw(4) << opt.currentVal;
 		}
 		if (opt.type == "spin")
-			oss << " min " << setw(3) << opt.min 
-				 << " max " << setw(3) << opt.max; 
+			oss << " min " << setw(3) << opt.minval 
+				 << " max " << setw(3) << opt.maxval; 
 		oss << endl;
 	}
 	return oss.str();
@@ -344,5 +344,153 @@ do
 	ThreadPool::wait_until_main_finish();
 
 } // main UCI::process() function
+
+
+
+/**********************************************/
+/* Printers to and from UCI notation */
+
+// UCI long algebraic notation
+string move2uci(Move mv)
+{
+	if (mv == MOVE_NULL)
+		return "null";
+
+	string mvstr = sq2str(get_from(mv));
+	mvstr += sq2str(get_to(mv));
+	if (is_promo(mv))
+		mvstr += PIECE_FEN[B][get_promo(mv)]; // must be lower case
+	return mvstr;
+}
+
+// Check validity and legality
+Move uci2move(const Position& pos, string& mvstr)
+{
+	// Simply generates all legal moves and compare one-by-one
+	// We don't care about speed here!
+	if (mvstr.size() == 5) // promotion piece
+		mvstr[4] = tolower(mvstr[4]); // case insensitive processing
+
+	MoveBuffer mbuf;
+	ScoredMove *it, *end = pos.gen_moves<LEGAL>(mbuf);
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
+		if (mvstr == move2uci(it->move))
+			return it->move;
+	
+	return MOVE_NULL; // not valid
+}
+
+
+// Converts a string that follows "info score "
+// UCI protocol:
+/// * score
+	//* cp 
+	//	the score from the engine's point of view in centipawns.
+	//	* mate 
+	//	mate in y moves, not plies.
+	//	If the engine is getting mated use negativ values for y.
+	//	* lowerbound
+	//	the score is just a lower bound.
+	//	* upperbound
+	//	the score is just an upper bound.
+string score2uci(Value val, Value alpha, Value beta)
+{
+	ostringstream oss;
+
+	// We aren't mated or giving mate. Print out the centipawn value
+	if (abs(val) < VALUE_MATE_IN_MAX_PLY)
+		oss << "cp " << val * 100 / MG_PAWN;
+
+	else //Mated or giving mate: calculate how many full moves to mate - divide the ply by 2
+		oss << "mate " << (val > 0 ? VALUE_MATE - val + 1 : -VALUE_MATE - val) / 2;
+
+	oss << ( val >= beta ? " lowerbound" 
+			: val <= alpha ? "upperbound" : "" );
+
+	return oss.str();
+}
+
+
+//// Convert a move to SAN (Standard Algebraic Notation0
+string move2san(Position& pos, Move mv)
+{
+	if (mv == MOVE_NULL)
+		return "null";
+
+	Square from = get_from(mv);
+	Square to = get_to(mv);
+	Color us = pos.turn;
+	PieceType pt = pos.boardPiece[from];
+
+	Bit disambig, tmp;
+	string san = "";
+
+	if (is_castle(mv))
+		san = (to > from) ? "O-O" : "O-O-O";
+	else
+	{  // non-castling move
+		if (pt != PAWN)
+		{
+			san = PIECE_FEN[W][pt]; // upper case
+			
+			// Disambiguation: no pawns considered
+			disambig = tmp = (pos.attack_map(pt, to) & pos.Pieces[pt][us] ) ^ setbit(from);
+
+			// if the "ambiguous move" can't actually be played because it's illegal
+			Move tmpmv;
+			Square tmpfrom;
+			while (tmp)
+			{
+				set_from_to(tmpmv, tmpfrom = pop_lsb(tmp), to);
+				if (!pos.pseudo_is_legal(tmpmv, pos.pinned_map()) )
+					disambig ^= setbit(tmpfrom); // illegal. Don't consider it again
+			}
+			
+			if (disambig)  // still we have ambiguous moving pieces
+			{
+				// If no other identical piece exists on the same file as the real moving one
+				// then we disambiguate by denoting the mover's file
+				if ( !(disambig & Board::file_mask(sq2file(from))) )
+					san += file2char(from);
+
+				// Similar concerns for rank. Rank disambig has a lower precedence than 
+				// file disambig, as specified by SAN rules
+				else if ( !(disambig & Board::rank_mask(sq2rank(from))) )
+					san += rank2char(from);
+
+				// Ambiguity persists for either file or rank
+				// We have no choice but to add the full square name
+				else
+					san += sq2str(from);
+			}
+		}  // the "from" part of all pieces except pawns are dealt with
+
+		if (pos.is_capture(mv))
+		{
+			// Pawn capture only denotes the capturer's from-file
+			if (pt == PAWN) san = file2char(from);
+			san += "x";
+		}
+
+		 // The to-part of any pieces are the same
+		san += sq2str(to); 
+
+		// Promotion part is added last:  =Q , uppercase
+		if (is_promo(mv))
+			san += "=" + PIECE_FEN[W][get_promo(mv)]; 
+	} // dealt with all non-castling moves
+
+	// We then actually play the move to see if it's a checking/mating move
+	StateInfo st;
+	pos.make_move(mv, st);
+
+	if (pos.is_sq_attacked(pos.king_sq(~us), us)) // check !
+		san += pos.count_legal() ? "+" : "#";
+
+	pos.unmake_move(mv);
+
+	return san;
+}
+
 
 } // namespace UCI

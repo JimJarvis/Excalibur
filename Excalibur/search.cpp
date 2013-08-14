@@ -497,3 +497,11 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 }
 
 
+
+/**********************************************/
+/* Main Search Engine */
+template<NodeType NT>
+Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
+{
+	return 0;
+}

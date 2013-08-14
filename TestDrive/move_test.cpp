@@ -9,20 +9,6 @@ Some useful test positions.
 "r3kN1r/p3p3/8/1pP5/5pPp/8/PP1P1p1P/R3K1N1 b Qkq g3 2 30"  // 2 en-passant captures
 **********************************************/
 
-// Wrapper for gen_moves<LEGAL>
-class LegalIterator
-{
-public:
-	LegalIterator(const Position& pos) : 
-		it(mbuf), end(pos.gen_moves<LEGAL>(mbuf))
-		{ end->move = MOVE_NULL; }
-	void operator++() { it++; } // prefix version
-	Move operator*() const { return it->move; }
-	size_t size() const { return end - mbuf; }
-private:
-	MoveBuffer mbuf;
-	ScoredMove *it, *end;
-};
 
 const int DD = 0; // divide depth
 // Gen and counts pseudo-legal moves of a specific GenType
@@ -45,7 +31,7 @@ static U64 pseudo_perft(Position& pos, int depth)
 		{
 			U64 show = leaf ? 1 : pseudo_perft<GT>(pos, depth - 1);
 			if (depth == DD)
-				cout << mv2str(m) << ": " << show << endl;
+				cout << move2uci(m) << ": " << show << endl;
 			nodeCount += show;
 		}
 		else
@@ -198,12 +184,12 @@ TEST(Moves, MakeUnmake)
 			Move m = *it;
 			pos.make_move(m, si);
 
-			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << ushort(m) << "\n" << fenList[i];
+			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << move2uci(m) << "\n" << fenList[i];
 			
 			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << ushort(m);
+			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << move2uci(m);
 		} 
 	}
 }
@@ -218,7 +204,7 @@ string print_move_trace(int ply)  // helper
 	oss << currentFEN << endl;
 	oss << "Move trace: ";
 	for (int i = 0; i <= ply; i++)
-		oss << ushort(moveTrace[i]) << "  ";
+		oss << move2uci(moveTrace[i]) << "  ";
 	return oss.str();
 }
 

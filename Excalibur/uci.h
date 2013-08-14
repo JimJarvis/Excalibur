@@ -3,7 +3,7 @@
 #ifndef __uci_h__
 #define __uci_h__
 
-#include "utils.h"
+#include "position.h"
 
 const string engine_name = "Excalibur 1.0";
 const string engine_author = "Jim Fan";
@@ -56,8 +56,8 @@ namespace UCI
 			type("check"), changer(c)
 			{ currentVal = defaultVal = (val ? "true":"false"); }
 
-		Option(int val, int minval, int maxval, ChangeListener c = nullptr) : 
-			type("spin"), changer(c), min(minval), max(maxval)
+		Option(int val, int minValue, int maxValue, ChangeListener c = nullptr) : 
+			type("spin"), changer(c), minval(minValue), maxval(maxValue)
 			{ currentVal = defaultVal = int2str(val); }
 
 		operator int() const
@@ -77,7 +77,7 @@ namespace UCI
 		// 5 UCI types: 
 		// check, spin, combo, button, string
 		string type;
-		int min, max;
+		int minval, maxval;
 		ChangeListener changer; // a function pointer
 	};
 
@@ -85,6 +85,14 @@ namespace UCI
 	void init();
 	// Main stdin processor (infinite loop)
 	void process();
+
+
+	/*** Printers to and from UCI notation ***/
+	Move uci2move(const Position& pos, string& mvstr);
+	string move2uci(Move mv);
+	string score2uci(Value val, Value alpha, Value beta);
+		// Print the move in SAN (standard algebraic notation) to console or UCI
+	string move2san(Position& pos, Move mv);
 }
 
 // global UCI option map

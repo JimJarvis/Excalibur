@@ -32,20 +32,6 @@ namespace Moves
 	inline void set_ep(Move& mv) { mv = Move(mv | 0x8000); }
 	inline bool is_ep(Move& mv) { return (mv & 0xc000) == 0x8000; }
 	inline bool is_normal(Move& mv) { return (mv & 0xc000) == 0x0; }
-
-	inline string mv2str(Move& mv)
-	{
-		ostringstream ostr; 
-		if (is_castle(mv))
-			ostr << (sq2file(get_to(mv))==6 ? "O-O" : "O-O-O");
-		else if (is_ep(mv))
-			ostr << sq2str(get_from(mv)) << "-" << sq2str(get_to(mv)) << "[EP]";
-		else
-			ostr << sq2str(get_from(mv)) << "-" << sq2str(get_to(mv))
-				<< (is_promo(mv) ? string("=")+PIECE_NOTATION[get_promo(mv)] : "" );
-	
-		return ostr.str();
-	}
 }
 
 struct ScoredMove
@@ -59,7 +45,7 @@ typedef ScoredMove MoveBuffer[MAX_MOVES];
 
 
 // Constants for castling
-const Move MOVE_CASTLING[COLOR_N][CASTLE_TYPES_N] = 
+const Move CastleMoves[COLOR_N][CASTLE_TYPES_N] = 
 {{Move(0x4184), Move(0x4084)}, {Move(0x4fbc), Move(0x4ebc)}};
 
 // Castling right query

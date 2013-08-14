@@ -152,6 +152,7 @@ public:
 	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
 
+	/* perft.cpp */
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.
 	// raw node number counting: strictly legal moves.
 	template <bool UseHash>

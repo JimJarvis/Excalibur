@@ -237,7 +237,7 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned, B
 			&& !is_map_attacked(CastleMask[turn][CASTLE_EG], ~turn)
 					// Generate a castling move whose rook delivers a quiet check
 			&& (!qcheck || (attack_map<ROOK>(RookCastleSq[turn][CASTLE_OO][1]) & Kingmap[~turn]))  )
-						add_move(MOVE_CASTLING[turn][CASTLE_OO]);  // prestored king's castling move
+						add_move(CastleMoves[turn][CASTLE_OO]);  // prestored king's castling move
 
 		if (can_castle<CASTLE_OOO>(st->castleRights[turn])
 				// no pieces between the king and rook
@@ -246,7 +246,7 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned, B
 			&& !is_map_attacked(CastleMask[turn][CASTLE_CE], ~turn)
 					// Generate a castling move whose rook delivers a quiet check
 			&& (!qcheck || (attack_map<ROOK>(RookCastleSq[turn][CASTLE_OOO][1]) & Kingmap[~turn]))  )
-						add_move(MOVE_CASTLING[turn][CASTLE_OOO]);  // prestored king's castling move
+						add_move(CastleMoves[turn][CASTLE_OOO]);  // prestored king's castling move
 	}
 
 	return mbuf;

@@ -54,18 +54,6 @@ enum : uint
 const Bit DARK_SQUARES = 0xAA55AA55AA55AA55ULL;  // a bitboard of all dark squares
 const Bit LIGHT_SQUARES = ~DARK_SQUARES; // a bitboard of all light squares
 
-// square index to algebraic notation
-static const char* SQ_NAME[SQ_N] = {
-	"a1", "b1",  "c1", "d1", "e1", "f1", "g1", "h1",
-	"a2", "b2",  "c2", "d2", "e2", "f2", "g2", "h2",
-	"a3", "b3",  "c3", "d3", "e3", "f3", "g3", "h3",
-	"a4", "b4",  "c4", "d4", "e4", "f4", "g4", "h4",
-	"a5", "b5",  "c5", "d5", "e5", "f5", "g5", "h5",
-	"a6", "b6",  "c6", "d6", "e6", "f6", "g6", "h6",
-	"a7", "b7",  "c7", "d7", "e7", "f7", "g7", "h7",
-	"a8", "b8",  "c8", "d8", "e8", "f8", "g8", "h8",
-};
-
 // Square shift in 6 directions
 const int 
 	DELTA_N =  8, DELTA_E =  1,
@@ -103,9 +91,8 @@ enum PieceType : byte
 	KING = 6,
 };
 const PieceType PIECE_TYPES[PIECE_TYPE_N - 1] = {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}; // for iterators
-static const char* PIECE_NOTATION[PIECE_TYPE_N] = {"", "", "N", "B", "R", "Q", "K"};
-static const char* PIECE_FEN[COLOR_N][PIECE_TYPE_N] = { {"", "P", "N", "B", "R", "Q", "K"}, {"", "p", "n", "b", "r", "q", "k"} };  // FEN name. White - capital letters.
-static const char* PIECE_FULL_NAME[PIECE_TYPE_N] = {"", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};
+const string PIECE_FEN[COLOR_N][PIECE_TYPE_N] = { {"", "P", "N", "B", "R", "Q", "K"}, {"", "p", "n", "b", "r", "q", "k"} };  // FEN name. White - capital letters.
+const string PIECE_FULL_NAME[PIECE_TYPE_N] = {"", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};
 
 // Castle types
 #define CASTLE_TYPES_N 2
@@ -234,8 +221,9 @@ DEF_OPERATOR(PieceType);
 
 // disable windows macros min() and max()
 #ifndef NOMINMAX
-#  define NOMINMAX
+#define NOMINMAX
 #endif
+
 
 // thrown when requested file can't be opened
 class FileNotFoundException : public exception

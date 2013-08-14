@@ -16,6 +16,7 @@
 namespace Utils
 { void init(); }
 
+/***************** Pseudo Random Generator ********************/
 // Special RKISS random number generator for hash keys
 namespace RKiss
 {
@@ -24,7 +25,7 @@ namespace RKiss
 	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 
 }
 
-/* Bit Scan */
+/********************* Bit Scan ********************/
 /* De Bruijn Multiplication, see http://chessprogramming.wikispaces.com/BitScan
  * BitScan and get the position of the least significant bit 
  * bitmap = 0 would be undefined for this func */
@@ -98,7 +99,8 @@ inline int pop_lsb(U64& bitmap)
 inline bool more_than_one_bit(U64 bitmap)
 	{ return (bitmap & (bitmap - 1)) != 0; }
 
-/* Bit Count */
+
+/********************* Bit Count ********************/
 enum { CNT_FULL_ALGORITHM,  CNT_MAX15_ALGORITHM, CNT_BUILT_IN};
 // use built-in bit count?
 #ifdef USE_BITCOUNT
@@ -146,11 +148,35 @@ INLINE int bit_count(U64 b)
 	{ return bit_count<CNT_MAX15>(b); }
 
 
+/******************* File / Rank ********************/
+inline int sq2file(Square sq) { return sq & 7; }
+inline int sq2rank(Square sq) { return sq >> 3; }
+inline Square fr2sq(int f, int r) { return (r << 3) | f; }
+inline int file_distance(Square sq1, Square sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
+inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
+inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
+inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
+
+inline void flip_vert(Square& sq) { sq ^= 56; }  // vertical flip a square. Modifies the parameter.
+inline Square flip_vert(Square&& sq) { return sq ^ 56; }  // C++11 rvalue overload. 
+inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
+
+inline bool opp_color_sq(Square sq1, Square sq2) {
+	int s = sq1 ^ sq2;
+	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
+inline Color operator~(Color c) { return Color (c ^ 1); }
+
+
+/****************** String Conversion *********************/
 // display a bitmap as 8*8. For debugging
 Bit dispbit(Bit bitmap);
+
 // convert a name to its square index. a1 is 0 and h8 is 63
+inline char file2char(Square sq) { return 'a' + sq2file(sq); }
+inline char rank2char(Square sq) { return '1' + sq2rank(sq); }
 inline Square str2sq(string str) { return 8* (str[1] -'1') + (str[0] - 'a'); };
-inline string sq2str(Square sq) { return SQ_NAME[sq]; }
+inline string sq2str(Square sq) // the char array must be null terminated
+	{ char str[3] = {file2char(sq), rank2char(sq), 0}; return str; }
 
 // string and integer conversion
 inline string int2str(int i) 
@@ -174,33 +200,18 @@ inline bool is_int(const string& str)
 }
 // resets the ostringstream
 inline void clear_osstr(ostringstream& ss)
-	{ ss.str(""); ss.clear(); }
+{ ss.str(""); ss.clear(); }
 
 // ugly workaround wrapper for gcc
 typedef int (*UnaryFn)(int);
 inline string str2lower(string str)  // lower case transformation
-	{ transform(str.begin(), str.end(), str.begin(), static_cast<UnaryFn>(tolower)); return str; }
+{ transform(str.begin(), str.end(), str.begin(), static_cast<UnaryFn>(tolower)); return str; }
 
-// file/rank and square conversion
-inline int sq2file(Square sq) { return sq & 7; }
-inline int sq2rank(Square sq) { return sq >> 3; }
-inline Square fr2sq(int f, int r) { return (r << 3) | f; }
-inline int file_distance(Square sq1, Square sq2) { return abs(sq2file(sq1) - sq2file(sq2)); }
-inline int rank_distance(Square sq1, Square sq2) { return abs(sq2rank(sq1) - sq2rank(sq2)); }
-inline Square forward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_N : DELTA_S);  }
-inline Square backward_sq(Color c, Square sq) { return sq + (c == W ? DELTA_S : DELTA_N);  }
-
-inline void flip_vert(Square& sq) { sq ^= 56; }  // vertical flip a square. Modifies the parameter.
-inline Square flip_vert(Square&& sq) { return sq ^ 56; }  // C++11 rvalue overload. 
-inline void flip_horiz(Square& sq) { sq ^= 7; } // horizontally flip a square
-
-inline bool opp_color_sq(Square sq1, Square sq2) {
-	int s = sq1 ^ sq2;
-	return ((s >> 3) ^ s) & 1;  }  // if two squares are different colors
-inline Color operator~(Color c) { return Color (c ^ 1); }
+// concatenate char* arguments into a single string delimited by space
+string concat_args(int argc, char **argv); 
 
 
-/* Evaluation scores */
+/****************** Evaluation Scores *******************/
 // first LSB 16 bits are used to store endgame value, while upper bits are used for midgame value.
 inline Score make_score(int mg, int eg) { return Score((mg << 16) + eg); }
 /* Extracting the signed lower and upper 16 bits it not so trivial because
@@ -215,6 +226,8 @@ inline double centi_pawn(Value v) { return double(v) / double(MG_PAWN); }
 inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
 
+
+/****************** Timing ******************/
 // Platform-specific system time in ms
 #ifdef _WIN32  // Windows
 #  include <sys/timeb.h>
@@ -235,7 +248,7 @@ inline U64 now()
 #endif // !_WIN32
 
 
-/*
+/* **************************************************
  *	Variadic MACRO utilities. Used mainly for debugging
  * Usage:
  * #define example(...) VARARG(example, __VA_ARGS__)
@@ -268,8 +281,5 @@ inline U64 now()
 #define DBG_DO(command) 
 #define DBG_DISP(msg)
 #endif
-
-// concatenate char* arguments into a single string delimited by space
-string concat_args(int argc, char **argv); 
 
 #endif // __utils_h__
