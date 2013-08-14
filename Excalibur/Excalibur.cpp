@@ -13,6 +13,7 @@ int main(int argc, char **argv)
 	Zobrist::init_keys_psqt();
 	UCI::init();
 	Eval::init();
+	Search::init();
 	TT.set_size((int) OptMap["Hash"]); // set transposition table size
 
 	ThreadPool::init();

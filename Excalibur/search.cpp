@@ -8,6 +8,8 @@ using namespace Search;
 using namespace ThreadPool;
 using namespace Moves;
 using namespace Board;
+using namespace UCI;
+
 using Transposition::Entry;
 
 /**********************************************/
@@ -55,6 +57,70 @@ void iterative_deepen(Position& pos);
 
 
 /**********************************************/
+/* Complete the definition of RootMove class */
+
+// Builds a PV by adding moves from the TTable
+// We consider also failing high nodes and not only BOUND_EXACT nodes so to
+// allow to always have a ponder move even when we fail high at root (if so, 
+// there'd be a cutoff and no RootMove.pv[1] would exist) and a
+// long PV to print that is important for position analysis.
+// 
+void RootMove::tt2pv(Position& pos)
+{
+	StateStack ststack; StateInfo *st = ststack;
+
+	const Entry *tte; // TT entry
+	int ply = 0;
+	Move mv = pv[0]; // preserve the first move
+	pv.clear();
+
+	do 
+	{
+		ply ++;
+		pv.push_back(mv);
+		pos.make_move(mv, *st++);
+		tte = TT.probe(pos.key());
+
+	} while ( tte
+		&& pos.is_pseudo(mv = tte->move) // must maintain a local copy. TT can change
+		&& pos.pseudo_is_legal(mv, pos.pinned_map())
+		&& ply < MAX_PLY
+		&& (!pos.is_draw<false>() || ply < 2) );
+
+	pv.push_back(MOVE_NULL); // must be null-terminated
+
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
+}
+
+// Called at the end of a search iteration, and
+// puts the PV back into the TT. This makes sure the old PV moves are searched
+// first, even if the old TT entries have been overwritten.
+// 
+void RootMove::pv2tt(Position& pos)
+{
+	StateStack ststack; StateInfo *st = ststack;
+
+	const Entry *tte; // TT entry
+	int ply = 0;
+
+	do 
+	{
+		tte = TT.probe(pos.key());
+
+		if (!tte || tte->move != pv[ply]) // Overwrite bad entries
+			TT.store(pos.key(), VALUE_NULL, BOUND_NULL, 
+			DEPTH_NULL, pv[ply], VALUE_NULL, VALUE_NULL);
+
+		pos.make_move(pv[ply++], *st++);
+
+	} while (pv[ply] != MOVE_NULL);
+
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
+}
+
+
+
+/**********************************************/
 /* Search data tables and their access functions */
 
 // Dynamic razoring margin based on depth
@@ -80,9 +146,9 @@ template <bool PvNode> inline Depth reduction(bool i, Depth d, int moveNum)
 }
 
 
-
 /**********************************************/
 /* Search namespace external interface */
+/**********************************************/
 
 // Init various search lookup tables. Called at program startup
 void Search::init()
@@ -146,30 +212,32 @@ void Search::think()
 	RootColor = RootPos.turn;
 	// TimeManger ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
-	// No legal moves available. Mate!
+	// No legal moves available. Either we're checkmated, or stalemate. 
 	if (RootMoveList.empty())
 	{
 		RootMoveList.push_back(MOVE_NULL);
-		// info depth 0 ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		sync_print("info depth 0 score " 
+			<< score2uci(RootPos.checker_map() ? -VALUE_MATE : VALUE_DRAW) );
 	}
-	else // start our search engine
+	else // Legal moves available. Launch our search engine
 	{
 	update_contempt_factor();
 
 	// Reset the main thread
 	ThreadPool::Main->maxPly = 0;
 
-	// Timer->msec = TimeManager ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	// Clock->msec = TimeManager ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 	
-	Timer->signal(); // wake up the recurrng timer
+	Clock->signal(); // wake up the recurring clock
 
 	/* **************************
 	 *	Start the main iterative deepening search engine
 	 * **************************/
 	iterative_deepen(RootPos);
 
-	Timer->ms = 0; // stops the timer
-	}  // !RootMoveList.empty()
+	Clock->ms = 0; // stops the clock
+
+	}  // if-else case that RootMoveList isn't empty
 
 	// If the search is stopped midway, the following code would never be reached
 	sync_print("info nodes " << RootPos.nodes << " time " << now() - SearchTime);
@@ -185,7 +253,14 @@ void Search::think()
 		Main->wait_until(Signal.stop);
 	}
 
-	// sync_print bestmove ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	// We print bestmove to console - ask the GUI to play the move!
+	// This is the only place we print bestmove
+	// could be MOVE_NULL if we search on a stalemate position.
+	// The bestmove is expressed in UCI long algebraic notation. 
+	// pv[0] will be played. pv[1] is our prediction of opp's move, which
+	// will be pondered upon. 
+	sync_print("bestmove " << move2uci(RootMoveList[0].pv[0])
+			<<  " ponder " << move2uci(RootMoveList[0].pv[1]) );
 }
 
 
@@ -195,7 +270,8 @@ void Search::think()
 // Calls search() repeatedly with increasing depth until the
 // allocated thinking time has been consumed,
 // user stops the search, or the maximum search depth is reached.
-// 
+/**********************************************/
+
 void iterative_deepen(Position& pos)
 {
 	SearchStack sstack; SearchInfo *ss = sstack; // To allow dereferencing (ss - 2)
@@ -255,7 +331,10 @@ void iterative_deepen(Position& pos)
 			if (Signal.stop)
 				return;
 
-			// When fail high/low give some update to UCI ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+			// When fail high/low give some update before re-searching
+			if ( (best <= alpha || best >= beta)
+				&& now() - SearchTime > 3000)
+				sync_print(pv2uci(pos, depth, alpha, beta));
 
 			// If we fail low/high, increase the aspiration window and re-search
 			// The aspiration window size will be increased exponentially
@@ -274,7 +353,8 @@ void iterative_deepen(Position& pos)
 			delta += delta / 2;  // Increase the window size by an exponent of 1.5
 		}
 		
-		// Print to UCI ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		// Succeed. No fail low or high!
+		sync_print(pv2uci(pos, depth));
 
 		// Have we found a mate-in-N ? Then stop. 
 		// Limit.mate will be flagged by UCI "go mate" command
@@ -285,75 +365,21 @@ void iterative_deepen(Position& pos)
 		// Decide if we have time for the next iteration. See if we can stop searching now
 		// TIME MANAGEMENT ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
-	} // end of the main iterative loop
-	
+	} // end of the main iterative while-loop
 }
+
+
+/**********************************************/
+/*************  Main Search Function **************/
+/**********************************************/
+
 
 
 
 /**********************************************/
-/* Various little tool functions defined first */
+/**********************************************/
+/* Various little tool functions used by search() and qsearch() */
 // value2tt(), tt2value(), is_check_dangerous(), allows(), refutes()
-
-// Builds a PV by adding moves from the TTable
-// We consider also failing high nodes and not only BOUND_EXACT nodes so to
-// allow to always have a ponder move even when we fail high at root (if so, 
-// there'd be a cutoff and no RootMove.pv[1] would exist) and a
-// long PV to print that is important for position analysis.
-// 
-void RootMove::tt2pv(Position& pos)
-{
-	StateStack ststack; StateInfo *st = ststack;
-
-	const Entry *tte; // TT entry
-	int ply = 0;
-	Move mv = pv[0]; // preserve the first move
-	pv.clear();
-
-	do 
-	{
-		ply ++;
-		pv.push_back(mv);
-		pos.make_move(mv, *st++);
-		tte = TT.probe(pos.key());
-
-	} while ( tte
-		&& pos.is_pseudo(mv = tte->move) // must maintain a local copy. TT can change
-		&& pos.pseudo_is_legal(mv, pos.pinned_map())
-		&& ply < MAX_PLY
-		&& (!pos.is_draw<false>() || ply < 2) );
-	
-	pv.push_back(MOVE_NULL); // must be null-terminated
-
-	while (ply--) pos.unmake_move(pv[ply]); // restore the state
-}
-
-// Called at the end of a search iteration, and
-// puts the PV back into the TT. This makes sure the old PV moves are searched
-// first, even if the old TT entries have been overwritten.
-// 
-void RootMove::pv2tt(Position& pos)
-{
-	StateStack ststack; StateInfo *st = ststack;
-
-	const Entry *tte; // TT entry
-	int ply = 0;
-
-	do 
-	{
-		tte = TT.probe(pos.key());
-
-		if (!tte || tte->move != pv[ply]) // Overwrite bad entries
-			TT.store(pos.key(), VALUE_NULL, BOUND_NULL, 
-					DEPTH_NULL, pv[ply], VALUE_NULL, VALUE_NULL);
-		
-		pos.make_move(pv[ply++], *st++);
-
-	} while (pv[ply] != MOVE_NULL);
-	
-	while (ply--) pos.unmake_move(pv[ply]); // restore the state
-}
-
 
 // Adjusts a mate score from "plies to mate from the root" to
 // "plies to mate from the current position". Non-mate scores are unchanged.

@@ -7,18 +7,18 @@ namespace ThreadPool
 {
 	// Instantiate externs
 	MainThread *Main;
-	TimerThread *Timer;
+	ClockThread *Clock;
 
 	// will be called at program startup
 	void init()
 	{
-		Timer = new_thread<TimerThread>();
+		Clock = new_thread<ClockThread>();
 		Main = new_thread<MainThread>();
 	}
 	// will be called at program exit
 	void terminate()
 	{
-		del_thread<TimerThread>(Timer);
+		del_thread<ClockThread>(Clock);
 		del_thread<MainThread>(Main);
 	}
 
@@ -80,14 +80,14 @@ void MainThread::execute()
 }
 
 
-// Checks the time for Timer
+// Checks the time for ClockThread
 void check_time()
 {
 
 }
 
-// TimerThread 
-void TimerThread::execute()
+// Launch a clock thread
+void ClockThread::execute()
 {
 	while (exist) // will stop at program termination.
 	{

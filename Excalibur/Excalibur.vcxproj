@@ -31,6 +31,7 @@
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="search.cpp" />
     <ClCompile Include="thread.cpp" />
+    <ClCompile Include="timer.cpp" />
     <ClCompile Include="ttable.cpp" />
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="utils.cpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="search.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="timer.h" />
     <ClInclude Include="ttable.h" />
     <ClInclude Include="uci.h" />
     <ClInclude Include="utils.h" />
@@ -157,7 +159,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <MinimalRebuild>true</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>

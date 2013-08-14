@@ -90,9 +90,11 @@ namespace UCI
 	/*** Printers to and from UCI notation ***/
 	Move uci2move(const Position& pos, string& mvstr);
 	string move2uci(Move mv);
-	string score2uci(Value val, Value alpha, Value beta);
-		// Print the move in SAN (standard algebraic notation) to console or UCI
+	string score2uci(Value val, Value alpha = -VALUE_INFINITE, Value beta = VALUE_INFINITE);
+	// Print the move in SAN (standard algebraic notation) to console or UCI
 	string move2san(Position& pos, Move mv);
+	// Formats and sends the PV to UCI protocol
+	string pv2uci(const Position& pos, Depth depth, Value alpha = -VALUE_INFINITE, Value beta = VALUE_INFINITE);
 }
 
 // global UCI option map

@@ -48,7 +48,7 @@ CFLAGS = $(CXXFLAGS)
 
 Excalibur: utils.o board.o position.o perft.o movegen.o\
 	zobrist.o ttable.o endgame.o material.o pawnshield.o\
-	kpkbase.o eval.o search.o uci.o thread.o
+	kpkbase.o eval.o search.o uci.o thread.o timer.o
 
 Excalibur.o: search.h uci.h thread.h
 
@@ -83,6 +83,8 @@ search.o: search.h thread.h moveorder.h uci.h
 uci.o: uci.h search.h thread.h
 
 thread.o: thread.h search.h
+
+timer.o: timer.h search.h uci.h
 
 .PHONY: clean
 clean:

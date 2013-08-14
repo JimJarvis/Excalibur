@@ -347,8 +347,9 @@ do
 
 
 
-/**********************************************/
-/* Printers to and from UCI notation */
+/*****************************************************/
+/************ Printers to and from UCI notation ************/
+/*****************************************************/
 
 // UCI long algebraic notation
 string move2uci(Move mv)
@@ -381,18 +382,18 @@ Move uci2move(const Position& pos, string& mvstr)
 }
 
 
-// Converts a string that follows "info score "
+// Sent after the command 'info score '
 // UCI protocol:
-/// * score
-	//* cp 
-	//	the score from the engine's point of view in centipawns.
-	//	* mate 
-	//	mate in y moves, not plies.
-	//	If the engine is getting mated use negativ values for y.
-	//	* lowerbound
-	//	the score is just a lower bound.
-	//	* upperbound
-	//	the score is just an upper bound.
+//	* cp 
+//		the score from the engine's point of view in centipawns.
+//	* mate 
+//		mate in y moves, not plies.
+//		If the engine is getting mated use negativ values for y.
+//	* lowerbound
+//		the score is just a lower bound.
+//	* upperbound
+//		the score is just an upper bound.
+//		
 string score2uci(Value val, Value alpha, Value beta)
 {
 	ostringstream oss;
@@ -411,7 +412,7 @@ string score2uci(Value val, Value alpha, Value beta)
 }
 
 
-//// Convert a move to SAN (Standard Algebraic Notation0
+//// Convert a move to SAN (Standard Algebraic Notation)
 string move2san(Position& pos, Move mv)
 {
 	if (mv == MOVE_NULL)
@@ -490,6 +491,45 @@ string move2san(Position& pos, Move mv)
 	pos.unmake_move(mv);
 
 	return san;
+}
+
+
+// UCI protocol (after command 'info ')
+// Note that the 'score' command is already handled by score2uci()
+//	* depth 
+//		search depth in plies
+//	* seldepth 
+//		selective search depth in plies,
+//		if the engine sends seldepth there must also a "depth" be present in the same string.
+//	* time 
+//		the time searched in ms, this should be sent together with the pv.
+//	* nodes 
+//		x nodes searched, the engine should send this info regularly
+//	* pv  ... 
+//		the best line found
+//	* nps 
+//		x nodes per second searched, the engine should send this info regularly
+//		
+//	Needs global variable info from Search:: namespace
+string pv2uci(const Position& pos, Depth depth, Value alpha, Value beta)
+{
+	ostringstream oss;
+	U64 lapse = now() - SearchTime;
+	Value val = RootMoveList[0].score;
+
+	oss << "info depth " << depth
+		<< " score " << score2uci(val, alpha, beta)
+		<< " nodes " << pos.nodes
+		<< " nps " << pos.nodes * 1000 / lapse
+		<< " time " << lapse
+		<< " pv";
+
+	// Prints out the PV in UCI long algebraic notation
+	// RootMoveList is null terminated. 
+	for (int i = 0; RootMoveList[0].pv[i] != MOVE_NULL; i++)
+		oss << " " << move2uci(RootMoveList[0].pv[i]);
+
+	return oss.str();
 }
 
 

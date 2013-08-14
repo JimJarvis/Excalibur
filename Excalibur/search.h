@@ -88,6 +88,7 @@ namespace Search
 	/// move we store a score, and a PV (really a refutation in the
 	/// case of moves which fail low). Score is normally set at -VALUE_INFINITE for
 	/// all non-pv moves.
+	/// pv[] is null terminated because we might print out a stalemate (encoded as MOVE_NULL)
 	struct RootMove
 	{
 		RootMove(Move m) : score(-VALUE_INFINITE), prevScore(-VALUE_INFINITE)

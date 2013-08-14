@@ -124,10 +124,10 @@ struct MainThread : public Thread
 	volatile bool running;
 };
 
-// Timer
-struct TimerThread : public Thread
+// Clock
+struct ClockThread : public Thread
 {
-	TimerThread() : ms(0) {}
+	ClockThread() : ms(0) {}
 	virtual void execute();
 	int ms;
 };
@@ -136,7 +136,7 @@ struct TimerThread : public Thread
 namespace ThreadPool
 {
 	extern MainThread *Main;
-	extern TimerThread *Timer;
+	extern ClockThread *Clock;
 
 	// will be called at program startup
 	void init();
