@@ -2,7 +2,8 @@
 using namespace Board;
 
 /* Instantiate extern tables */
-// Precalculated attack tables for non-sliding pieces
+// Precalculated attack tables for non-sliding pieces. Combine the 3 types for piece_attack() switch retrieval
+Bit nonSliderMask[PIECE_TYPE_N][COLOR_N][SQ_N]; // Contains [PAWN], [KING] and [KNIGHT]
 Bit knightMask[SQ_N], kingMask[SQ_N];
 // pawn has 3 kinds of moves: attack, push, and double push (push2)
 Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
@@ -318,6 +319,7 @@ void init_knight_mask(Square sq, int fl, int rk)
 			}
 		}
 	}
+	nonSliderMask[KNIGHT][W][sq] = nonSliderMask[KNIGHT][B][sq] = ans;
 	knightMask[sq] = ans;
 }
 
@@ -339,6 +341,7 @@ void init_king_mask(Square sq, int fl, int rk)
 			ans |= setbit(fr2sq(destx, desty));
 		}
 	}
+	nonSliderMask[KING][W][sq] = nonSliderMask[KING][B][sq] = ans;
 	kingMask[sq] = ans;
 }
 
@@ -349,6 +352,7 @@ void init_pawn_masks(Square sq, int fl, int rk, Color c)
 	/* pawnAttackMask */
 	if (relative_rank<RANK_N>(c,rk) == RANK_8) 
 	{
+		nonSliderMask[PAWN][c][sq] = 0;
 		pawnAttackMask[c][sq] = 0;
 		return;
 	}
@@ -358,6 +362,7 @@ void init_pawn_masks(Square sq, int fl, int rk, Color c)
 		ans |= setbit(fr2sq(fl-1, rk+offset)); // white color = 0, black = 1
 	if (fl + 1 < 8)
 		ans |= setbit(fr2sq(fl+1, rk+offset)); // white color = 0, black = 1
+	nonSliderMask[PAWN][c][sq] = ans;
 	pawnAttackMask[c][sq] = ans;
 
 	/* pawnPushMask */

@@ -24,7 +24,7 @@ namespace Search
 		int futilityMoveCount;
 	};
 
-	typedef SearchInfo SearchBuffer[MAX_PLY + 3];
+	typedef SearchInfo SearchStack[MAX_PLY + 3];
 
 	/// The struct stores information sent by GUI 'go' command about available time
 	/*  copied from UCI protocol:
@@ -93,7 +93,8 @@ namespace Search
 		RootMove(Move m) : score(-VALUE_INFINITE), prevScore(-VALUE_INFINITE)
 			{ pv.push_back(m); pv.push_back(MOVE_NULL); }
 
-		bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
+		// We use std::stable_sort to sort in descending order. Thus need to overload '<' in reverse.
+		bool operator<(const RootMove& m) const { return score > m.score; }
 		bool operator==(const Move& m) const { return pv[0] == m; }
 
 		// Extract PV from a transposition entry
@@ -115,7 +116,7 @@ namespace Search
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime;
 
-	typedef StateInfo StateBuffer[MAX_PLY + 3];
+	typedef StateInfo StateStack[MAX_PLY + 3];
 
 	extern stack<StateInfo> SetupStates;
 

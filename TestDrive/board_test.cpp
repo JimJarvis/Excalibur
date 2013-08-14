@@ -79,6 +79,8 @@ TEST(Board, Knight)
 	ASSERT_EQ(kn("h8"), 9077567998918656);
 	ASSERT_EQ(kn("e6"), 2901444352662306816);
 	ASSERT_EQ(kn("h2"), 1075839008);
+	for (int i = 0; i < SQ_N; i++)
+		ASSERT_EQ(knight_attack(i), piece_attack(KNIGHT, W, i));
 }
 
 TEST(Board, King)
@@ -87,6 +89,8 @@ TEST(Board, King)
 	ASSERT_EQ(k("h3"), 3225468928);
 	ASSERT_EQ(k("e3"), 942159872);
 	ASSERT_EQ(k("b8"), 362258295026614272);
+	for (int i = 0; i < SQ_N; i++)
+		ASSERT_EQ(king_attack(i), piece_attack(KING, W, i));
 }
 
 TEST(Board, Pawn)
@@ -101,6 +105,9 @@ TEST(Board, Pawn)
 	ASSERT_EQ(ppush2("a3", W), 0);
 	ASSERT_EQ(ppush2("f2", W), 536870912);
 	ASSERT_EQ(ppush2("a7", B), 4294967296);
+	for (Color c : COLORS)
+	for (int i = 0; i < SQ_N; i++)
+		ASSERT_EQ(pawn_attack(c, i), piece_attack(PAWN, c, i));
 }
 
 TEST(Board, Between)

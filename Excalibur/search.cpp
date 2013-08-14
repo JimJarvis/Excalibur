@@ -3,6 +3,17 @@
 #include "uci.h"
 #include "thread.h"
 
+using namespace Eval;
+using namespace Search;
+using namespace ThreadPool;
+using namespace Moves;
+using namespace Board;
+using Transposition::Entry;
+
+/**********************************************/
+// Search related global variables shared across the entire program
+// Some of them will be updated by Thread or UCI processor
+// 
 namespace Search
 {
 	// instantiate the extern variables
@@ -15,18 +26,32 @@ namespace Search
 	stack<StateInfo> SetupStates;
 }  // namespace Search
 
-using namespace Eval;
-using namespace Search;
-using namespace ThreadPool;
-using namespace Moves;
-using namespace Board;
-using Transposition::Entry;
+/**********************************************/
+// Different node types, used as template parameter
+enum NodeType { ROOT, PV, NON_PV};
+
+/**********************************************/
+/* Shared global variables and prototype for main searchers */
 
 // This is the minimum interval in ms between two check_time() calls
 const int TimerResolution = 5;
 
-// Different node types, used as template parameter
-enum NodeType { Root, PV, NonPV};
+int BestMoveChanges;
+Value DrawValue[COLOR_N]; // set by contempt factor
+HistoryStats History;
+GainStats Gains;
+RefutationStats Refutations;
+
+// Main search engine
+template<NodeType>
+Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+// Quiescence search engine
+template<NodeType, bool Check>
+Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth);
+
+// Iterative deepening
+void iterative_deepen(Position& pos);
 
 
 /**********************************************/
@@ -54,28 +79,10 @@ template <bool PvNode> inline Depth reduction(bool i, Depth d, int moveNum)
 	return Reductions[PvNode][i][min(d / ONE_PLY, 63)][min(moveNum, 63)];
 }
 
-/**********************************************/
-/* Shared global variables and prototype for main searchers */
-int BestMoveChanges;
-Value DrawValue[COLOR_N]; // set by contempt factor
-HistoryStats History;
-GainStats Gains;
-RefutationStats Refutations;
-
-// Main search engine
-template<NodeType>
-Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode);
-
-// Quiescence search engine
-template<NodeType, bool Check>
-Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth);
-
-// Iterative deepening
-void iterative_deepen(Position& pos);
 
 
 /**********************************************/
-/* Search namespace interface */
+/* Search namespace external interface */
 
 // Init various search lookup tables. Called at program startup
 void Search::init()
@@ -159,7 +166,7 @@ void Search::think()
 	/* **************************
 	 *	Start the main iterative deepening search engine
 	 * **************************/
-	//iterative_deepen(RootPos);
+	iterative_deepen(RootPos);
 
 	Timer->ms = 0; // stops the timer
 	}  // !RootMoveList.empty()
@@ -182,8 +189,111 @@ void Search::think()
 }
 
 
+
+/**********************************************/
+/* Main iterative deepening */
+// Calls search() repeatedly with increasing depth until the
+// allocated thinking time has been consumed,
+// user stops the search, or the maximum search depth is reached.
+// 
+void iterative_deepen(Position& pos)
+{
+	SearchStack sstack; SearchInfo *ss = sstack; // To allow dereferencing (ss - 2)
+	Depth depth = 0;
+	int prevBestMoveChanges;
+	BestMoveChanges = 0;
+	Value best, alpha, beta, delta; // alpha's the lower limit and beta's the upper
+	best = alpha = delta = -VALUE_INFINITE;
+	beta = VALUE_INFINITE; 
+
+	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
+	// clear the recording tables
+	TT.new_search();
+	History.clear();
+	Gains.clear();
+	Refutations.clear();
+
+	// Iterative deepening loop until requested to stop or target depth reached
+	while (++depth <= MAX_PLY && !Signal.stop && (!Limit.depth || depth <= Limit.depth))
+	{
+		// Save last iteration's score
+		// RootMoveList won't be empty because that's already handled by Search::think()
+		for (int i = 0; i < RootMoveList.size(); i++)
+			RootMoveList[i].prevScore = RootMoveList[i].score;
+
+		prevBestMoveChanges = BestMoveChanges;
+		BestMoveChanges = 0;
+
+		// Reset aspiration window starting size, 
+		// centered on the score from the previous iteration (+-delta)
+		if (depth >= 5)
+		{
+			delta = 16;
+			alpha = max(-VALUE_INFINITE, RootMoveList[0].prevScore - delta);
+			beta = min(VALUE_INFINITE, RootMoveList[0].prevScore + delta);
+		}
+
+		// Start with a small aspiration window and, in case of fail high/low,
+		// research with bigger window until not failing high/low anymore.
+		while (true)
+		{
+			best = search<ROOT>(pos, ss, alpha, beta, depth * ONE_PLY, false);
+
+			// Bring to front the best move. It is critical that sorting is
+			// done with a stable algorithm because all the values but the first
+			// and eventually the new best one are set to -VALUE_INFINITE and
+			// we want to keep the same order for all the moves but the new
+			// PV that goes to the front. 
+			std::stable_sort(RootMoveList.begin(), RootMoveList.end());
+
+			// Write PV back to transposition table in case the relevant
+			// entries have been overwritten during the search.
+			RootMoveList[0].pv2tt(pos);
+
+			// If search has been stopped return immediately. Sorting and
+			// storing PV to TT is safe because those are values from the last iteration
+			if (Signal.stop)
+				return;
+
+			// When fail high/low give some update to UCI ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+			// If we fail low/high, increase the aspiration window and re-search
+			// The aspiration window size will be increased exponentially
+			if (best <= alpha) // fail low
+			{
+				alpha = max(best - delta, -VALUE_INFINITE);
+				// Send out signals
+				Signal.failedLowAtRoot = true;
+				Signal.stopOnPonderhit = false;
+			}
+			else if (best >= beta) // fail high
+				beta = min(best + delta, VALUE_INFINITE);
+			else // we've found the EXACT best value
+				break;
+
+			delta += delta / 2;  // Increase the window size by an exponent of 1.5
+		}
+		
+		// Print to UCI ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+		// Have we found a mate-in-N ? Then stop. 
+		// Limit.mate will be flagged by UCI "go mate" command
+		if (Limit.mate && best >= VALUE_MATE_IN_MAX_PLY
+			&& VALUE_MATE - best <= 2 * Limit.mate)
+			Signal.stop = true;
+
+		// Decide if we have time for the next iteration. See if we can stop searching now
+		// TIME MANAGEMENT ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+	} // end of the main iterative loop
+	
+}
+
+
+
 /**********************************************/
 /* Various little tool functions defined first */
+// value2tt(), tt2value(), is_check_dangerous(), allows(), refutes()
 
 // Builds a PV by adding moves from the TTable
 // We consider also failing high nodes and not only BOUND_EXACT nodes so to
@@ -193,7 +303,7 @@ void Search::think()
 // 
 void RootMove::tt2pv(Position& pos)
 {
-	StateBuffer stbuf; StateInfo *st = stbuf;
+	StateStack ststack; StateInfo *st = ststack;
 
 	const Entry *tte; // TT entry
 	int ply = 0;
@@ -224,7 +334,7 @@ void RootMove::tt2pv(Position& pos)
 // 
 void RootMove::pv2tt(Position& pos)
 {
-	StateBuffer stbuf; StateInfo *st = stbuf;
+	StateStack ststack; StateInfo *st = ststack;
 
 	const Entry *tte; // TT entry
 	int ply = 0;
@@ -255,7 +365,6 @@ Value value2tt(Value v, int ply)
 			  : v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
 }
 
-
 // The inverse of value_to_tt(): It adjusts a mate score
 // from the transposition table (where refers to the plies to mate/be mated
 // from current position) to "plies to mate/be mated from the root".
@@ -266,6 +375,7 @@ Value tt2value(Value v, int ply)
 			: v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
 			: v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
 }
+
 
 // Tests if a checking move can be pruned in qsearch
 bool is_check_dangerous(const Position& pos, Move mv, Value futilityBase, Value beta)
@@ -304,6 +414,7 @@ bool is_check_dangerous(const Position& pos, Move mv, Value futilityBase, Value 
 	return false;
 }
 
+
 // Tests whether the 'first' move (already played) at previous ply somehow makes the
 // 'second' move possible. Normally the second move is the threat (the best move returned
 // from a null search that fails low). The 2 moves are made by the same side
@@ -324,7 +435,7 @@ bool allows(const Position& pos, Move mv1, Move mv2)
 		return true;
 
 	// mv2's destination is defended by mv1's piece. Note that mv1 is already played!!
-	Bit mv1Atk = pos.attack_map(pos.boardPiece[to1], to1, pos.Occupied ^ setbit(from2));
+	Bit mv1Atk = piece_attack(pos.boardPiece[to1], pos.boardColor[to1], to1, pos.Occupied ^ setbit(from2));
 	if (mv1Atk & setbit(to2)) // defended
 		return true;
 
@@ -334,6 +445,7 @@ bool allows(const Position& pos, Move mv1, Move mv2)
 
 	return false;
 }
+
 
 // Tests whether a 'first' move is able to defend against a 'second'
 // opp's move. In this case will not be pruned. Normally the second move
@@ -362,13 +474,13 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 		// New occ as if the defender and threater are moving
 		Bit occ = pos.Occupied ^ setbit(from1) ^ setbit(to1) ^ setbit(from2);
 		PieceType defender = pos.boardPiece[from1];
+		Color defColor = pos.boardColor[from1];
 
 		// Defender attacks to2, the threatened square
-		if (pos.attack_map(defender, to1, occ) & setbit(to2))
+		if (piece_attack(defender, defColor, to1, occ) & setbit(to2))
 			return true;
 
 		// Scan for possible ray attacks behind the defending piece (from1)
-		Color defColor = pos.boardColor[from1];
 		Bit ray = ( rook_attack(to2, occ) & pos.piece_union(defColor, ROOK, QUEEN) )
 			| ( bishop_attack(to2, occ) & pos.piece_union(defColor, BISHOP, QUEEN) );
 
@@ -383,3 +495,5 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 
 	return false;
 }
+
+

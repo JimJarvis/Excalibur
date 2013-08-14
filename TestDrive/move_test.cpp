@@ -277,7 +277,7 @@ TEST(Moves, Pinned)
 #define Rep2Assert(ans) ASSERT_EQ(bool(ans), pp.is_draw<false>())
 TEST(Moves, RepetitionDraw)
 {
-	StateBuffer sb; StateInfo *sbuf = sb;
+	StateStack sb; StateInfo *sbuf = sb;
 	// The rook and bishop goes back and forth to force repeitition
 	Position pp("8/8/2p2K1B/1pq5/3k2P1/5P1P/1r6/8 w - - 10 23");
 	Move mv;

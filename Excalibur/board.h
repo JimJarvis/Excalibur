@@ -4,6 +4,7 @@
 #include "utils.h" 
 
 /* All kinds of pretabulated tables */
+extern Bit nonSliderMask[PIECE_TYPE_N][COLOR_N][SQ_N]; // Combines [PAWN], [KING] and [KNIGHT]
 extern Bit knightMask[SQ_N], kingMask[SQ_N];
 extern Bit pawnAttackMask[COLOR_N][SQ_N], pawnPushMask[COLOR_N][SQ_N], pawnPush2Mask[COLOR_N][SQ_N];
 extern Bit pawnAttackSpanMask[COLOR_N][SQ_N];
@@ -67,13 +68,12 @@ namespace Board
 	inline Bit pawn_push2(Color c, Square sq) { return pawnPush2Mask[c][sq]; }
 	inline Bit pawn_attack_span(Color c, Square sq) { return pawnAttackSpanMask[c][sq]; }
 	inline Bit passed_pawn_mask(Color c, Square sq) { return passedPawnMask[c][sq]; }
-	INLINE Bit piece_attack(PieceType pt, Color c, Square sq, Bit occ) // all PieceType
+	INLINE Bit piece_attack(PieceType pt, Color c, Square sq, Bit occ = 0) // all PieceType
 	{
 		return pt == BISHOP ? bishop_attack(sq, occ) :
 			pt == ROOK ? rook_attack(sq, occ) :
-			pt == QUEEN ? queen_attack(sq, occ) :
-			pt == KNIGHT ? knight_attack(sq) :
-			pt == PAWN ? pawn_attack(c, sq) : king_attack(sq);
+			pt == QUEEN ? queen_attack(sq, occ) : 
+							nonSliderMask[pt][c][sq]; // combines KING, PAWN and KNIGHT
 	}
 
 	/* Other board info */
