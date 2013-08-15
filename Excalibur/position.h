@@ -64,13 +64,14 @@ public:
 	PieceType boardPiece[SQ_N];  // records all piece types
 	Color boardColor[SQ_N];  // records all color distribution
 	Color turn;
-	int cntHalfMove; // half move counter. starts at 1. The full move increments after black.
 
 	// Internal states are stored in StateInfo class. Accessed externally as a history stack
 	StateInfo startSt;  // allocate on stack memory, init the state pointer
 	StateInfo *st; // state pointer
 
 	U64 nodes;  // used to keep account of how many nodes have been searched. 
+	int cntHalfMove; // half move counter. starts at 1. The full move increments after black.
+	int ply() const { return cntHalfMove; }
 
 	void parse_fen(string fen); // parse a FEN position
 	template<bool full> string print() const; // ASCII string graph representation of the board

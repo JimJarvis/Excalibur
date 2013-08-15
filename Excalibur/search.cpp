@@ -36,8 +36,11 @@ enum NodeType { ROOT, PV, NON_PV};
 /**********************************************/
 /* Shared global variables and prototype for main searchers */
 
-// This is the minimum interval in ms between two check_time() calls
-const int TimerResolution = 5;
+TimeKeeper Timer; // single instance Time Keeper
+
+// If the remaining available time drops below this percentage 
+// threshold, we don't start the next iteration. 
+const double IterativeTimePercentThresh = 0.67; 
 
 int BestMoveChanges;
 Value DrawValue[COLOR_N]; // set by contempt factor
@@ -147,10 +150,14 @@ void Search::update_contempt_factor()
 
 // External interface to the main search engine. Started by UCI 'go'.
 // Search from RootPos and print out "bestmove"
+// Gives out the one move we decide to play
+// 
 void Search::think()
 {
 	RootColor = RootPos.turn;
-	// TimeManger ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+	// Allocate the optimal time for the current one move
+	Timer.talloc(RootColor, RootPos.ply());
 
 	// No legal moves available. Either we're checkmated, or stalemate. 
 	if (RootMoveList.empty())
@@ -166,7 +173,11 @@ void Search::think()
 	// Reset the main thread
 	ThreadPool::Main->maxPly = 0;
 
-	// Clock->msec = TimeManager ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	// Set Clock check interval to avoid lagging. Clock thread checks for remaining 
+	// available time regularly, as allocated by Timer.talloc() at the beginning
+	 Clock->ms = Limit.use_timer() ? 
+						min(100, max(Timer.optimum()/16, ClockThread::Resolution)) : 
+			Limit.nodes ? 2 * ClockThread::Resolution : 100;  
 	
 	Clock->signal(); // wake up the recurring clock
 
@@ -354,9 +365,10 @@ void iterative_deepen(Position& pos)
 				break;
 
 			delta += delta / 2;  // Increase the window size by an exponent of 1.5
-		}
+
+		} // end of aspiration loop
 		
-		// Succeed. No fail low or high!
+		/******* Succeed. No fail low or high! ********/
 		sync_print(pv2uci(pos, depth));
 
 		// Have we found a mate-in-N ? Then stop. 
@@ -365,17 +377,54 @@ void iterative_deepen(Position& pos)
 			&& VALUE_MATE - best <= 2 * Limit.mate)
 			Signal.stop = true;
 
+		// Under time control scenario:
 		// Decide if we have time for the next iteration. See if we can stop searching now
-		// TIME MANAGEMENT ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		if (Limit.use_timer() && !Signal.stopOnPonderhit)
+		{
+			bool stopjug = false; // Can we stop searching?
 
-	} // end of the main iterative while-loop
+			// If PV is unstable, we need extra time
+			if (depth > 4)
+				Timer.unstable_pv_adjust(BestMoveChanges, prevBestMoveChanges);
+
+			// Stop searching if we seem to have insufficient time for the next iteration
+			// Global const threshold decides the percentage of remaining time below which
+			// we'd choose not to start the next iteration. Typically set to 60-70%
+			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThresh)
+				stopjug = true;
+
+			// Stop early if one move seems much better than others
+			if ( !stopjug  &&  depth >= 12 
+				&& best > VALUE_MATED_IN_MAX_PLY
+				&& ( RootMoveList.size() == 1 || now() - SearchTime > Timer.optimum() * 0.2))
+			{
+				// Verify this move's much better ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+			}
+
+			if (stopjug)
+			{
+				// If we are in ponder state, don't stop the search now (as requested by UCI)
+				// until UCI sends 'ponderhit' or 'stop'
+				if (Limit.ponder)
+					Signal.stopOnPonderhit = true;
+				else
+					Signal.stop = true;
+			}
+		}
+
+	} // end of the main iter deepening while-loop
 }
 
 
 /**********************************************/
-/*************  Main Search Function **************/
+/*************  Main Search Engine **************/
 /**********************************************/
 
+template<NodeType NT>
+Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
+{
+	return 0;
+}
 
 
 
@@ -523,14 +572,4 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 		return true;
 
 	return false;
-}
-
-
-
-/**********************************************/
-/* Main Search Engine */
-template<NodeType NT>
-Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
-{
-	return 0;
 }

@@ -24,13 +24,13 @@ public:
 	void talloc(Color us, int curPly);
 	// compute on the fly and adjust tOptimal if PV is unstable
 	void unstable_pv_adjust(int bestMoveChanges, int prevBestMoveChanges);
-	long optimum() { return tOptimal + tUnstablePV; }
-	long maximum() { return tMax; }
+	Msec optimum() { return tOptimal + tUnstablePV; }
+	Msec maximum() { return tMax; }
 
 private: // time counted in ms
-	long tOptimal;
-	long tMax;
-	long tUnstablePV; // we need extra time if PV changes unstably
+	Msec tOptimal;
+	Msec tMax;
+	Msec tUnstablePV; // we need extra time if PV changes unstably
 };
 
 #endif // __timer_h__

@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <climits>
 #include <algorithm>
 #include <map>
 #include <stack>
@@ -22,15 +23,16 @@
 #include "stddef.h"
 using namespace std;
 
-typedef unsigned long long Bit;  // Bitboard
-typedef unsigned long long U64; // Unsigned ULL
+typedef unsigned long long Bit;  // Bitboards.
+typedef unsigned long long U64; // Unsigned 64-bit word.
 typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned char byte;
-typedef unsigned int Square;
+typedef int Square;
 typedef int Value;
 typedef int ScaleFactor;
 typedef int Depth;
+typedef int Msec; // milliseconds. Might be negative in computation. 
 
 #define SQ_N 64
 #define FILE_N 8

@@ -71,11 +71,12 @@ namespace Search
 	 */
 	struct LimitListener
 	{
-		// clear everything
-		LimitListener() { memset(this, 0, sizeof(LimitListener)); }
-		bool use_time_management() const { return (mate | moveTime | depth | nodes | infinite) == 0; }
-		long time[COLOR_N], increment[COLOR_N]; 
-		int movesToGo, depth, nodes, moveTime, mate, infinite, ponder;
+		LimitListener() { memset(this, 0, sizeof(LimitListener)); } // Set all flags to false.
+		// Under 5 UCI scenarios, we don't use TimeKeeper
+		bool use_timer() const { return !(mate || moveTime || depth || nodes || infinite); }
+		Msec time[COLOR_N], increment[COLOR_N], moveTime; 
+		int movesToGo, depth, nodes;
+		bool mate, infinite, ponder;
 	};
 
 	/// The struct stores volatile flags updated during the search

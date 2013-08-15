@@ -406,7 +406,7 @@ void init_between_mask(Square sq1, int fl1, int rk1)
 			delta = DELTA_NW;
 
 		if (delta != 0)
-			for (uint sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
+			for (Square sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
 				mask |= setbit(sqi);
 
 		betweenMask[sq1][sq2] = mask;

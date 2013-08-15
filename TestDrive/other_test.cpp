@@ -4,6 +4,9 @@
 
 TEST(Misc, Other)
 {
+	LimitListener lim;
+	lim.infinite = 1;
+	cout << lim.use_timer() << endl;
 
 }
 
@@ -18,13 +21,13 @@ TEST(Misc, Timer)
 	Limit.increment[W] = 0 * S;
 	Limit.movesToGo = 40;
 
-	int p = 0;
-	for (int i = p; i < p + 1; i++)
+	int p = 40;
+	for (int i = 0; i < p; i++)
 	{
 		Timer.talloc(W, i);
-		cout << "ply " << setw(3) << i+1 << "  " 
-			<< Timer.optimum() << setw(8) 
-			<< Timer.maximum() << endl;
+		/*cout << "ply " << setw(3) << i+1 << "  " 
+		<< Timer.optimum() << setw(8) 
+		<< Timer.maximum() << endl;*/
 	}
 }
 

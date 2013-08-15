@@ -127,9 +127,11 @@ struct MainThread : public Thread
 // Clock
 struct ClockThread : public Thread
 {
+	// This is the minimum interval in ms between two check_time() calls
+	static const Msec Resolution = 5; // clock resolution
 	ClockThread() : ms(0) {}
 	virtual void execute();
-	int ms;
+	Msec ms;
 };
 
 /* External interface that takes care of 2 global threads */

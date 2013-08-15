@@ -33,10 +33,9 @@ void TimeKeeper::init()
 }
 
 
-
 // Helper: compute the remaining time, either Optimal or Maximal
 template<bool Optimal> // set to false to compute maximual
-long remainder(long total, int movesToGo, int curPly)
+Msec remainder(Msec total, int movesToGo, int curPly)
 {
 	// When in emergency, we may step over the optimal reserved time by this multiplier
 	const double maxRatio = Optimal ? 1.0 : 7.0;
@@ -52,7 +51,27 @@ long remainder(long total, int movesToGo, int curPly)
 	double w1 = (curWeight * maxRatio) / (curWeight * maxRatio + remainWeightsSum);
 	double w2 = (curWeight + remainWeightsSum * reserveRatio) / (curWeight + remainWeightsSum);
 
-	return long(total * min(w1, w2));
+	return Msec(total * min(w1, w2));
+}
+
+// Helper: returns the minimal total time we might have
+// If no increment, we simply return remainder<>()
+// If yes,  we iterate from max MTG to 1 (all possible movesToGo) and find the min 
+// remainder time in the range (because time increments with each move, but the 
+// ply weights drop with each move - counter-directional)
+// 
+template<bool Optimal> // same as remainder<>
+inline Msec min_total(Msec base, Msec inc, int mtgMax, int curPly)
+{
+	if (inc == 0)
+		return remainder<Optimal>(base, mtgMax, curPly); // it's sudden-death time control: only base time is considered
+
+	// The total time we take into account is (base + sum over all increments)
+	Msec minTotal = INT_MAX;
+	for (int m = mtgMax; m > 0; m--)
+		minTotal = min(minTotal, remainder<Optimal>(base + inc * (m-1), m, curPly));
+
+	return max(minTotal, 0); // guarantee non-negative
 }
 
 // Computes and allocates tOptimal and tMax at each Search::think()
@@ -69,19 +88,20 @@ void TimeKeeper::talloc(Color us, int curPly)
 	// moves (until mate) in the remaining time - sudden death
 	int mtg = Limit.movesToGo ? min(Limit.movesToGo, 50) : 50;
 
-	// Compute our total available time. Use a conservative approach
-	long total = Limit.time[us] + Limit.increment[us] * (mtg - 1)
-					- 160 - 70 * min(mtg, 40);
-	total = max(total, 0L);
+	// Compute our total available time (without increments)
+	// deduct some time for emergency situations
+	// of course must be non-negative
+	Msec totalBase = max(Limit.time[us] - 160 - 70 * min(mtg, 40),  0);
+	Msec inc = Limit.increment[us];
 
 	// Read from UCI optionmap: minimum time
 	int tMin = OptMap["Min Thinking Time"];
 
 	// Shouldn't cross the hard deadline
 	tOptimal = min(Limit.time[us], 
-						tMin + remainder<true>(total, mtg, curPly));
+				tMin + min_total<true>(totalBase, inc, mtg, curPly));
 	tMax = min(Limit.time[us], 
-						tMin + remainder<false>(total, mtg, curPly));
+				tMin + min_total<false>(totalBase, inc, mtg, curPly));
 
 	// Read from UCI: is ponder enabled
 	if (OptMap["Ponder"]) // give more time to pondering
