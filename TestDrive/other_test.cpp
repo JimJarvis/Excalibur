@@ -4,7 +4,7 @@
 
 TEST(Misc, Other)
 {
-
+	TimeKeeper::init();
 }
 
 #define SAN(from, to, str) \

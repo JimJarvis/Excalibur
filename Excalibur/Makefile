@@ -78,13 +78,13 @@ kpkbase.o: endgame.h
 
 eval.o: eval.h material.h pawnshield.h search.h uci.h
 
-search.o: search.h thread.h moveorder.h uci.h
+search.o: search.h thread.h moveorder.h uci.h timer.h
 
 uci.o: uci.h search.h thread.h
 
 thread.o: thread.h search.h
 
-timer.o: timer.h search.h uci.h
+timer.o: timer.h uci.h search.h
 
 .PHONY: clean
 clean:

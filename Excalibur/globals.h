@@ -13,6 +13,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <algorithm>
 #include <map>
 #include <stack>

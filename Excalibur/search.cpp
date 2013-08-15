@@ -2,6 +2,7 @@
 #include "moveorder.h"
 #include "uci.h"
 #include "thread.h"
+#include "timer.h"
 
 using namespace Eval;
 using namespace Search;
@@ -56,69 +57,6 @@ Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth dept
 void iterative_deepen(Position& pos);
 
 
-/**********************************************/
-/* Complete the definition of RootMove class */
-
-// Builds a PV by adding moves from the TTable
-// We consider also failing high nodes and not only BOUND_EXACT nodes so to
-// allow to always have a ponder move even when we fail high at root (if so, 
-// there'd be a cutoff and no RootMove.pv[1] would exist) and a
-// long PV to print that is important for position analysis.
-// 
-void RootMove::tt2pv(Position& pos)
-{
-	StateStack ststack; StateInfo *st = ststack;
-
-	const Entry *tte; // TT entry
-	int ply = 0;
-	Move mv = pv[0]; // preserve the first move
-	pv.clear();
-
-	do 
-	{
-		ply ++;
-		pv.push_back(mv);
-		pos.make_move(mv, *st++);
-		tte = TT.probe(pos.key());
-
-	} while ( tte
-		&& pos.is_pseudo(mv = tte->move) // must maintain a local copy. TT can change
-		&& pos.pseudo_is_legal(mv, pos.pinned_map())
-		&& ply < MAX_PLY
-		&& (!pos.is_draw<false>() || ply < 2) );
-
-	pv.push_back(MOVE_NULL); // must be null-terminated
-
-	while (ply--) pos.unmake_move(pv[ply]); // restore the state
-}
-
-// Called at the end of a search iteration, and
-// puts the PV back into the TT. This makes sure the old PV moves are searched
-// first, even if the old TT entries have been overwritten.
-// 
-void RootMove::pv2tt(Position& pos)
-{
-	StateStack ststack; StateInfo *st = ststack;
-
-	const Entry *tte; // TT entry
-	int ply = 0;
-
-	do 
-	{
-		tte = TT.probe(pos.key());
-
-		if (!tte || tte->move != pv[ply]) // Overwrite bad entries
-			TT.store(pos.key(), VALUE_NULL, BOUND_NULL, 
-			DEPTH_NULL, pv[ply], VALUE_NULL, VALUE_NULL);
-
-		pos.make_move(pv[ply++], *st++);
-
-	} while (pv[ply] != MOVE_NULL);
-
-	while (ply--) pos.unmake_move(pv[ply]); // restore the state
-}
-
-
 
 /**********************************************/
 /* Search data tables and their access functions */
@@ -150,9 +88,11 @@ template <bool PvNode> inline Depth reduction(bool i, Depth d, int moveNum)
 /* Search namespace external interface */
 /**********************************************/
 
-// Init various search lookup tables. Called at program startup
+// Init various search lookup tables and TimeKeeper. Called at program startup
 void Search::init()
 {
+	TimeKeeper::init(); // Init Timer's heuristic data
+
 	Depth d; // full, one ply = 2
 	Depth hd; // half, one ply = 1
 	int mc; // move count
@@ -261,6 +201,69 @@ void Search::think()
 	// will be pondered upon. 
 	sync_print("bestmove " << move2uci(RootMoveList[0].pv[0])
 			<<  " ponder " << move2uci(RootMoveList[0].pv[1]) );
+}
+
+
+/**********************************************/
+/* Complete the definition of RootMove class */
+
+// Builds a PV by adding moves from the TTable
+// We consider also failing high nodes and not only BOUND_EXACT nodes so to
+// allow to always have a ponder move even when we fail high at root (if so, 
+// there'd be a cutoff and no RootMove.pv[1] would exist) and a
+// long PV to print that is important for position analysis.
+// 
+void RootMove::tt2pv(Position& pos)
+{
+	StateStack ststack; StateInfo *st = ststack;
+
+	const Entry *tte; // TT entry
+	int ply = 0;
+	Move mv = pv[0]; // preserve the first move
+	pv.clear();
+
+	do 
+	{
+		ply ++;
+		pv.push_back(mv);
+		pos.make_move(mv, *st++);
+		tte = TT.probe(pos.key());
+
+	} while ( tte
+		&& pos.is_pseudo(mv = tte->move) // must maintain a local copy. TT can change
+		&& pos.pseudo_is_legal(mv, pos.pinned_map())
+		&& ply < MAX_PLY
+		&& (!pos.is_draw<false>() || ply < 2) );
+
+	pv.push_back(MOVE_NULL); // must be null-terminated
+
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
+}
+
+// Called at the end of a search iteration, and
+// puts the PV back into the TT. This makes sure the old PV moves are searched
+// first, even if the old TT entries have been overwritten.
+// 
+void RootMove::pv2tt(Position& pos)
+{
+	StateStack ststack; StateInfo *st = ststack;
+
+	const Entry *tte; // TT entry
+	int ply = 0;
+
+	do 
+	{
+		tte = TT.probe(pos.key());
+
+		if (!tte || tte->move != pv[ply]) // Overwrite bad entries
+			TT.store(pos.key(), VALUE_NULL, BOUND_NULL, 
+			DEPTH_NULL, pv[ply], VALUE_NULL, VALUE_NULL);
+
+		pos.make_move(pv[ply++], *st++);
+
+	} while (pv[ply] != MOVE_NULL);
+
+	while (ply--) pos.unmake_move(pv[ply]); // restore the state
 }
 
 

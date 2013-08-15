@@ -19,9 +19,10 @@ void changer_contempt_factor() { Search::update_contempt_factor(); }
 // initialize default UCI options
 void init()
 {
-	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner
-	OptMap["Clear Hash"] = Option(changer_clear_hash); // button
-	OptMap["Ponder"] = Option(true); // checkbox
+	// The first three won't be shown explicitly in dialogue box. Handled internally
+	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner. Not shown
+	OptMap["Clear Hash"] = Option(changer_clear_hash); // button. Not shown
+	OptMap["Ponder"] = Option(true); // checkbox. Not shown
 	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
 	// Evaluation weights 

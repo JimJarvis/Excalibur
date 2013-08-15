@@ -33,6 +33,7 @@
     <ClCompile Include="..\Excalibur\position.cpp" />
     <ClCompile Include="..\Excalibur\search.cpp" />
     <ClCompile Include="..\Excalibur\thread.cpp" />
+    <ClCompile Include="..\Excalibur\timer.cpp" />
     <ClCompile Include="..\Excalibur\ttable.cpp" />
     <ClCompile Include="..\Excalibur\uci.cpp" />
     <ClCompile Include="..\Excalibur\utils.cpp" />

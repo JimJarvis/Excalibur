@@ -92,7 +92,7 @@ void ClockThread::execute()
 	while (exist) // will stop at program termination.
 	{
 		mutex.lock();
-		// If ms is 0, the timer waits indefinitely until woken up again
+		// If ms is 0, the clock waits indefinitely until woken up again
 		if (exist)
 			sleepCond.timed_wait(mutex, ms != 0 ? ms : INT_MAX);
 		mutex.unlock();

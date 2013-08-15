@@ -74,7 +74,7 @@ namespace Search
 		// clear everything
 		LimitListener() { memset(this, 0, sizeof(LimitListener)); }
 		bool use_time_management() const { return (mate | movetime | depth | nodes | infinite) == 0; }
-		int time[COLOR_N], inc[COLOR_N], movestogo, depth, nodes, movetime, mate, infinite, ponder;
+		int time[COLOR_N], increment[COLOR_N], movestogo, depth, nodes, movetime, mate, infinite, ponder;
 	};
 
 	/// The struct stores volatile flags updated during the search
