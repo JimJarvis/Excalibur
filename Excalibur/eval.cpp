@@ -521,7 +521,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 
 	// Increase bonus if supported by pawn, especially if the opponent has
 	// no minor piece which can exchange the outpost piece.
-	if (bonus && (ei.attackedBy[us][PAWN] & setbit(sq))!= 0 )
+	if (bonus && (ei.attackedBy[us][PAWN] & setbit(sq)) )
 	{
 		if (   !pos.Knightmap[opp]
 			&& !(colored_sq_mask(sq) & pos.Bishopmap[opp]))

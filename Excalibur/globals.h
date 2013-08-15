@@ -213,13 +213,18 @@ DEF_OPERATOR(Score);  // operators enabled
 DEF_OPERATOR(Phase);
 DEF_OPERATOR(PieceType);
 
-// force inline
+// Force inline
 #ifdef _MSC_VER
 #  define INLINE  __forceinline
 #elif defined(__GNUC__)
 #  define INLINE  inline __attribute__((always_inline))
 #else
 #  define INLINE  inline
+#endif
+
+// Suppress noisy VC++ compiler warning
+#ifdef _MSC_VER
+#pragma warning (disable : 4800)
 #endif
 
 // disable windows macros min() and max()

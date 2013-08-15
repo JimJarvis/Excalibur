@@ -196,9 +196,9 @@ U64 Position::calc_key() const
 	for (Color c : COLORS)  // castling hash
 	{
 		if (can_castle<CASTLE_OO>(st->castleRights[c]))
-			key ^= Zobrist::castleOO[c];
+			key ^= Zobrist::castle[c][1];
 		if (can_castle<CASTLE_OOO>(st->castleRights[c]))
-			key ^= Zobrist::castleOOO[c];
+			key ^= Zobrist::castle[c][2];
 	}
 
 	PieceType pt;

@@ -78,7 +78,7 @@ namespace Zobrist
 {
 	U64 psq[COLOR_N][PIECE_TYPE_N][SQ_N];
 	U64 ep[FILE_N];
-	U64 castleOO[COLOR_N], castleOOO[COLOR_N];
+	U64 castle[COLOR_N][4]; // see header explanation
 	U64 turn;
 	U64 exclusion;
 
@@ -100,8 +100,10 @@ namespace Zobrist
 
 		for (Color c : COLORS)
 		{
-			castleOO[c] = RKiss::rand64();
-			castleOOO[c] = RKiss::rand64();
+			castle[c][0] = 0ULL;
+			castle[c][1] = RKiss::rand64();
+			castle[c][2] = RKiss::rand64();
+			castle[c][3] = castle[c][1] ^ castle[c][2];
 		}
 
 		turn = RKiss::rand64();

@@ -52,6 +52,8 @@ namespace Board
 		{	{63, 61}, {56, 59}}  }; // B
 	// Rook from-to map
 	extern Bit RookCastleMask[COLOR_N][CASTLE_TYPES_N];
+	// Used to quickly update castling rights. The only mask that has only 2 bits to be '&'.
+	extern byte CastleRightMask[COLOR_N][SQ_N][SQ_N];
 
 	/* Functions that would be used to answer queries */
 	INLINE Bit rook_attack(Square sq, Bit occup)

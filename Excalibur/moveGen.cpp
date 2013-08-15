@@ -686,26 +686,27 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		st->epSquare = SQ_NULL;
 	}
 
+	// Castling key update
+	byte cas, casNew;
+	cas = st->castleRights[W];
+	if (cas && 
+		(casNew = cas & CastleRightMask[W][from][to]) != cas)
+	{
+		key ^= Zobrist::castle[W][cas - casNew];
+		st->castleRights[W] = casNew;
+	}
+	cas = st->castleRights[B];
+	if (cas && 
+		(casNew = cas & CastleRightMask[B][from][to]) != cas)
+	{
+		key ^= Zobrist::castle[B][cas - casNew];
+		st->castleRights[B] = casNew;
+	}
 
 	// Deal with all kinds of captures, including en-passant
 	if (capt)
 	{
 		st->cntFiftyMove = 0;  // clear fifty move counter
-		if (capt == ROOK)  // if a rook is captured, its castling right will be terminated
-		{
-		 	if (to == RookCastleSq[opp][CASTLE_OO][0])  
-			{	if (can_castle<CASTLE_OO>(st->castleRights[opp]))
-				{
-					key ^= Zobrist::castleOO[opp];  // update castling hash key
-					delete_castle<CASTLE_OO>(st->castleRights[opp]);
-				}  }
-			else if (to == RookCastleSq[opp][CASTLE_OOO][0])  
-			{	if (can_castle<CASTLE_OOO>(st->castleRights[opp]))
-				{
-					key ^= Zobrist::castleOOO[opp];
-					delete_castle<CASTLE_OOO>(st->castleRights[opp]);
-				}  }
-		}
 		
 		Square captSq;  // consider EP capture
 		if (is_ep(mv)) 
@@ -746,9 +747,8 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	plistIndex[to] = plistIndex[from];
 	pieceList[turn][piece][plistIndex[to]] = to;
 
-	switch (piece)
+	if (piece == PAWN)
 	{
-	case PAWN:
 		st->cntFiftyMove = 0;  // any pawn move resets the fifty-move clock
 		// update pawn structure key
 		st->pawnKey ^= Zobrist::psq[turn][PAWN][from] ^ Zobrist::psq[turn][PAWN][to];
@@ -785,50 +785,28 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 			st->psqScore += PieceSquareTable[turn][promo][to] - PieceSquareTable[turn][PAWN][to];
 			st->npMaterial[turn] += PIECE_VALUE[MG][promo];
 		}
-		break;
+	}
 
-	case KING:
-		// update castling hash keys
-		if (can_castle<CASTLE_OO>(st->castleRights[turn]))  key ^= Zobrist::castleOO[turn];
-		if (can_castle<CASTLE_OOO>(st->castleRights[turn]))  key ^= Zobrist::castleOOO[turn];
-		st->castleRights[turn] = 0;  // cannot castle any more
-		if (is_castle(mv))
-		{
-			Square rfrom, rto;
-			int castleType = sq2file(to) == FILE_C;
-			Rookmap[turn] ^= RookCastleMask[turn][castleType];
-			Colormap[turn] ^= RookCastleMask[turn][castleType];
-			rfrom = RookCastleSq[turn][castleType][0];
-			rto = RookCastleSq[turn][castleType][1];
+	else if (is_castle(mv))
+	{
+		Square rfrom, rto;
+		int castleType = sq2file(to) == FILE_C;
+		Rookmap[turn] ^= RookCastleMask[turn][castleType];
+		Colormap[turn] ^= RookCastleMask[turn][castleType];
+		rfrom = RookCastleSq[turn][castleType][0];
+		rto = RookCastleSq[turn][castleType][1];
 
-			boardPiece[rfrom] = NON; boardColor[rfrom] = COLOR_NULL;  // from
-			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
+		boardPiece[rfrom] = NON; boardColor[rfrom] = COLOR_NULL;  // from
+		boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 
-			// move the rook in pieceList
-			plistIndex[rto] = plistIndex[rfrom];
-			pieceList[turn][ROOK][plistIndex[rto]] = rto;
+		// move the rook in pieceList
+		plistIndex[rto] = plistIndex[rfrom];
+		pieceList[turn][ROOK][plistIndex[rto]] = rto;
 
-			// update the hash key for the moving rook
-			key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
-			// update incremental score
-			st->psqScore += PieceSquareTable[turn][ROOK][rto] - PieceSquareTable[turn][ROOK][rfrom];
-		}
-		break;
-
-	case ROOK:
-		if (from == RookCastleSq[turn][CASTLE_OO][0])   // if the rook moves, cancel the castle rights
-		{	if (can_castle<CASTLE_OO>(st->castleRights[turn]))
-			{
-				key ^= Zobrist::castleOO[turn];  // update castling hash key
-				delete_castle<CASTLE_OO>(st->castleRights[turn]);
-			}	}
-		else if (from == RookCastleSq[turn][CASTLE_OOO][0])
-		{	if (can_castle<CASTLE_OOO>(st->castleRights[turn]))
-			{
-				key ^= Zobrist::castleOOO[turn];
-				delete_castle<CASTLE_OOO>(st->castleRights[turn]);
-			}	}
-		break;
+		// update the hash key for the moving rook
+		key ^= Zobrist::psq[turn][ROOK][rfrom] ^ Zobrist::psq[turn][ROOK][rto];
+		// update incremental score
+		st->psqScore += PieceSquareTable[turn][ROOK][rto] - PieceSquareTable[turn][ROOK][rfrom];
 	}
 
 	st->capt = capt;

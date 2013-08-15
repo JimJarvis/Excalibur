@@ -106,11 +106,11 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 
 		// Flag the pawn as passed, isolated, doubled or member of a pawn
 		// chain (but not the backward one).
-		chain    =   (ourPawns  & file_adjacent_mask(f) & b)  != 0;
-		isolated = ( !(ourPawns   & file_adjacent_mask(f)) ) != 0;
-		doubled  =  ( ourPawns   & forward_mask(us, sq) )  != 0;
-		opposed  =  ( oppPawns & forward_mask(us, sq) )  != 0;
-		passed   = ( !(oppPawns & passed_pawn_mask(us, sq)) )  != 0;
+		chain = ourPawns & file_adjacent_mask(f) & b;
+		isolated = !(ourPawns & file_adjacent_mask(f));
+		doubled = ourPawns & forward_mask(us, sq);
+		opposed = oppPawns & forward_mask(us, sq);
+		passed = !(oppPawns & passed_pawn_mask(us, sq));
 
 		// Test for backward pawn
 		backward = false;
@@ -135,7 +135,7 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 
 			// The friendly pawn needs to be at least two ranks closer than the
 			// enemy pawn in order to help the potentially backward pawn advance.
-			backward = ( (b | shift_board<UP>(b)) & oppPawns )  != 0;
+			backward = (b | shift_board<UP>(b)) & oppPawns;
 		}
 
 		// A not passed pawn is a candidate to become passed if it is free to
@@ -143,7 +143,7 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 		// pawn on adjacent files is higher or equal than the number of
 		// enemy pawns in the forward direction on the adjacent files.
 		candidate =   !(opposed | passed | backward | isolated)
-			&& (b = pawn_attack_span(opp, forward_sq(us, sq)) & ourPawns) != 0
+			&& (b = pawn_attack_span(opp, forward_sq(us, sq)) & ourPawns)
 			&&  bit_count(b) >= bit_count(pawn_attack_span(us, sq) & oppPawns);
 
 		// Passed pawns will be properly scored in evaluation because we need

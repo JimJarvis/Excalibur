@@ -50,6 +50,7 @@ const U64 BISHOP_MAGIC_KEY[64] =
 // Castling masks
 Bit Board::CastleMask[COLOR_N][4];
 Bit Board::RookCastleMask[COLOR_N][CASTLE_TYPES_N];
+byte Board::CastleRightMask[COLOR_N][SQ_N][SQ_N];
 
 // Other tables
 Bit betweenMask[SQ_N][SQ_N];  // get the mask between two squares: if not aligned diag or orthogonal, return 0
@@ -84,6 +85,20 @@ void init_castle_mask()
 
 		RookCastleMask[c][CASTLE_OO] =  setbit(7+delta) | setbit(5+delta);
 		RookCastleMask[c][CASTLE_OOO] =  setbit(0+delta) | setbit(3+delta);
+
+		for (Square from = 0; from < SQ_N; from++)
+			for (Square to = 0; to < SQ_N; to++)
+				if ( from == relative_square(c, SQ_H1) // Rook itself moves
+					|| to == relative_square(c, SQ_H1) ) // Rook is captured
+					CastleRightMask[c][from][to] = 2; // castleRight &= 2 to kill kingside
+				else if (from == relative_square(c, SQ_A1) // Rook itself moves
+					|| to == relative_square(c, SQ_A1)) // Rook is captured
+					CastleRightMask[c][from][to] = 1; // castleRight &= 1 to kill queenside
+				else if (from == relative_square(c, SQ_E1)) // King itself moves
+					CastleRightMask[c][from][to] = 0; // castleRight &= 0 to kill both king and queenside
+				else
+					CastleRightMask[c][from][to] = 3; // preserve whatever castle rights 
+
 	}
 }
 
@@ -405,7 +420,7 @@ void init_between_mask(Square sq1, int fl1, int rk1)
 		else if ((rk1 - rk2)==(fl2 - fl1))  // same NW-SE diag
 			delta = DELTA_NW;
 
-		if (delta != 0)
+		if (delta)
 			for (Square sqi = min(sq1, sq2) + delta; sqi < max(sq1, sq2); sqi += delta)
 				mask |= setbit(sqi);
 
