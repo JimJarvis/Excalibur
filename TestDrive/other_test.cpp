@@ -4,7 +4,28 @@
 
 TEST(Misc, Other)
 {
-	TimeKeeper::init();
+
+}
+
+// Display the time management for debugging
+TEST(Misc, Timer)
+{
+	TimeKeeper Timer;
+	const long M = 60000; // minutes
+	const long S = 1000; // sec
+
+	Limit.time[W] = 90 * M;
+	Limit.increment[W] = 0 * S;
+	Limit.movesToGo = 40;
+
+	int p = 0;
+	for (int i = p; i < p + 1; i++)
+	{
+		Timer.talloc(W, i);
+		cout << "ply " << setw(3) << i+1 << "  " 
+			<< Timer.optimum() << setw(8) 
+			<< Timer.maximum() << endl;
+	}
 }
 
 #define SAN(from, to, str) \

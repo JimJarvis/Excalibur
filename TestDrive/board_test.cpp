@@ -19,6 +19,8 @@ TEST(Misc, Setup)
 	Board::init_tables();
 	Zobrist::init_keys_psqt();
 	Eval::init();
+	UCI::init();
+	Search::init();
 
 	// Read from FEN.epd
 	ifstream fin("FEN.epd");

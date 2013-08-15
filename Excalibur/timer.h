@@ -20,9 +20,7 @@ class TimeKeeper // single instance in search.cpp : TimeKeeper Timer;
 {
 public:
 	static void init(); // init the ply_weight lookup table. Called at Search::init()
-	// Computes and allocates tOptimal and tMax at each Search::think()
-	// word play on 'malloc' and 'calloc'
-	// For each move we need to make, compute only once and store as private fields.
+	// Computes and allocates (like 'malloc') tOptimal and tMax at each Search::think()
 	void talloc(Color us, int curPly);
 	// compute on the fly and adjust tOptimal if PV is unstable
 	void unstable_pv_adjust(int bestMoveChanges, int prevBestMoveChanges);
