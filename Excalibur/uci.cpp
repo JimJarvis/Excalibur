@@ -74,7 +74,8 @@ string options2str()
 	return oss.str();
 }
 
-// an ugly helper for perft thread
+
+/***************** Helper for perft thread **********************/
 struct PerftHelper 
 {	PerftHelper() : epdFile("perftsuite.epd"), useHash(false) {}; 
 	int type;  // which version of perft_verifer() will be used?
@@ -116,9 +117,9 @@ void PerftThread::execute()
 #define kill_perft del_thread<PerftThread>(pth)
 
 
-/*
- *	UCI protocol main processor
- */
+/*******************************************************************/
+/*******************	UCI protocol main processor **********************/
+/*******************************************************************/
 /**
 Ponderhit example:
 GUI -> engine: position p1 [initial position]
@@ -175,7 +176,10 @@ do
 		// already ran out of time), otherwise we should continue searching but
 		// switching from pondering to normal search.
 		if (cmd != "ponderhit" || Signal.stopOnPonderhit)
+		{
 			Signal.stop = true;
+			Main->signal(); // wake up the main thread
+		}
 		else
 			Limit.ponder = false;
 
@@ -188,96 +192,87 @@ do
 		sync_print(engine_id << options2str<true>() << "uciok");
 
 	/**********************************************/
-	// New game
+	// Starts a new game. Clears the hash.
 	else if (cmd == "ucinewgame")
 		TT.clear();
 
 	else if (cmd == "isready")
 		sync_print("readyok");
 
+
 	/**********************************************/
-	// go: main game driver
+	/*********** go: main game driver ****************/
+	/**********************************************/
 	else if (cmd == "go")
 	{
+		vector<Move> searchMoveList;
+
+		while (iss >> str) // all supported sub-cmd after 'go'
+		{
+			// Restrict search to these moves only
+			if (str == "searchmoves")
+				while (iss >> str)
+					searchMoveList.push_back(uci2move(pos, str));
+			// Main time left for both sides
+			else if (str == "wtime")	iss >> Limit.time[W];
+			else if (str == "btime")		iss >> Limit.time[B];
+			// Time increments per move
+			else if (str == "winc")		iss >> Limit.increment[W];
+			else if (str == "binc")		iss >> Limit.increment[B];
+			// There're x moves left until the next time control
+			else if (str == "movestogo")		iss >> Limit.movesToGo;
+			// Search x plies only
+			else if (str == "depth")		iss >> Limit.depth;
+			// Search up to x nodes
+			else if (str == "nodes")		iss >> Limit.nodes;
+			// Search for a mate in x moves
+			else if (str == "mate")		iss >> Limit.mateInX;
+			// Search for exactly x msec
+			else if (str == "movetime")	iss >> Limit.moveTime;
+			// Search until 'stop'. Otherwise never exit
+			else if (str == "infinite")		Limit.infinite = true;
+			// Start searching in pondering mode
+			else if (str == "ponder")		Limit.ponder = true;
+		}
+		
+		// We need to wait until Main thread finishes running
+		ThreadPool::wait_until_main_finish();
+
+		//** Most of the variables below are globals critical to search.cpp **//
+		// Main is idle now. Reset all signals
 		Signal.stopOnPonderhit = Signal.firstRootMove
 			= Signal.stop = Signal.failedLowAtRoot = false;
-		wait_until_main_finish();
+
+		// Start our clock: SearchTime global var in the search.cpp records the 
+		// starting point at which we begin thinking on the current move.
+		// "How much time has elapsed" can be answered by subtraction: now() - SearchTime
+		SearchTime = now();
+
+		// Search::SetupStates are set in UCI command 'position'
+		RootMoveList.clear();
+		RootPos = pos;
+
+		// Check whether searchMoveList has all legal moves
+		MoveBuffer mbuf;
+		ScoredMove *it, *end = pos.gen_moves<LEGAL>(mbuf);
+		for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
+			if ( searchMoveList.empty() // no 'searchmoves' cmd specified. We add all legal moves as RootMove
+				// if a legal move is found within the UCI specified searchmoves, add it
+				|| std::find(searchMoveList.begin(), searchMoveList.end(), it->move) != searchMoveList.end())
+			{
+					RootMoveList.push_back(RootMove(it->move));
+					DBG_DISP(move2dbg(it->move));
+			}
+
+		// Wake up and start our business!
 		Main->running = true;
 		Main->signal();
 	}
 
-	/**********************************************/
-	// Debug command perft (interactive)
-	else if (cmd == "perft")
-	{
-		if (pth) // never run 2 perfts at the same time
-			if (!Signal.stop) { sync_print("perft is running"); continue; }
-			else kill_perft;
-
-		PH.posperft = pos; // Shared "pos"
-		vector<string> args;
-		while (iss >> str)
-			args.push_back(str);
-		size_t size = args.size();
-		// No arg: perform an interactive perft with the shared "pos"
-		if (size == 0)
-		{
-			string response;
-			sync_print("Enter any non-number to quit perft.");
-			bool again = true, first = true;
-			while (again)
-			{
-				cout << "depth: ";
-				getline(cin, response);
-				if ( !pth && ((!first && response.empty()) || istringstream(response) >> PH.depth) )
-					{ start_perft(0); kill_perft; } // blocks here
-				else
-					again = false;
-				if (first)  first = false;
-			}
-		}
-		// 'perft' with arguments
-		else
-		{
-			string opt = str2lower(args[0]);
-			// Set depth
-			if (is_int(opt))
-				{ PH.depth = str2int(opt); start_perft(0); }
-			// Set epd file path
-			else if (opt == "filepath" && size > 1)
-			{
-				PH.epdFile = args[1]; 
-				int i = 2; while (i < size)  PH.epdFile += " " + args[i++]; 
-			}
-			// Run epd test suite
-			else if (opt == "suite")
-			{
-				sync_print("Reading " << PH.epdFile);
-				// Run from the beginning of epd file
-				if (size == 1)	{ start_perft(1); }
-				// Run from a specific id-gentest
-				else { PH.epdId = args[1]; start_perft(2); }
-			}
-			// Resize, disable or clear the perft hash
-			else if (opt == "hash" && size == 2)
-			{
-				if (is_int(args[1]))
-				{
-					int hashSize = str2int(args[1]);
-					// Disable hash and clear all existing entries
-					if (hashSize == 0)
-						{PH.useHash = false; perft_hash_resize(-1); }
-					// Resize. Maximum 4096 mb. If alloc fails, useHash = false
-					else {PH.useHash = perft_hash_resize(min(4096, hashSize));}
-				}
-				else if (PH.useHash && args[1] == "clear")
-					perft_hash_resize(-1);
-			}
-		}
-	}  // cmd 'perft'
 
 	/**********************************************/
-	// Sets the position. Syntax: position [startpos | fen] XXX [move]
+	// Sets the position. Syntax: position [startpos | fen] xxxx xxxx ...
+	/**********************************************/
 	else if (cmd == "position")
 	{
 		iss >> str;
@@ -289,16 +284,30 @@ do
 		}
 		else if (str == "fen")
 			while (iss >> str && str != "move")	fen += str + " ";
-		else
+		else // sub-command not supported
 			continue;
 
 		pos.parse_fen(fen);
-		// Parse move list
+		
+		// Optional UCI-format move list right after the fen string or 'startpos'
+		// Parse the move list and play them on the internal board
+		// First we clear the global SetupStates variable in search.cpp
+		while (!SetupStates.empty()) SetupStates.pop();
+
+		Move mv;
+		while (iss >> str && (mv = uci2move(pos, str)) != MOVE_NULL )
+		{
+			SetupStates.push(StateInfo());
+			// play the move with the most recently created state.
+			pos.make_move(mv, SetupStates.top());
+		}
 
 	}  // cmd 'position'
 
+
 	/**********************************************/
 	// Updates UCI options 
+	/**********************************************/
 	else if (cmd == "setoption")
 	{
 		string optname, optval;
@@ -318,6 +327,79 @@ do
 	// shows all option current value
 	else if (cmd == "option")
 		sync_print(options2str<false>());
+
+
+	/**********************************************/
+	// Debug command perft (interactive)
+	/**********************************************/
+	else if (cmd == "perft")
+	{
+		if (pth) // never run 2 perfts at the same time
+			if (!Signal.stop) { sync_print("perft is running"); continue; }
+			else kill_perft;
+
+			PH.posperft = pos; // Shared "pos"
+			vector<string> args;
+			while (iss >> str)
+				args.push_back(str);
+			size_t size = args.size();
+			// No arg: perform an interactive perft with the shared "pos"
+			if (size == 0)
+			{
+				string response;
+				sync_print("Enter any non-number to quit perft.");
+				bool again = true, first = true;
+				while (again)
+				{
+					cout << "depth: ";
+					getline(cin, response);
+					if ( !pth && ((!first && response.empty()) || istringstream(response) >> PH.depth) )
+					{ start_perft(0); kill_perft; } // blocks here
+					else
+						again = false;
+					if (first)  first = false;
+				}
+			}
+			// 'perft' with arguments
+			else
+			{
+				string opt = str2lower(args[0]);
+				// Set depth
+				if (is_int(opt))
+				{ PH.depth = str2int(opt); start_perft(0); }
+				// Set epd file path
+				else if (opt == "filepath" && size > 1)
+				{
+					PH.epdFile = args[1]; 
+					int i = 2; while (i < size)  PH.epdFile += " " + args[i++]; 
+				}
+				// Run epd test suite
+				else if (opt == "suite")
+				{
+					sync_print("Reading " << PH.epdFile);
+					// Run from the beginning of epd file
+					if (size == 1)	{ start_perft(1); }
+					// Run from a specific id-gentest
+					else { PH.epdId = args[1]; start_perft(2); }
+				}
+				// Resize, disable or clear the perft hash
+				else if (opt == "hash" && size == 2)
+				{
+					if (is_int(args[1]))
+					{
+						int hashSize = str2int(args[1]);
+						// Disable hash and clear all existing entries
+						if (hashSize == 0)
+						{PH.useHash = false; perft_hash_resize(-1); }
+						// Resize. Maximum 4096 mb. If alloc fails, useHash = false
+						else {PH.useHash = perft_hash_resize(min(4096, hashSize));}
+					}
+					else if (PH.useHash && args[1] == "clear")
+						perft_hash_resize(-1);
+				}
+			}
+	}  // cmd 'perft'
+
 
 	/**********************************************/
 	// Display the board as an ASCII graph
@@ -348,9 +430,9 @@ do
 
 
 
-/*****************************************************/
-/************ Printers to and from UCI notation ************/
-/*****************************************************/
+/*********************************************************/
+/************** Printers to and from UCI notation **************/
+/*********************************************************/
 
 // UCI long algebraic notation
 string move2uci(Move mv)
@@ -364,6 +446,26 @@ string move2uci(Move mv)
 		mvstr += PIECE_FEN[B][get_promo(mv)]; // must be lower case
 	return mvstr;
 }
+
+// Similar to move2uci but used only for debugging
+string move2dbg(Move mv)
+{
+	if (mv == MOVE_NULL)
+		return "null";
+
+	if (is_castle(mv))
+		return sq2file(get_to(mv)) == FILE_G ? "O-O" : "O-O-O";
+
+	string mvstr = sq2str(get_from(mv));
+	mvstr += "-" + sq2str(get_to(mv));
+	if (is_promo(mv))
+		mvstr += "=" + PIECE_FEN[B][get_promo(mv)]; // must be lower case
+	if (is_ep(mv))
+		mvstr += "[ep]";
+
+	return mvstr;
+}
+
 
 // Check validity and legality
 Move uci2move(const Position& pos, string& mvstr)
@@ -407,7 +509,7 @@ string score2uci(Value val, Value alpha, Value beta)
 		oss << "mate " << (val > 0 ? VALUE_MATE - val + 1 : -VALUE_MATE - val) / 2;
 
 	oss << ( val >= beta ? " lowerbound" 
-			: val <= alpha ? "upperbound" : "" );
+			: val <= alpha ? " upperbound" : "" );
 
 	return oss.str();
 }

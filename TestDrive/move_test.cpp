@@ -31,7 +31,7 @@ static U64 pseudo_perft(Position& pos, int depth)
 		{
 			U64 show = leaf ? 1 : pseudo_perft<GT>(pos, depth - 1);
 			if (depth == DD)
-				cout << move2uci(m) << ": " << show << endl;
+				cout << move2dbg(m) << ": " << show << endl;
 			nodeCount += show;
 		}
 		else
@@ -184,12 +184,12 @@ TEST(Moves, MakeUnmake)
 			Move m = *it;
 			pos.make_move(m, si);
 
-			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << move2uci(m) << "\n" << fenList[i];
+			ASSERT_TRUE(is_piece_list_invariant(pos)) << "Move " << move2dbg(m) << "\n" << fenList[i];
 			
 			pos.unmake_move(m);
 			// enable the verbose version by overloading the op== in position.cpp
 			//cout << (pos_orig == pos2 ? "pass" : "fail") << endl;
-			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << move2uci(m);
+			ASSERT_EQ(pos_orig, pos) << "#" <<  i << " " << fenList[i] << "\n" << move2dbg(m);
 		} 
 	}
 }
@@ -204,7 +204,7 @@ string print_move_trace(int ply)  // helper
 	oss << currentFEN << endl;
 	oss << "Move trace: ";
 	for (int i = 0; i <= ply; i++)
-		oss << move2uci(moveTrace[i]) << "  ";
+		oss << move2dbg(moveTrace[i]) << "  ";
 	return oss.str();
 }
 

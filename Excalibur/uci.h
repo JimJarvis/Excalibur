@@ -95,6 +95,8 @@ namespace UCI
 	string move2san(Position& pos, Move mv);
 	// Formats and sends the PV to UCI protocol
 	string pv2uci(const Position& pos, Depth depth, Value alpha = -VALUE_INFINITE, Value beta = VALUE_INFINITE);
+	// Only for debugging
+	string move2dbg(Move mv);
 }
 
 // global UCI option map

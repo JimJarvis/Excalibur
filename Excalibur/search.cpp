@@ -373,8 +373,8 @@ void iterative_deepen(Position& pos)
 
 		// Have we found a mate-in-N ? Then stop. 
 		// Limit.mate will be flagged by UCI "go mate" command
-		if (Limit.mate && best >= VALUE_MATE_IN_MAX_PLY
-			&& VALUE_MATE - best <= 2 * Limit.mate)
+		if (Limit.mateInX && best >= VALUE_MATE_IN_MAX_PLY
+			&& VALUE_MATE - best <= 2 * Limit.mateInX)
 			Signal.stop = true;
 
 		// Under time control scenario:

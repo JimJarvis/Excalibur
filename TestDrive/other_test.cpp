@@ -4,10 +4,7 @@
 
 TEST(Misc, Other)
 {
-	LimitListener lim;
-	lim.infinite = 1;
-	cout << lim.use_timer() << endl;
-
+	
 }
 
 // Display the time management for debugging

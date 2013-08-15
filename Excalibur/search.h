@@ -25,6 +25,7 @@ namespace Search
 	};
 
 	typedef SearchInfo SearchStack[MAX_PLY + 3];
+	typedef StateInfo StateStack[MAX_PLY + 3];
 
 	/// The struct stores information sent by GUI 'go' command about available time
 	/*  copied from UCI protocol:
@@ -73,10 +74,10 @@ namespace Search
 	{
 		LimitListener() { memset(this, 0, sizeof(LimitListener)); } // Set all flags to false.
 		// Under 5 UCI scenarios, we don't use TimeKeeper
-		bool use_timer() const { return !(mate || moveTime || depth || nodes || infinite); }
+		bool use_timer() const { return !(mateInX || moveTime || depth || nodes || infinite); }
 		Msec time[COLOR_N], increment[COLOR_N], moveTime; 
-		int movesToGo, depth, nodes;
-		bool mate, infinite, ponder;
+		int movesToGo, depth, nodes, mateInX;
+		bool infinite, ponder;
 	};
 
 	/// The struct stores volatile flags updated during the search
@@ -117,17 +118,21 @@ namespace Search
 	extern Position RootPos;
 	extern Color RootColor;
 	extern vector<RootMove> RootMoveList;
-	extern U64 SearchTime;
+	extern U64 SearchTime; // start time of our search on the current move
 
-	typedef StateInfo StateStack[MAX_PLY + 3];
-
+	// SetupStates are set by UCI command 'position' with a list
+	// of moves played on the internal board.
+	// Needed for functions like pos.is_draw(), which needs to trace
+	// back in state history.
 	extern stack<StateInfo> SetupStates;
 
 	void init();
+
 	// Updates contempt factor collected by UCI OptMap
 	// Contempt factor that determines when we should consider draw
 	// unit: centi-pawn. Normally a good CF is -50 for opening, -25 general, and 0 engame.
 	void update_contempt_factor();
+
 	void think(); // external main interface
 }
 
