@@ -5,7 +5,7 @@
 #include "board.h"
 #include "zobrist.h"
 
-/* internal state of a position: used to unmake a move */
+/* Internal state of a position: used to unmake a move */
 struct StateInfo
 {
 	// State hash keys
@@ -27,6 +27,17 @@ struct StateInfo
 	Bit checkerMap; // a map that collects all checkers
 	PieceType capt;  // captured piece
 	StateInfo *st_prev; // point to the previous state
+};
+
+/* Keeps together all the shared data about check */
+// Instance can be obtained by pos.check_info()
+struct CheckInfo
+{
+	Bit discv;  // discovered checkers
+	Bit pinned;
+	// Record locations of a piecetype where it can check the opponent's king square
+	Bit pieceCheckMap[PIECE_TYPE_N];
+	Square oppKsq;
 };
 
 // Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
@@ -98,10 +109,7 @@ public:
 	Bit attackers_to(Square sq, Bit occ) const;  // regardless of color: records all attackers and defenders
 	Bit attackers_to(Square sq) const { return attackers_to(sq, Occupied); };  // regardless of color: records all attackers and defenders
 
-	// Pawn push masks
-	Bit pawn_push(int sq) const { return Board::pawn_push(turn, sq); }
-	Bit pawn_push2(int sq) const { return Board::pawn_push2(turn, sq); }
-	// a passed pawn?
+	// A passed pawn?
 	bool is_pawn_passed(Color c, Square sq) const
 	{ return ! (Pawnmap[~c] & Board::passed_pawn_mask(c, sq)); }
 
@@ -141,6 +149,8 @@ public:
 	template<GenType>
 	ScoredMove* gen_moves(ScoredMove* mbuf) const;
 
+	CheckInfo check_info() const; // obtain a CheckInfo obj
+	bool is_check(Move mv, const CheckInfo& ci) const; // test if a move gives check
 	bool is_capture(Move mv) const
 		{ return boardPiece[Moves::get_to(mv)] != NON || Moves::is_ep(mv); }
 	bool is_pseudo(Move mv) const;

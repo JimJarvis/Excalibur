@@ -44,11 +44,9 @@ namespace Board
 	void init_tables();
 
 	/* Castling masks. Will be accessed directly in movegen. */
-   // here [4] should be one of CASTLE_CE, _BD, _FG, _EG
+   // Here [4] should be one of CASTLE_CE, _BD, _FG, _EG
 	extern Bit CastleMask[COLOR_N][4];
-	//const Square SQ_OO_ROOK[COLOR_N][2] = { {7, 5}, {63, 61} };
-	//const Square SQ_OOO_ROOK[COLOR_N][2] = { {0, 3}, {56, 59} };
-	// location of the rook for castling: [COLOR_N][OO or OOO][0=from, 1=to]. Used in make/unmakeMove
+	// Location of the rook for castling: [COLOR_N][OO or OOO][0=from, 1=to]. Used in make/unmakeMove
 	const Square RookCastleSq[COLOR_N][CASTLE_TYPES_N][2] = {
 		{	{7, 5}, {0, 3}	},   // W
 		{	{63, 61}, {56, 59}}  }; // B

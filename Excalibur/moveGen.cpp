@@ -389,6 +389,27 @@ int Position::count_legal() const
 }
 
 
+/* Obtain a CheckInfo object that keeps together all useful check-related data */
+CheckInfo Position::check_info() const
+{
+	CheckInfo ci;
+	Color opp = ~turn;
+	Square oppKsq = king_sq(opp);
+	ci.oppKsq = oppKsq;
+	ci.pinned = pinned_map();
+	ci.discv = discv_map();
+
+	ci.pieceCheckMap[PAWN] = pawn_attack(opp, oppKsq);
+	ci.pieceCheckMap[KNIGHT] = knight_attack(oppKsq);
+	ci.pieceCheckMap[BISHOP] = attack_map<BISHOP>(oppKsq);
+	ci.pieceCheckMap[ROOK] = attack_map<ROOK>(oppKsq);
+	ci.pieceCheckMap[QUEEN] = ci.pieceCheckMap[ROOK] | ci.pieceCheckMap[BISHOP];
+	ci.pieceCheckMap[KING] = 0;
+
+	return ci;
+}
+
+
 // Get a bitmap of all pinned pieces
 template<bool UsInCheck>
 Bit Position::hidden_check_map() const
@@ -548,16 +569,69 @@ bool Position::pseudo_is_legal(Move mv, Bit pinned) const
 		Square ksq = king_sq(turn);
 		Color opp = ~turn;
 		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | Board::pawn_push(~turn, to) );
+		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | pawn_push(~turn, to) );
 		// only slider "pins" are possible
-		return !(Board::rook_attack(ksq, newOccup) & piece_union(opp, QUEEN, ROOK))
-			&& !(Board::bishop_attack(ksq, newOccup) & piece_union(opp, QUEEN, BISHOP));
+		return !(rook_attack(ksq, newOccup) & piece_union(opp, QUEEN, ROOK))
+			&& !(bishop_attack(ksq, newOccup) & piece_union(opp, QUEEN, BISHOP));
 	}
 
 	// A non-king move is legal iff :
 	return !pinned ||		// it isn't pinned at all
 		!(pinned & setbit(from)) ||    // pinned but doesn't move
 		( is_aligned(from, to, king_sq(turn)) );  // the ksq, from and to squares are aligned: move along the pin direction.
+}
+
+
+// Test if a move gives check to the opponent, given the discovered checker map
+bool Position::is_check(Move mv, const CheckInfo& ci) const
+{
+	Square from = get_from(mv);
+	Square to = get_to(mv);
+	PieceType pt = boardPiece[from];
+
+	// Direct check
+	if (ci.pieceCheckMap[pt] & setbit(to))
+		return true;
+
+	Square oppKsq = ci.oppKsq;
+
+	// Discovered check
+	if (ci.discv && (ci.discv & setbit(from)) )
+		// If this piece (which blocks another slider's check-ray) is also
+		// a slider, then it must be of a different ray type. Thus if it moves
+		// it must give check. If a knight-blocker moves it always reveals the 
+		// discv check ray. But a pawn- or king-blocker might move in the 
+		// direction of discv check ray. Need to verify alignment
+		if ( (pt != PAWN && pt != KING) || !is_aligned(from, to, oppKsq) )
+			return true;
+
+	if (is_normal(mv))	return false;
+
+	if (is_promo(mv))
+		return attack_map(get_promo(mv), to, Occupied ^ setbit(from)) & setbit(oppKsq);
+
+	if (is_ep(mv)) // handle the extremely rare 'double discovered check'
+	{
+		// Same as the EP procedure in pseudo_is_legal()
+		// Occupied ^ (From | To | Capt)
+		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | pawn_push(~turn, to) );
+		// only slider "pins" are possible
+		return (rook_attack(oppKsq, newOccup) & piece_union(turn, QUEEN, ROOK))
+			|| (bishop_attack(oppKsq, newOccup) & piece_union(turn, QUEEN, BISHOP));
+	}
+
+	if (is_castle(mv))
+	{
+		// RookCastleMask[color][0=O-O, 1=O-O-O]
+		int castleType = sq2file(to) == FILE_C;
+		Bit rFromToMap = RookCastleMask[turn][castleType];
+		Square rto = RookCastleSq[turn][castleType][1];
+
+		return (ray_mask(ROOK, rto) & setbit(oppKsq))
+			&& (rook_attack(rto, Occupied ^ rFromToMap ^ setbit(from) ^ setbit(to)) & setbit(oppKsq) );
+	}
+
+	return false; // should never be reached.
 }
 
 
@@ -681,7 +755,7 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 
 		// Set enpassant only if the moved pawn can be attacked
 		Square ep;
-		if (ToMap == pawn_push2(from)
+		if (ToMap == pawn_push2(turn, from)
 			&& (pawn_attack(turn, ep = (from + to)/2) & Pawnmap[opp] ))
 		{
 			st->epSquare = ep;  // new ep square, directly ahead the 'from' square
@@ -721,20 +795,12 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		if (is_castle(mv))
 		{
 			Square rfrom, rto;
-			if (sq2file(to) == 6)  // King side castle
-			{
-				Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OO];
-				Colormap[turn] ^= RookCastleMask[turn][CASTLE_OO];
-				rfrom = RookCastleSq[turn][CASTLE_OO][0];
-				rto = RookCastleSq[turn][CASTLE_OO][1];
-			}
-			else
-			{
-				Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
-				Colormap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
-				rfrom = RookCastleSq[turn][CASTLE_OOO][0];
-				rto = RookCastleSq[turn][CASTLE_OOO][1];
-			}
+			int castleType = sq2file(to) == FILE_C;
+			Rookmap[turn] ^= RookCastleMask[turn][castleType];
+			Colormap[turn] ^= RookCastleMask[turn][castleType];
+			rfrom = RookCastleSq[turn][castleType][0];
+			rto = RookCastleSq[turn][castleType][1];
+
 			boardPiece[rfrom] = NON; boardColor[rfrom] = COLOR_NULL;  // from
 			boardPiece[rto] = ROOK; boardColor[rto] = turn; // to
 
@@ -818,20 +884,12 @@ void Position::unmake_move(Move& mv)
 	else if (is_castle(mv))
 	{
 		Square rfrom, rto;
-		if (sq2file(to) == 6)  // king side castling
-		{
-			Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OO];
-			Colormap[turn] ^= RookCastleMask[turn][CASTLE_OO];
-			rfrom = RookCastleSq[turn][CASTLE_OO][0];
-			rto = RookCastleSq[turn][CASTLE_OO][1];
-		}
-		else
-		{
-			Rookmap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
-			Colormap[turn] ^= RookCastleMask[turn][CASTLE_OOO];
-			rfrom = RookCastleSq[turn][CASTLE_OOO][0];
-			rto = RookCastleSq[turn][CASTLE_OOO][1];
-		}
+		int castleType = sq2file(to) == FILE_C;
+		Rookmap[turn] ^= RookCastleMask[turn][castleType];
+		Colormap[turn] ^= RookCastleMask[turn][castleType];
+		rfrom = RookCastleSq[turn][castleType][0];
+		rto = RookCastleSq[turn][castleType][1];
+
 		boardPiece[rfrom] = ROOK;  boardColor[rfrom] = turn;  // from
 		boardPiece[rto] = NON;  boardColor[rto] = COLOR_NULL; // to
 

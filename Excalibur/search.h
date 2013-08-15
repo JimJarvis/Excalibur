@@ -5,6 +5,7 @@
 #include "eval.h"
 #include "material.h"
 #include "ttable.h"
+#include "timer.h"
 
 namespace Search
 {
@@ -119,6 +120,7 @@ namespace Search
 	extern Color RootColor;
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime; // start time of our search on the current move
+	extern TimeKeeper Timer; // single instance Time Keeper
 
 	// SetupStates are set by UCI command 'position' with a list
 	// of moves played on the internal board.

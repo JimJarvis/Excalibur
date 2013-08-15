@@ -2,7 +2,6 @@
 #include "moveorder.h"
 #include "uci.h"
 #include "thread.h"
-#include "timer.h"
 
 using namespace Eval;
 using namespace Search;
@@ -22,11 +21,14 @@ namespace Search
 	// instantiate the extern variables
 	volatile SignalListener Signal;
 	LimitListener Limit;
+
+	stack<StateInfo> SetupStates;
 	vector<RootMove> RootMoveList;
 	Position RootPos;
 	Color RootColor;
+
+	TimeKeeper Timer;
 	U64 SearchTime;
-	stack<StateInfo> SetupStates;
 }  // namespace Search
 
 /**********************************************/
@@ -36,7 +38,6 @@ enum NodeType { ROOT, PV, NON_PV};
 /**********************************************/
 /* Shared global variables and prototype for main searchers */
 
-TimeKeeper Timer; // single instance Time Keeper
 
 // If the remaining available time drops below this percentage 
 // threshold, we don't start the next iteration. 
@@ -170,12 +171,9 @@ void Search::think()
 	{
 	update_contempt_factor();
 
-	// Reset the main thread
-	ThreadPool::Main->maxPly = 0;
-
 	// Set Clock check interval to avoid lagging. Clock thread checks for remaining 
 	// available time regularly, as allocated by Timer.talloc() at the beginning
-	 Clock->ms = Limit.use_timer() ? 
+	Clock->ms = Limit.use_timer() ? 
 						min(100, max(Timer.optimum()/16, ClockThread::Resolution)) : 
 			Limit.nodes ? 2 * ClockThread::Resolution : 100;  
 	
@@ -396,7 +394,8 @@ void iterative_deepen(Position& pos)
 			// Stop early if one move seems much better than others
 			if ( !stopjug  &&  depth >= 12 
 				&& best > VALUE_MATED_IN_MAX_PLY
-				&& ( RootMoveList.size() == 1 || now() - SearchTime > Timer.optimum() * 0.2))
+				&& ( RootMoveList.size() == 1  // has only 1 legal move at root
+						|| now() - SearchTime > Timer.optimum() * 0.2))
 			{
 				// Verify this move's much better ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 			}
@@ -423,10 +422,33 @@ void iterative_deepen(Position& pos)
 template<NodeType NT>
 Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
 {
+	const bool isPV = (NT == PV || NT == ROOT);
+	const bool isRoot = NT == ROOT;
+
+	StateInfo st;
+	Entry *tte; // transposition table
+	U64 key;
+	Move ttMv, mv, excludedMv, bestMv, threatMv;
+	Value best, val, ttVal;
+	Value eval, nullVal, futilityVal;
+	bool inCheck;
+	int moveCnt, quietCnt;
+
+	//******* Stage 1: Init *******//
 	return 0;
 }
 
 
+
+/***********************************************/
+/*************** Quiesence Search ****************/
+/***********************************************/
+
+template<NodeType NT>
+Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth)
+{
+	return 0;
+}
 
 /**********************************************/
 /**********************************************/

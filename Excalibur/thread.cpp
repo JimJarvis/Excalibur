@@ -1,6 +1,6 @@
 #include "thread.h"
 #include "search.h"
-#include <climits>
+using namespace Search;
 
 // External interface to 2 global threads
 namespace ThreadPool
@@ -83,7 +83,22 @@ void MainThread::execute()
 // Checks the time for ClockThread
 void check_time()
 {
+	if (Limit.ponder)
+		return;
 
+	U64 lapse = now() - SearchTime;
+
+	bool stillMove1 = Signal.firstRootMove && !Signal.failedLowAtRoot
+			&& lapse > Timer.optimum();
+	bool timeRunOut = stillMove1 ||
+					lapse > Timer.maximum() - 2 * ClockThread::Resolution;
+
+	if ( (Limit.use_timer() && timeRunOut) 
+			// UCI 'movetime' requires that we search exactly x msec
+		|| ( Limit.moveTime && lapse >= Limit.moveTime )
+			// UCI 'nodes' requires that we search exactly x nodes
+		|| (Limit.nodes && RootPos.nodes >= Limit.nodes) )
+		Signal.stop = true;
 }
 
 // Launch a clock thread

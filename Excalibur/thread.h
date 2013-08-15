@@ -118,7 +118,6 @@ struct MainThread : public Thread
 {
 	MainThread() : running(true) {}
 	virtual void execute();
-	int maxPly;
 	volatile bool searching;
 	// avoid a race condition with 'searching'
 	volatile bool running;
