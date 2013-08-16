@@ -93,23 +93,24 @@ U64 Position::perft<true>(Depth depth)
 		return tte->store(st->key, gen_moves<LEGAL>(mbuf) - mbuf);
 
 	U64 nodeCount = 0;
-	Move m;
+	Move mv;
 	StateInfo si;
+	CheckInfo ci = check_info();
 	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
 	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
-		m = it->move;
-		make_move(m, si);
+		mv = it->move;
+		make_move(mv, si, ci, is_check(mv, ci));
 		//U64 count = perft<true>(depth - 1);
 		//if (depth == DivideDepth)
 		//{
-		//	cout << m2str(m) << ": ";
+		//	cout << move2dbg(mv) << ": ";
 		//	cout << count << endl;
 		//}
 		//nodeCount += count;
 		nodeCount += perft<true>(depth - 1);
-		unmake_move(m);
+		unmake_move(mv);
 	}
 
 	return tte->store(st->key, nodeCount);
@@ -122,14 +123,15 @@ U64 Position::perft_helper(int depth)
 	const bool isLeaf = depth == 2;
 
 	U64 nodeCount = 0;
-	Move m;
+	Move mv;
 	StateInfo si;
+	CheckInfo ci = check_info();
 	ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
 	// This is EXTREMELY IMPORTANT to set end->move to 0. Otherwise weird bug. 
 	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
 	{
-		m = it->move;
-		make_move(m, si);
+		mv = it->move;
+		make_move(mv, si, ci, is_check(mv, ci));
 		if (isLeaf)
 		{
 			MoveBuffer mbufLeaf;
@@ -137,7 +139,7 @@ U64 Position::perft_helper(int depth)
 		}
 		else
 			nodeCount += perft_helper(depth - 1);
-		unmake_move(m);
+		unmake_move(mv);
 	}
 
 	return nodeCount;

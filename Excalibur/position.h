@@ -13,7 +13,8 @@ struct StateInfo
 	Value npMaterial[COLOR_N];  // non-pawn material
 	Score psqScore;
 	// Additional important states
-	byte castleRights[COLOR_N]; // &1: O-O, &2: O-O-O
+	byte castleRights[COLOR_N]; // Castling encoding: 2 bits, msb = O-O-O, lsb = O-O
+				// &1 get kingside; &2 get queenside; &=1 delete queenside; &=2 delete kingside
 	Square epSquare; // en-passant square
 	int cntInternalFiftyMove; // The internal counter, records the real number of half moves actually made by the engine
 				// Every time we parse a new FEN this would be set to 0, regardless of cntFiftyMove (arbitrarily specified by FEN)
@@ -39,6 +40,7 @@ struct CheckInfo
 	Bit pieceCheckMap[PIECE_TYPE_N];
 	Square oppKsq;
 };
+const CheckInfo ci_NULL; // pass a null CheckInfo for make_move version 2
 
 // Borrowed from Stockfish, used to partially copy the StateInfo struct. offsetof macro is defined in stddef.h
 const size_t STATEINFO_COPY_SIZE = offsetof(StateInfo, key) / sizeof(U64) + 1;
@@ -159,8 +161,13 @@ public:
 	Bit checker_map() const { return st->checkerMap; }
 	Bit pinned_map() const { return hidden_check_map<true>(); }; // a bitmap of all pinned pieces
 	Bit discv_map() const { return hidden_check_map<false>(); }; // a bitmap of all discovered checkers
-	
-	void make_move(Move& mv, StateInfo& nextSt);   // make the move. The new state will be recorded in nextState output parameter
+
+	// The new state will be recorded in nextState output parameter
+	// Make the move and update a new checkerMap, given CheckInfo and bool does this move give check to opp.
+	INLINE void make_move(Move& mv, StateInfo& nextSt, const CheckInfo& ci, bool isCheck)
+		{ make_move_helper<true>(mv, nextSt, ci, isCheck); }
+	INLINE void make_move(Move& mv, StateInfo& nextSt)
+		{ make_move_helper<false>(mv, nextSt, ci_NULL); }
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
 
 	/* perft.cpp */
@@ -182,6 +189,10 @@ private:
 	ScoredMove* gen_all_pieces(ScoredMove*, Bit target, Bit pinned = 0, Bit discv = 0) const; 
 	template<bool legal>
 	ScoredMove* gen_evasion(ScoredMove*, Bit pinned = 0) const;
+
+	// Used to power 2 versions of make_move, one with and one without CheckInfo
+	template<bool UseCheckInfo> // do we use a CheckInfo obj to make the move?
+	void make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo&, bool isCheck = false);
 
 	// Used for pinned_map() [UsInCheck=true] and discv_map()[UsInCheck=false]
 	template<bool UsInCheck> Bit hidden_check_map() const;

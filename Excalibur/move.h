@@ -52,8 +52,5 @@ const Move CastleMoves[COLOR_N][CASTLE_TYPES_N] =
 template<CastleType> inline bool can_castle(byte castleRight);
 template<> inline bool can_castle<CASTLE_OO>(byte castleRight) { return (castleRight & 1) == 1; }
 template<> inline bool can_castle<CASTLE_OOO>(byte castleRight) { return (castleRight & 2) == 2; }
-template<CastleType> inline void delete_castle(byte& castleRight);
-template<> inline void delete_castle<CASTLE_OO>(byte& castleRight) { castleRight &= 2; }
-template<> inline void delete_castle<CASTLE_OOO>(byte& castleRight) { castleRight &= 1; }
 
 #endif // __move_h__

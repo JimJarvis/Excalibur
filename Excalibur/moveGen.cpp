@@ -641,14 +641,22 @@ bool Position::is_check(Move mv, const CheckInfo& ci) const
  * Use a stack of StateInfo, to continuously makeMove:
  *
  * StateInfo states[MAX_STACK_SIZE], *si = states;
- * makeMove(mv, *si++);
+ * make_move(mv, *si++);
  * 
  * Special note: pieceList[][][] is VERY TRICKY to update. You must follow this sequence:
  * make_move():  (1) capture   (2) move the piece  (3) promotion
  * unmake_move():  (1) promotion  (2) move the piece  (3) capture
  * inverse sequences guarantees the correct update. 
+ * 
+ * make_move() mode 1:
+ * pass an external CheckInfo to avoid updating the st->checkerMap from 
+ * scratch over and over again. We update only if isCheck is true.
+ * 
+ * make_move() mode 2: compute checkerMap each time on the fly.
+ * Used for trivial make_moves (that won't be recurring).
  */
-void Position::make_move(Move& mv, StateInfo& nextSt)
+template<bool UseCheckInfo>
+void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci, bool isCheck)
 {
 	// First get the previous Zobrist key
 	U64 key = st->key;
@@ -686,22 +694,19 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 		st->epSquare = SQ_NULL;
 	}
 
-	// Castling key update
-	byte cas, casNew;
-	cas = st->castleRights[W];
-	if (cas && 
-		(casNew = cas & CastleRightMask[W][from][to]) != cas)
-	{
-		key ^= Zobrist::castle[W][cas - casNew];
-		st->castleRights[W] = casNew;
-	}
-	cas = st->castleRights[B];
-	if (cas && 
-		(casNew = cas & CastleRightMask[B][from][to]) != cas)
-	{
-		key ^= Zobrist::castle[B][cas - casNew];
-		st->castleRights[B] = casNew;
-	}
+	// Castling rights and key update
+	// Castling right change is only possible if our moving piece is either king or rook
+	// and only possible if opp's captured piece is a rook. 
+	// The magic Board::CastleRightMask leaves the st->castleRights unchanged if 
+	// the rook/king isn't moved and the opp rook isn't captured when able to castle.
+	byte cas;
+	if ((cas = st->castleRights[turn]) && (piece == ROOK || piece == KING))
+		key ^= Zobrist::castle[turn][cas - 
+						(st->castleRights[turn] &= CastleRightMask[turn][from][to]) ];
+	if ((cas = st->castleRights[opp]) && capt == ROOK)
+		key ^= Zobrist::castle[opp][cas - 
+						(st->castleRights[opp] &= CastleRightMask[opp][from][to]) ];
+
 
 	// Deal with all kinds of captures, including en-passant
 	if (capt)
@@ -813,11 +818,45 @@ void Position::make_move(Move& mv, StateInfo& nextSt)
 	st->key = key;
 	Occupied = Colormap[W] | Colormap[B];
 
-	// now we look from our opponents' perspective and update checker info
-	st->checkerMap = attackers_to(king_sq(opp), turn);
+	// Now we look from our opponents' perspective and update checker info
+	// Smart update with CheckInfo shared data.
+	// Avoid calculate from scratch over and over again, like the naive code below:
+	// st->checkerMap = attackers_to(king_sq(opp), turn);
+
+	if (UseCheckInfo)  // Template argument. make_move mode 1
+	{
+		st->checkerMap = 0;
+		if (isCheck)
+		{
+			if (!is_normal(mv)) // we're reluctant to handle special moves
+				st->checkerMap = attackers_to(ci.oppKsq, turn);
+			else
+			{
+				if (ci.pieceCheckMap[piece] & ToMap) // direct check
+					st->checkerMap |= ToMap;
+	
+				if (ci.discv && (ci.discv & setbit(from))) // discovered check
+				{
+					// The 'piece' is a blocker
+					if (piece != ROOK) // Thus reveals a rook attack
+						st->checkerMap |= attack_map<ROOK>(ci.oppKsq) & piece_union(turn, ROOK, QUEEN);
+	
+					if (piece != BISHOP) // Thus reveals a bishop attack
+						st->checkerMap |= attack_map<BISHOP>(ci.oppKsq) & piece_union(turn, BISHOP, QUEEN);
+				}
+			}
+		}
+	}
+	else // Compute on the fly. make_move mode 2
+		st->checkerMap = attackers_to(king_sq(opp), turn);
 
 	turn = opp;
 }
+// Explicit instantiation
+template void Position::make_move_helper<true>(Move& mv, StateInfo& nextSt, const CheckInfo& ci, bool isCheck);
+template void Position::make_move_helper<false>(Move& mv, StateInfo& nextSt, const CheckInfo& ci, bool isCheck);
+
+
 
 /* Unmake move and restore the Position internal states */
 void Position::unmake_move(Move& mv)
