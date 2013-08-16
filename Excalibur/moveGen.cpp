@@ -661,7 +661,8 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 	// First get the previous Zobrist key
 	U64 key = st->key;
 
-	// copy to the next state and begin updating the new state object
+	// Copy to the next state and begin updating the new state object
+	// Only make a partial copy (up to 'key') to save memory. 
 	memcpy(&nextSt, st, STATEINFO_COPY_SIZE * sizeof(U64));
 	nextSt.st_prev = st;
 	st = &nextSt;
@@ -857,7 +858,6 @@ template void Position::make_move_helper<true>(Move& mv, StateInfo& nextSt, cons
 template void Position::make_move_helper<false>(Move& mv, StateInfo& nextSt, const CheckInfo& ci, bool isCheck);
 
 
-
 /* Unmake move and restore the Position internal states */
 void Position::unmake_move(Move& mv)
 {
@@ -943,4 +943,34 @@ void Position::unmake_move(Move& mv)
 	Occupied = Colormap[W] | Colormap[B];
 
 	st = st->st_prev; // recover the state from previous position
+}
+
+
+/* Make a null move: for search pruning */
+void Position::make_null_move(StateInfo& nextSt)
+{
+	// Full copy here.
+	memcpy(&nextSt, st, sizeof(StateInfo)); 
+	nextSt.st_prev = st;
+	st = &nextSt;
+
+	st->key ^= Zobrist::turn;
+
+	st->cntFiftyMove ++;  // will be set to 0 later if it's a pawn move or capture
+	st->cntInternalFiftyMove = 0; // explained in the header comment
+
+	if (st->epSquare != SQ_NULL)  // reset epSquare and its hash key
+	{
+		st->key ^=Zobrist::ep[sq2file(st->epSquare)];
+		st->epSquare = SQ_NULL;
+	}
+
+	turn = ~turn; // flip side
+}
+
+/* Unmake a null move */
+void Position::unmake_null_move()
+{
+	st = st->st_prev; // restore the state
+	turn = ~turn;
 }

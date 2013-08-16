@@ -15,14 +15,14 @@ namespace Search
 	struct SearchInfo
 	{
 		int ply;
-		Move currentMove;
-		Move excludedMove;
+		Move currentMv;
+		Move excludedMv;
 		Move killers[2];
 		Depth reduction;
 		Value staticEval;
 		Value staticMargin;
-		bool skipNullMove;
-		int futilityMoveCount;
+		bool skipNullMv;
+		int futilityMvCnt;
 	};
 
 	typedef SearchInfo SearchStack[MAX_PLY + 3];
@@ -86,7 +86,10 @@ namespace Search
 	/// The flag stopOnPonderhit is defined because
 	/// normally we should continue searching on ponderhit unless we're out of time.
 	struct SignalListener
-	{ bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; };
+	{
+		SignalListener() { memset(this, 0, sizeof(SignalListener)); } // Set all falgs to false
+		bool stopOnPonderhit, firstRootMove, stop, cutOff, failedLowAtRoot; 
+	};
 
 	/// RootMove struct is used for moves at the root of the tree. For each root
 	/// move we store a score, and a PV (really a refutation in the
@@ -120,7 +123,7 @@ namespace Search
 	extern Color RootColor;
 	extern vector<RootMove> RootMoveList;
 	extern U64 SearchTime; // start time of our search on the current move
-	extern TimeKeeper Timer; // single instance Time Keeper
+	extern TimeKeeper Timer;
 
 	// SetupStates are set by UCI command 'position' with a list
 	// of moves played on the internal board.

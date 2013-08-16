@@ -296,7 +296,7 @@ void iterative_deepen(Position& pos)
 
 	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
 	// clear the recording tables
-	TT.new_search();
+	TT.new_generation();
 	History.clear();
 	Gains.clear();
 	Refutations.clear();
@@ -366,6 +366,7 @@ void iterative_deepen(Position& pos)
 
 		} // end of aspiration loop
 		
+
 		/******* Succeed. No fail low or high! ********/
 		sync_print(pv2uci(pos, depth));
 
@@ -415,65 +416,36 @@ void iterative_deepen(Position& pos)
 }
 
 
-/**********************************************/
-/*************  Main Search Engine **************/
-/**********************************************/
-
-template<NodeType NT>
-Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
-{
-	const bool isPV = (NT == PV || NT == ROOT);
-	const bool isRoot = NT == ROOT;
-
-	StateInfo st;
-	Entry *tte; // transposition table
-	U64 key;
-	Move ttMv, mv, excludedMv, bestMv, threatMv;
-	Value best, val, ttVal;
-	Value eval, nullVal, futilityVal;
-	bool inCheck;
-	int moveCnt, quietCnt;
-
-	//******* Stage 1: Init *******//
-	return 0;
-}
-
-
-
-/***********************************************/
-/*************** Quiesence Search ****************/
-/***********************************************/
-
-template<NodeType NT>
-Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth)
-{
-	return 0;
-}
 
 /**********************************************/
 /**********************************************/
 /* Various little tool functions used by search() and qsearch() */
-// value2tt(), tt2value(), is_check_dangerous(), allows(), refutes()
+// value2tt(), tt2value(), is_check_dangerous(), allows(), refutes(), mate_value(), mated_value()
+ 
+// Large positive
+inline Value mate_value(int ply) { return VALUE_MATE - ply; }
+// Large negative
+inline Value mated_value(int ply) { return -VALUE_MATE + ply; }
 
 // Adjusts a mate score from "plies to mate from the root" to
 // "plies to mate from the current position". Non-mate scores are unchanged.
 // The function is called before storing a value to the transposition table.
 //
-Value value2tt(Value v, int ply)
+inline Value value2tt(Value v, int ply)
 {
 	return  v >= VALUE_MATE_IN_MAX_PLY  ? v + ply
-			  : v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
+		: v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
 }
 
 // The inverse of value_to_tt(): It adjusts a mate score
 // from the transposition table (where refers to the plies to mate/be mated
 // from current position) to "plies to mate/be mated from the root".
 //
-Value tt2value(Value v, int ply)
+inline Value tt2value(Value v, int ply)
 {
 	return  v == VALUE_NULL  ? VALUE_NULL
-			: v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
-			: v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
+		: v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
+		: v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
 }
 
 
@@ -510,7 +482,7 @@ bool is_check_dangerous(const Position& pos, Move mv, Value futilityBase, Value 
 		if (futilityBase + PIECE_VALUE[EG][pos.boardPiece[pop_lsb(newAtked)]] >= beta)
 			return true;  // fail high -  pruned
 	}
-	
+
 	return false;
 }
 
@@ -568,8 +540,8 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 	// threater piece, don't prune moves which defend it.
 	// from2 == threater;  to2 == threatened
 	if (pos.is_capture(mv2)
-	&& ( PIECE_VALUE[MG][pos.boardPiece[from2]] >= PIECE_VALUE[MG][pos.boardPiece[to2]]
-			|| pos.boardPiece[from2] == KING) )
+		&& ( PIECE_VALUE[MG][pos.boardPiece[from2]] >= PIECE_VALUE[MG][pos.boardPiece[to2]]
+	|| pos.boardPiece[from2] == KING) )
 	{
 		// New occ as if the defender and threater are moving
 		Bit occ = pos.Occupied ^ setbit(from1) ^ setbit(to1) ^ setbit(from2);
@@ -584,7 +556,7 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 		Bit ray = ( rook_attack(to2, occ) & pos.piece_union(defColor, ROOK, QUEEN) )
 			| ( bishop_attack(to2, occ) & pos.piece_union(defColor, BISHOP, QUEEN) );
 
-		 // Verify attackers are triggered by our move and not already existent
+		// Verify attackers are triggered by our move and not already existent
 		if (ray && (ray & ~pos.attack_map<QUEEN>(to2)))
 			return true;
 	}
@@ -595,3 +567,228 @@ bool refutes(const Position& pos, Move mv1, Move mv2)
 
 	return false;
 }
+/**********************************************/
+
+
+/**********************************************/
+/*************  Main Search Engine **************/
+/**********************************************/
+
+template<NodeType NT>
+Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode)
+{
+	const bool isPV = (NT == PV || NT == ROOT);
+	const bool isRoot = NT == ROOT;
+
+	StateInfo nextSt;
+	Entry *tte; // transposition table
+	U64 key;
+	Move ttMv, mv, excludedMv, bestMv, threatMv;
+	Value best, val, ttVal;
+	Value eval, nullVal, futilityVal;
+	bool inCheck;
+	int moveCnt, quietCnt;
+
+	//####### Init #######//
+	inCheck = pos.checker_map();
+	moveCnt = quietCnt = 0;
+	best = -VALUE_INFINITE;
+	ss->currentMv = (ss+1)->excludedMv = threatMv = bestMv = MOVE_NULL;
+	ss->ply = (ss - 1)->ply + 1;
+	ss->futilityMvCnt = 0;
+	(ss+1)->skipNullMv = false;
+	(ss+1)->reduction = DEPTH_ZERO;
+	// Killer heuristics ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	//(ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NULL;
+
+	if (!isRoot)
+	{
+		//####### Aborted search and immediate draw  #######//
+		if (Signal.stop || pos.is_draw<false>()) // no full repetition check
+			return DrawValue[pos.turn];
+
+		//####### Mate distance pruning. #######//
+		// Even if we mate at the next move our score
+		// would be at best mate_in(ss->ply+1), but if alpha is already bigger because
+		// a shorter mate was found upward in the tree then there is no need to search
+		// further, we will never beat current alpha. Same logic but with reversed signs
+		// applies also in the opposite condition of being mated instead of giving mate,
+		// in this case return a fail-high score.
+		alpha = max(mated_value(ss->ply), alpha);
+		beta = min(mate_value(ss->ply + 1), beta);
+		if (alpha >= beta)
+			return alpha;
+	}
+	else if (pos.is_draw<true>()) // Enable full 3-repetition draw check only at Root
+		return DrawValue[pos.turn];
+
+	//####### Transposition lookup #######//
+	// We don't want the score of a partial search to overwrite a previous full search
+	// TT value, so we use a different position key in case of an excluded move.
+	excludedMv = ss->excludedMv;
+	key = excludedMv ? (pos.key() ^ Zobrist::exclusion) : pos.key();
+	tte = TT.probe(key);
+	ttMv = isRoot ? RootMoveList[0].pv[0] : 
+				tte ? tte->move : MOVE_NULL;
+	ttVal = tte ? tt2value(tte->value, ss->ply) : VALUE_NULL;
+
+	// At PV nodes we check for exact scores, while at non-PV nodes we check for
+	// a fail high/low. Biggest advantage at probing at PV nodes is to have a
+	// smooth experience in analysis mode. We don't probe at Root nodes otherwise
+	// we should also update RootMoveList to avoid bogus output.
+	if ( !isRoot  && tte  && tte->depth >= depth // TT entry useful only with greater depth
+		&& ttVal != VALUE_NULL
+		&& ( isPV ? tte->bound == BOUND_EXACT :
+			ttVal >= beta ? (tte->bound & BOUND_LOWER) : // lower bound or exact
+								(tte->bound & BOUND_UPPER) )) // upper bound or exact
+	{
+		TT.update_generation(tte);
+		ss->currentMv = ttMv; // might be NULL
+
+		// Killer Heuristics ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+		return ttVal;
+	}
+
+	//######## Evalulate statically and update parent's GainStats #######//
+	if (inCheck)
+		ss->staticEval = ss->staticMargin = eval = VALUE_NULL;
+	else // #If we are not inCheck, do the following steps
+	{
+
+	if (tte) // We've got a TT entry with potential eval value
+	{
+		// If the values are null, we evaulate the position from scratch
+		if ( (ss->staticEval = eval = tte->staticEval) == VALUE_NULL
+			|| (ss->staticMargin = tte->staticMargin) == VALUE_NULL )
+			eval = ss->staticEval = evaluate(pos, ss->staticMargin);
+
+		// ttVal can be used as better position eval
+		if ((ttVal != VALUE_NULL) &&
+			(  ((tte->bound & BOUND_LOWER) && ttVal > eval)
+			 || ((tte->bound & BOUND_UPPER) && ttVal < eval) )  )
+			 eval = ttVal;
+	}
+	else // No TT entry found. Write and store a new entry
+	{
+		eval = ss->staticEval = evaluate(pos, ss->staticMargin);
+		TT.store(key, VALUE_NULL, BOUND_NULL, DEPTH_NULL, MOVE_NULL, 
+						ss->staticEval, ss->staticMargin);
+	}
+
+	// Update gain for the parent non-capture move given the static position
+	// evaluation before and after the move.
+	// GainsStats update ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+
+	//####### Razoring (skipped if inCheck) #######//
+	if (!isPV  && depth < 4 * ONE_PLY
+		&& eval + razor_margin(depth) < beta
+		&& ttMv == MOVE_NULL
+		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
+			// No pawns ready to promote.
+		&& !(pos.Pawnmap[turn] & rank_mask(relative_rank<RANK_N>(pos.turn, RANK_7))) )
+	{
+		Value razBeta = beta - razor_margin(depth);
+		Value val = qsearch<NON_PV, false>(pos, ss, razBeta-1, razBeta, DEPTH_ZERO);
+		if (val < razBeta)
+			// Logically we should return (v + razor_margin(depth)), but
+				// surprisingly this did slightly weaker in tests.
+					return val;
+	}
+
+	//####### Static null move pruning (not inCheck) #######//
+	// We're betting that the opponent doesn't have a move that will reduce
+	// the score by more than futility_margin(depth) if we do a null move.
+	if ( !isPV && !ss->skipNullMv // flag
+		&& depth < 4 * ONE_PLY
+		&& eval - futility_margin(depth, (ss-1)->futilityMvCnt) >= beta
+		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
+		&& abs(eval) < VALUE_KNOWN_WIN
+		&& pos.non_pawn_material(pos.turn) )
+		return eval - futility_margin(depth, (ss-1)->futilityMvCnt);
+
+	//####### Null move pruning with verification search #######//
+	// Reduce the search space by trying a "null" or "passing" move, 
+	// then see if the score of the subtree search is still high enough to cause a beta cutoff. 
+	// Nodes are saved by reducing the depth of the subtree under the null move. 
+	// The value of this depth reduction is known as R.
+	if (!isPV && !ss->skipNullMv
+		&& depth > ONE_PLY
+		&& eval >= beta
+		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
+		&& pos.non_pawn_material(pos.turn) )
+	{
+		ss->currentMv = MOVE_NULL;
+
+		 // Null move dynamic reduction based on depth
+		Depth R = 3 * ONE_PLY + depth / 4;
+
+		// Null move dynamic reduction based on value
+		if (eval - MG_PAWN > beta)
+			R += ONE_PLY;
+
+		pos.make_null_move(nextSt);
+		(ss+1)->skipNullMv = true;
+		nullVal = depth - R < ONE_PLY ? 
+				-qsearch<NON_PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO) :
+				-search<NON_PV>(pos, ss+1, -beta, -alpha, depth-R, !cutNode);
+		(ss+1)->skipNullMv = false;
+		pos.unmake_null_move();
+
+		if (nullVal >= beta) // fail high
+		{
+			// Do not return unproven mate scores
+			if (nullVal >= VALUE_MATE_IN_MAX_PLY)
+				nullVal = beta;
+
+			if (depth < 12 * ONE_PLY)
+				return nullVal;
+
+			// Do verification search at high depths
+			ss->skipNullMv = true;
+			Value val = search<NON_PV>(pos, ss, alpha, beta, depth-R, false);
+			ss->skipNullMv = false;
+
+			if (val >= beta)
+				return nullVal;
+		}
+		else
+		{
+			// The null move failed low, which means that doing nothing
+			// jeopardizes our current best score. Thus we may be faced with
+			// some kind of threat. If the previous move was reduced, check if
+			// the move that refuted the null move was somehow connected to the
+			// move which was reduced. If a connection is found, return a fail
+			// low score (which will cause the reduced move to fail high in the
+			// parent node, which will trigger a re-search with full depth).
+			threatMv = (ss+1)->currentMv;
+
+			if ( depth < 5 * ONE_PLY
+				&& threatMv != MOVE_NULL
+				&& (ss-1)->reduction
+				&& allows(pos, (ss-1)->currentMv, threatMv) )
+				return alpha; // fail-low score
+		}
+	}
+
+	// ProbCut ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+
+
+	} // #EndIf (hundreds of lines ago). We complete all the search steps when !inCheck
+			
+}
+
+
+
+/***********************************************/
+/*************** Quiesence Search ****************/
+/***********************************************/
+
+template<NodeType NT>
+Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth)
+{
+	return 0;
+}
+

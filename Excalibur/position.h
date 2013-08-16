@@ -19,7 +19,7 @@ struct StateInfo
 	int cntInternalFiftyMove; // The internal counter, records the real number of half moves actually made by the engine
 				// Every time we parse a new FEN this would be set to 0, regardless of cntFiftyMove (arbitrarily specified by FEN)
 				// Used in conjunction with the FEN cntFiftyMove to implement the 3-repetition draw
-				// Will be set to 0 when we do a null move. The StateInfo stack will be examined for hash key 3-repetition
+				// Also will be set to 0 when we do a null move. The StateInfo stack will be examined for hash key 3-repetition
 				// as deep as   min(cntFiftyMove, cntInternalFiftyMove)
 	int cntFiftyMove; // 50 move counter: since last pawn move or capture
 
@@ -169,6 +169,8 @@ public:
 	INLINE void make_move(Move& mv, StateInfo& nextSt)
 		{ make_move_helper<false>(mv, nextSt, ci_NULL); }
 	void unmake_move(Move& mv);  // undo the move and get back to the previous ply
+	void make_null_move(StateInfo& nextSt); // for null move pruning
+	void unmake_null_move(); // for null move pruning
 
 	/* perft.cpp */
 	// Recursive performance testing. Measure speed and accuracy. Used in test drives.

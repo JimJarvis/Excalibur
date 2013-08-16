@@ -25,7 +25,7 @@ namespace Transposition
 			depth = (short) d;
 			move = m;
 			generation = g;
-			staticValue = (short) s_val;
+			staticEval = (short) s_val;
 			staticMargin = (short) s_margin;
 		}
 
@@ -35,7 +35,7 @@ namespace Transposition
 		Move move;  // 16 bits
 		BoundType bound;  // 16 bits
 		byte generation; // 8 bits
-		short value, depth, staticValue, staticMargin; // 16 bits
+		short value, depth, staticEval, staticMargin; // 16 bits
 	};
 
 
@@ -47,7 +47,7 @@ namespace Transposition
 	{
 	public:
 		~Table() { free(table); }
-		void new_search() { generation++; }
+		void new_generation() { generation++; }
 
 		void set_size(U64 mbSize);
 		Entry* probe(U64 key) const;
@@ -58,9 +58,8 @@ namespace Transposition
 		Entry* first_entry(U64 key) const
 			{ return table + ((uint)key & hashMask); };
 
-		/// TranspositionTable::refresh() updates the 'generation' value of the Entry
-		/// to avoid aging. Normally called after a TT hit.
-		void refresh(Entry* tte) const
+		/// Avoid aging. Normally called after a TT hit.
+		void update_generation(Entry* tte) const
 			{ tte->set_generation(generation); };
 
 		/// overwrites the entire transposition table

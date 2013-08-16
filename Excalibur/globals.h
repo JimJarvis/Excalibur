@@ -128,8 +128,8 @@ enum GenType : byte
 enum BoundType : byte
 {
 	BOUND_NULL,
-	BOUND_UPPER,
-	BOUND_LOWER,
+	BOUND_UPPER, // b & UPPER is true for either upper or exact bound
+	BOUND_LOWER, // b & LOWER is true for either lower or exact bound
 	BOUND_EXACT // = UPPER | LOWER
 };
 
