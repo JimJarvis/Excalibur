@@ -28,6 +28,7 @@
     <ClCompile Include="..\Excalibur\kpkbase.cpp" />
     <ClCompile Include="..\Excalibur\material.cpp" />
     <ClCompile Include="..\Excalibur\movegen.cpp" />
+    <ClCompile Include="..\Excalibur\moveorder.cpp" />
     <ClCompile Include="..\Excalibur\pawnshield.cpp" />
     <ClCompile Include="..\Excalibur\perft.cpp" />
     <ClCompile Include="..\Excalibur\position.cpp" />

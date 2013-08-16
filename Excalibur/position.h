@@ -158,6 +158,8 @@ public:
 		{ return boardPiece[Moves::get_to(mv)] != NON || Moves::is_ep(mv); }
 	INLINE bool is_quiet(Move mv) const // == not capture or promotion
 		{ return !(is_capture(mv) || Moves::is_promo(mv)); }
+	INLINE bool create_passed_pawn(Move mv) const // does this move create a passed pawn?
+		{ return boardPiece[Moves::get_from(mv)]==PAWN && is_pawn_passed(turn, Moves::get_to(mv)); }
 	bool is_pseudo(Move mv) const;
 	bool pseudo_is_legal(Move mv, Bit pinned) const;  // test if a pseudo-legal move is legal, given the pinned map.
 	int count_legal() const; // count the number of legal moves

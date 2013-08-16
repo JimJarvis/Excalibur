@@ -54,8 +54,8 @@ template<NodeType>
 Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
 // Quiescence search engine
-template<NodeType, bool inCheck>
-Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth);
+template<NodeType, bool UsInCheck>
+Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
 // Iterative deepening
 void iterative_deepen(Position& pos);
@@ -585,7 +585,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	U64 key;
 	Move ttMv, mv, excludedMv, bestMv, threatMv; // mv is temp
 	Depth extDepth, newDepth;
-	Value best, value, ttVal; // val is temp
+	Value best, value, ttVal; // value is temp
 	Value eval, nullVal, futilityVal;
 	Square from, to;  // temp
 	bool inCheck, renderCheck, improving, isCaptOrPromo, fullDepthSearch, isPvMove, dangerous;
@@ -638,8 +638,8 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	// a fail high/low. Biggest advantage at probing at PV nodes is to have a
 	// smooth experience in analysis mode. We don't probe at Root nodes otherwise
 	// we should also update RootMoveList to avoid bogus output.
-	if ( !isRoot  && tte  && tte->depth >= depth // TT entry useful only with greater depth
-		&& ttVal != VALUE_NULL
+	if ( !isRoot
+		&& tte  && tte->depth >= depth // TT entry useful only with greater depth
 		&& ( isPV ? tte->bound == BOUND_EXACT :
 			ttVal >= beta ? (tte->bound & BOUND_LOWER) : // lower bound or exact
 								(tte->bound & BOUND_UPPER) )) // upper bound or exact
@@ -710,7 +710,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		&& !(pos.Pawnmap[pos.turn] & rank_mask(relative_rank<RANK_N>(pos.turn, RANK_7))) )
 	{
 		Value razBeta = beta - razor_margin(depth);
-		Value val = qsearch<NON_PV, false>(pos, ss, razBeta-1, razBeta, DEPTH_ZERO);
+		Value val = qsearch<NON_PV, false>(pos, ss, razBeta-1, razBeta);
 		if (val < razBeta)
 			// Logically we should return (v + razor_margin(depth)), but
 				// surprisingly this did slightly weaker in tests.
@@ -753,7 +753,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		pos.make_null_move(nextSt);
 		(ss+1)->skipNullMv = true;
 		nullVal = depth - R < ONE_PLY ? 
-				-qsearch<NON_PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO) :
+				-qsearch<NON_PV, false>(pos, ss+1, -beta, -alpha) :
 				-search<NON_PV>(pos, ss+1, -beta, -alpha, depth-R, !cutNode);
 		(ss+1)->skipNullMv = false;
 		pos.unmake_null_move();
@@ -866,9 +866,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		extDepth = DEPTH_ZERO; // extended depth
 		isCaptOrPromo = !pos.is_quiet(mv);
 		renderCheck = pos.is_check(mv, ci);  // Whether this move checks the opp
-		dangerous = renderCheck  // below decides if this move creates a passed pawn.
-				|| (pos.boardPiece[get_from(mv)]==PAWN && pos.is_pawn_passed(pos.turn, get_to(mv)))
-				|| is_castle(mv);
+		dangerous = renderCheck || pos.create_passed_pawn(mv) || is_castle(mv);
 
 		//####### Extend checks and dangerous moves depth #######//
 		if (isPV && dangerous)
@@ -910,7 +908,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 			 // Prune moves with negative SEE at low depths
 			if ( predictDepth < 4 * ONE_PLY
-				&& see_sign(pos, mv) <0 )
+				&& see_sign(pos, mv) < 0 )
 				continue;
 
 			// We have not pruned the move that will be searched, but remember how
@@ -946,8 +944,8 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		if (fullDepthSearch)
 		{
 			value = newDepth < ONE_PLY ? 
-				(renderCheck ? -qsearch<NON_PV, true>(pos, ss+1, -alpha-1, -alpha, DEPTH_ZERO)
-									: -qsearch<NON_PV, false>(pos, ss+1, -alpha-1, -alpha, DEPTH_ZERO))
+				(renderCheck ? -qsearch<NON_PV, true>(pos, ss+1, -alpha-1, -alpha)
+									: -qsearch<NON_PV, false>(pos, ss+1, -alpha-1, -alpha))
 						: - search<NON_PV>(pos, ss+1, -alpha-1, -alpha, newDepth, !cutNode);
 		}
 
@@ -958,8 +956,8 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		if (isPV && 
 			(isPvMove || (value > alpha && (isRoot || value < beta))) )
 			value = newDepth < ONE_PLY ? 
-				(renderCheck ? -qsearch<PV, true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
-									: -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO))
+				(renderCheck ? -qsearch<PV, true>(pos, ss+1, -beta, -alpha)
+									: -qsearch<PV, false>(pos, ss+1, -beta, -alpha))
 							: - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
 
 		//####### Unmak the move #######//
@@ -1071,10 +1069,204 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 /***********************************************/
 /*************** Quiesence Search ****************/
 /***********************************************/
+// qsearch() is the quiescence search function, which is called by the main
+// search function only when the remaining depth is 0
+// The depth parameter is defaulted to be DEPTH_ZERO
+// qsearch recursion may have negative depth
 
-template<NodeType NT, bool inCheck>
+template<NodeType NT, bool UsInCheck>
 Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth)
 {
-	return 0;
-}
+	const bool isPV = (NT == PV);
 
+	StateInfo nextSt;
+	Entry *tte; // transposition table
+	U64 key;
+	Move ttMv, mv, bestMv; // mv is temp
+	Depth ttDepth;
+	Value best, value, ttVal, futilityVal, futilityBase, oldAlpha; // value is temp
+	bool renderCheck, evasionPrunable;
+
+	// To flag BOUND_EXACT a node with eval above alpha and no available moves
+	if (isPV)
+		oldAlpha = alpha;
+
+	ss->currentMv = bestMv = MOVE_NULL;
+	ss->ply = (ss-1)->ply + 1;
+
+	//####### Instant draw or maximum ply reached #######//
+	if (pos.is_draw<false>() || ss->ply > MAX_PLY)
+		return DrawValue[pos.turn];
+
+	// Decide whether or not to include checks, this fixes also the type of
+	// TT entry depth that we are going to use. Note that in qsearch we use
+	// only two types of depth in TT: DEPTH_QS_CHECKS or DEPTH_QS_NO_CHECKS.
+	 ttDepth = UsInCheck || depth >= DEPTH_QS_CHECKS ? 
+						DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
+
+	 //####### Transposition Lookup #######//
+	 key = pos.key();
+	 tte = TT.probe(key);
+	 ttMv = tte ? tte->move : MOVE_NULL;
+	 ttVal = tte ? tt2value(tte->value, ss->ply) : VALUE_NULL;
+
+	 if (tte && tte->depth >= ttDepth
+		 && ( isPV ? tte->bound == BOUND_EXACT :
+		 ttVal >= beta ? (tte->bound & BOUND_LOWER) : // lower bound or exact
+							 (tte->bound & BOUND_UPPER) )) // upper bound or exact
+	 {
+		 ss->currentMv = ttMv; // can be MOVE_NULL
+		 return ttVal;
+	 }
+
+	 //####### Evaluate statically #######//
+	 if (UsInCheck)
+	 {
+		 ss->staticEval = ss->staticMargin = VALUE_NULL;
+		 best = futilityBase = -VALUE_INFINITE;
+	 }
+	 else // not in check
+	 {
+		 if (tte) // We've got a TT entry with potential eval value
+		 {
+			 // If the values are null, we evaulate the position from scratch
+			 if ( (best = ss->staticEval = tte->staticEval) == VALUE_NULL
+				 || (ss->staticMargin = tte->staticMargin) == VALUE_NULL )
+				 best = ss->staticEval = evaluate(pos, ss->staticMargin);
+		 }
+		 else // No TT entry found. Write and store a new entry
+			 best = ss->staticEval = evaluate(pos, ss->staticMargin);
+
+		 // Return immediately if static value produces a beta cutoff. Write to TT also.
+		 if (best >= beta)
+		 {
+			 if (!tte)
+				 TT.store(key, value2tt(best, ss->ply), 
+						BOUND_LOWER, DEPTH_NULL, MOVE_NULL, 
+						ss->staticEval, ss->staticMargin);
+			 return best;
+		 }
+
+		 if (isPV && best > alpha)
+			 alpha = best;
+
+		 futilityBase = ss->staticEval + ss->staticMargin + 128;
+
+	 } // #EndIf UsInCheck
+
+
+	 //####### Initialize a MoveSorter to iterate the moves #######//
+	 // Because the depth is <= 0 here, only captures, queen promotions and checks
+	 // (only if depth >= DEPTH_QS_CHECKS) will be generated.
+	 // the last argument is the recapture square
+	 MoveSorter Msorter(pos, ttMv, depth, History, get_to((ss-1)->currentMv));
+
+	 //####### Iterate through the moves until no more or a beta cutoff #####//
+	 CheckInfo ci = pos.check_info();
+
+	 while ((mv = Msorter.next_move()) != MOVE_NULL)
+	 {
+		 renderCheck = pos.is_check(mv, ci);
+
+		 //####### Futility pruning #######//
+		 if ( !isPV
+			 && !UsInCheck
+			 && !renderCheck
+			 && mv != ttMv
+			 && !is_promo(mv)
+			 && !pos.create_passed_pawn(mv) )
+		 {
+			 futilityVal = futilityBase 
+								+ PIECE_VALUE[EG][pos.boardPiece[get_to(mv)]]
+								+ is_ep(mv) ? EG_PAWN : VALUE_ZERO;
+				
+			if (futilityVal < beta) // pruned
+			{
+				best = max(best, futilityVal);
+				continue;
+			}
+
+			// Prune moves with negative or equal SEE and also moves with positive
+			// SEE where capturing piece loses a tempo and SEE < beta - futilityBase.
+			// Call SEE with asymmetric threshold
+			if ( futilityBase < beta
+				&& see(pos, mv, beta - futilityBase) <= 0 )
+			{
+				best = max(best, futilityBase);
+				continue;
+			}
+		 }
+
+		 //#### Detect non-capture evasions that are candidate to be pruned #####//
+		 evasionPrunable = UsInCheck 
+							&& best > VALUE_MATED_IN_MAX_PLY
+							&& !pos.is_capture(mv)
+							&& pos.castle_rights(pos.turn) == 0; // can't castle
+
+		 // Prune moves with negative SEE
+		 if (  !isPV
+			 && (!UsInCheck || evasionPrunable)
+			 && mv != ttMv
+			 && !is_promo(mv)
+			 && see_sign(pos, mv) < 0 )
+			 continue;
+
+		 //####### Prune useless checks #######//
+		 if (  !isPV
+			 && !UsInCheck
+			 && renderCheck
+			 && mv != ttMv
+			 && pos.is_quiet(mv)  // not capture or promotion
+			 && ss->staticEval + MG_PAWN / 4 < beta
+			 && !is_check_dangerous(pos, mv, futilityBase, beta) )
+			 continue;
+
+		 // Guarantee legality before we make the move
+		 if (!pos.pseudo_is_legal(mv, ci.pinned))
+			 continue;
+
+		 ss->currentMv = mv;
+
+		 //####### Make/Unmake the move and start recursion #######//
+		 pos.make_move(mv, nextSt, ci, renderCheck);
+			// Here depth can be well below 0
+		 value = renderCheck ? -qsearch<NT, true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
+									: -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
+		 pos.unmake_move(mv);
+
+		 // Do we have a new best move?
+		 if (value > best)
+		 {
+			 best = value; 
+
+			 if (value > alpha) // good!!
+			 {
+				 if (isPV && value < beta) // Update alpha. Always have alpha < beta
+				 {
+					 alpha = value;
+					 bestMv = mv;
+				 }
+				 else // Fail high - beta cutoff
+				 {
+					 TT.store(key, value2tt(value, ss->ply), 
+								BOUND_LOWER, ttDepth, mv, 
+								ss->staticEval, ss->staticMargin);
+					 return value;
+				 }
+			 }
+		 }
+
+	 } // EndWhile, all generated moves searched. The MoveSorter expires
+	 
+	 // All legal moves have been searched. A special case: If we're in check
+	 // and no legal moves were found, it is checkmate.
+	 if (UsInCheck && best == -VALUE_INFINITE)
+		 return mated_value(ss->ply); // plies to mate from Root
+
+	 // Write to Transposition table
+	 TT.store( key, value2tt(best, ss->ply), 
+				isPV && best > alpha  ? BOUND_EXACT : BOUND_UPPER,
+				ttDepth, bestMv, ss->staticEval, ss->staticMargin);
+
+	return best;
+}
