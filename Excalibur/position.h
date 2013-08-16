@@ -26,7 +26,7 @@ struct StateInfo
 	// the rest won't be copied. See the macro STATE_COPY_SIZE(upToVar) - up to "key" excluded
 	U64 key;
 	Bit checkerMap; // a map that collects all checkers
-	PieceType capt;  // captured piece
+	PieceType captured;  // the last captured piece. Used for GainStats heuristics in search.
 	StateInfo *st_prev; // point to the previous state
 };
 
@@ -129,6 +129,7 @@ public:
 	U64 pawn_key() const { return st->pawnKey; }
 	Score psq_score() const { return st->psqScore; }
 	Value non_pawn_material(Color c) const { return st->npMaterial[c]; }
+	PieceType last_capture() const { return st->captured; }
 
 	// More getter methods
 	byte castle_rights(Color c) const { return st->castleRights[c]; }
@@ -153,8 +154,10 @@ public:
 
 	CheckInfo check_info() const; // obtain a CheckInfo obj
 	bool is_check(Move mv, const CheckInfo& ci) const; // test if a move gives check
-	bool is_capture(Move mv) const
+	INLINE bool is_capture(Move mv) const
 		{ return boardPiece[Moves::get_to(mv)] != NON || Moves::is_ep(mv); }
+	INLINE bool is_quiet(Move mv) const // == not capture or promotion
+		{ return !(is_capture(mv) || Moves::is_promo(mv)); }
 	bool is_pseudo(Move mv) const;
 	bool pseudo_is_legal(Move mv, Bit pinned) const;  // test if a pseudo-legal move is legal, given the pinned map.
 	int count_legal() const; // count the number of legal moves

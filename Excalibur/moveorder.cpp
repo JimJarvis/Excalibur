@@ -45,10 +45,10 @@ MoveSorter::MoveSorter(const Position& p, Move ttm, Depth d, const HistoryStats&
 	{
 		stage = S4_QSEARCH;
 
-		// Skip TT move if is not a capture or a promotion, this avoids qsearch
-		// tree explosion due to a possible perpetual check or similar rare cases
-		// when TT table is full.
-		if (ttm && !(p.is_capture(ttm) || is_promo(ttm)) )
+		// Skip TT move if is not a capture or a promotion (thus a quiet).
+		// Avoids qsearch tree explosion due to a possible perpetual check 
+		// or similar rare cases when TT table is full.
+		if (ttm && p.is_quiet(ttm) )
 			ttm = MOVE_NULL;
 	}
 	else
@@ -110,7 +110,7 @@ void MoveSorter::score<QUIET>()
 	{
 		mv = it->move;
 		from = get_from(mv);
-		it->value = history.get(pos.boardColor[from], pos.boardPiece[from], get_to(mv));
+		it->value = history.get(pos, from, get_to(mv));
 	}
 }
 
@@ -136,7 +136,7 @@ void MoveSorter::score<EVASION>()
 		else
 		{
 			Square from = get_from(mv);
-			it->value = history.get(pos.boardColor[from], pos.boardPiece[from], get_to(mv));
+			it->value = history.get(pos, from, get_to(mv));
 		}
 	}
 }

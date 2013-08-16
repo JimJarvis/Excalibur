@@ -21,12 +21,22 @@ struct Stats
 {
 	static const Value MAX = 2000;
 
-	const T get(Color c, PieceType pt, Square to) const { return table[c][pt][to]; }
+	//const T get(Color c, PieceType pt, Square to) const { return table[c][pt][to]; }
+	INLINE const T get(const Position& pos, Square moverLocation, Square to) const
+	{ return table[pos.boardColor[moverLocation]][pos.boardPiece[moverLocation]][to]; }
+
 	void clear() { memset(table, 0, sizeof(table)); }
 
-	// only for RefutationStats
-	void update(Color c, PieceType pt, Square to, Move m)
+	// Only for RefutationStats
+	//void update(Color c, PieceType pt, Square to, Move m)
+	// For convenience we pass the Position and piece location.
+	// update() will look at Position's internal chessboard and 
+	// get the moving piece's color and type. 
+	void update(const Position& pos, Square moverLocation, Square to, Move m)
 	{
+		Color c = pos.boardColor[moverLocation];
+		PieceType pt = pos.boardPiece[moverLocation];
+
 		if (m == table[c][pt][to].first)
 			return;
 
@@ -34,8 +44,12 @@ struct Stats
 		table[c][pt][to].first = m;
 	}
 
-	void update(Color c, PieceType pt, Square to, Value v)
+	//void update(Color c, PieceType pt, Square to, Value v)
+	void update(const Position& pos, Square moverLocation, Square to, Value v)
 	{
+		Color c = pos.boardColor[moverLocation];
+		PieceType pt = pos.boardPiece[moverLocation];
+
 		if (Gain)
 			table[c][pt][to] = max(v, table[c][pt][to] - 1);
 

@@ -815,7 +815,7 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 		st->psqScore += PieceSquareTable[turn][ROOK][rto] - PieceSquareTable[turn][ROOK][rfrom];
 	}
 
-	st->capt = capt;
+	st->captured = capt;
 	st->key = key;
 	Occupied = Colormap[W] | Colormap[B];
 
@@ -868,7 +868,7 @@ void Position::unmake_move(Move& mv)
 	Bit ToMap = setbit(to);  // to update the captured piece's bitboard
 	Bit FromToMap = setbit(from) | ToMap;
 	PieceType piece = is_promo(mv) ? PAWN : boardPiece[to];
-	PieceType capt = st->capt;
+	PieceType capt = st->captured;
 	Color opp = turn;
 	turn = ~turn;
 

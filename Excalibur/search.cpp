@@ -82,9 +82,9 @@ inline Value futility_margin(Depth d, int moveNum)
 // Reduction lookup table (init at startup) and its access function
 byte Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
 
-template <bool PvNode> inline Depth reduction(bool i, Depth d, int moveNum)
+template <bool PvNode> inline Depth reduction(bool improving, Depth d, int moveNum)
 {
-	return Reductions[PvNode][i][min(d / ONE_PLY, 63)][min(moveNum, 63)];
+	return Reductions[PvNode][improving][min(d / ONE_PLY, 63)][min(moveNum, 63)];
 }
 
 
@@ -583,10 +583,13 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	StateInfo nextSt;
 	Entry *tte; // transposition table
 	U64 key;
-	Move ttMv, mv, excludedMv, bestMv, threatMv;
-	Value best, val, ttVal;
+	Move ttMv, mv, excludedMv, bestMv, threatMv; // mv is temp
+	Depth extDepth, newDepth;
+	Value best, value, ttVal; // val is temp
 	Value eval, nullVal, futilityVal;
-	bool inCheck;
+	Square from, to;  // temp
+	bool inCheck, renderCheck, improving, isCaptOrPromo, fullDepthSearch, isPvMove, dangerous;
+	Move quietMvsSearched[64]; // indexed by quietCnt
 	int moveCnt, quietCnt;
 
 	//####### Init #######//
@@ -645,8 +648,9 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		ss->currentMv = ttMv; // might be NULL
 
 		// Update killer heuristics
-		if ( ttVal >= beta  && ttMv != MOVE_NULL
-			&& !(pos.is_capture(ttMv) || is_promo(ttMv))
+		if ( ttVal >= beta 
+			&& ttMv != MOVE_NULL
+			&& pos.is_quiet(ttMv) // not capture or promotion
 			&& ttMv != ss->killerMvs[0] )
 		{
 			ss->killerMvs[1] = ss->killerMvs[0]; 
@@ -656,7 +660,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		return ttVal;
 	}
 
-	//######## Evalulate statically and update parent's GainStats #######//
+	//######## Evalulate statically #######//
 	if (inCheck)
 		ss->staticEval = ss->staticMargin = eval = VALUE_NULL;
 	else // #If we are not inCheck, do the following steps
@@ -682,9 +686,19 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 						ss->staticEval, ss->staticMargin);
 	}
 
+	//####### Update GainStats  #######//
 	// Update gain for the parent non-capture move given the static position
 	// evaluation before and after the move.
-	// GainsStats update ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+	if (  !pos.last_capture()
+		&& ss->staticEval != VALUE_NULL
+		&& (ss-1)->staticEval != VALUE_NULL
+		&& (mv = (ss-1)->currentMv) != MOVE_NULL
+		&& is_normal(mv) )
+	{
+		to = get_to(mv);
+		Gains.update(pos, to, to, 
+				-(ss-1)->staticEval - ss->staticEval); // eval difference. (ss-1) Eval is negated because side changed.
+	}
 
 
 	//####### Razoring (skipped if inCheck) #######//
@@ -703,6 +717,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 					return val;
 	}
 
+
 	//####### Static null move pruning (not inCheck) #######//
 	// We're betting that the opponent doesn't have a move that will reduce
 	// the score by more than futility_margin(depth) if we do a null move.
@@ -713,6 +728,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		&& abs(eval) < VALUE_KNOWN_WIN
 		&& pos.non_pawn_material(pos.turn) )
 		return eval - futility_margin(depth, (ss-1)->futilityMvCnt);
+
 
 	//####### Null move pruning with verification search #######//
 	// Reduce the search space by trying a "null" or "passing" move, 
@@ -797,9 +813,257 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 	} // #EndIf (hundreds of lines ago). We complete all the search steps when not inCheck
 
-	// Now deal with cases when we might be in check
+	/***************************************/
+	//// Now deal with cases when we might be in check
 
-			
+	//####### Retrieve info from the RefutationStats table #######//
+	Square prevTo = get_to((ss-1)->currentMv);
+	pair<Move, Move> refutEntry = Refutations.get(pos, prevTo, prevTo);
+	Move refutationMvs[2] = { refutEntry.first, refutEntry.second };
+	
+	//####### Init a MoveSorter with the refutation entry #######//
+	MoveSorter Msorter(pos, ttMv, depth, History, refutationMvs, ss);
+
+	value = best;
+	
+	improving = ss->staticEval >= (ss-2)->staticEval
+						|| ss->staticEval == VALUE_NULL
+						|| (ss-2)->staticEval == VALUE_NULL;
+
+	// Singular Extension boolean ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+	/****************************************/
+	//####### Move generation and looping  #######//
+	CheckInfo ci = pos.check_info();
+	// Loop through all pseudo legals until no more or beta cutoff
+	while ((mv = Msorter.next_move()) != MOVE_NULL)
+	{
+		if (mv == excludedMv)
+			continue;
+
+		// At root obey the "searchmoves" option and skip moves not listed in Root
+		// Move List, as a consequence any illegal move is also skipped. 
+		// Rmv (iterator-pointer) records the location of mv, if present, in RootMoveList
+		// If mv returns a good value, Rmv will be updated accordingly after all the search.
+		auto Rmv = std::find(RootMoveList.begin(), RootMoveList.end(), mv);
+		 // If find() returns the end iterator, then the element isn't found
+		if (isRoot && Rmv == RootMoveList.end())
+			continue;
+
+		moveCnt ++;
+
+		if (isRoot) // print out info about current move
+		{
+			// Used by the function check_time() in ClockThread to determine if we stop or not
+			Signal.firstRootMove = (moveCnt == 1);
+
+			if (now() - SearchTime > 3000)
+				sync_print("info depth " << depth / ONE_PLY 
+						<< " currmove " << move2uci(mv)  // display the move we're currently searching
+						<< " currmovenumber " << moveCnt); 
+		}
+
+		extDepth = DEPTH_ZERO; // extended depth
+		isCaptOrPromo = !pos.is_quiet(mv);
+		renderCheck = pos.is_check(mv, ci);  // Whether this move checks the opp
+		dangerous = renderCheck  // below decides if this move creates a passed pawn.
+				|| (pos.boardPiece[get_from(mv)]==PAWN && pos.is_pawn_passed(pos.turn, get_to(mv)))
+				|| is_castle(mv);
+
+		//####### Extend checks and dangerous moves depth #######//
+		if (isPV && dangerous)
+			extDepth = ONE_PLY;
+		
+		else if (renderCheck && see_sign(pos, mv) >= 0)
+			extDepth = ONE_PLY / 2;
+
+		// Singular Extension Search ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+
+		newDepth = depth - ONE_PLY + extDepth;
+
+		//####### Futility pruning (for nonPV nodes) #######//
+		if (!isPV  && !isCaptOrPromo  && !inCheck  &&  !dangerous
+			&& best > VALUE_MATED_IN_MAX_PLY) // implies "mv != ttMv"
+		{
+			// Move count based pruning
+			if ( depth < 16 * ONE_PLY
+				&& moveCnt >= FutilityMoveCounts[improving][depth]
+					// A threat move is created when a null move search fails low
+				&& (!threatMv || !refutes(pos, mv, threatMv)) )
+				continue;
+
+			// Value based pruning
+			// We illogically ignore reduction condition depth >= 3*ONE_PLY for predicted depth,
+			// but fixing this made program slightly weaker.
+			Depth predictDepth = newDepth - reduction<isPV>(improving, depth, moveCnt);
+
+			from = get_from(mv);
+			futilityVal = ss->staticEval + ss->staticMargin 
+					+ futility_margin(predictDepth, moveCnt)
+					+ Gains.get(pos, from, get_to(mv));
+
+			if (futilityVal < beta)
+			{
+				best = max(best, futilityVal);
+				continue;
+			}
+
+			 // Prune moves with negative SEE at low depths
+			if ( predictDepth < 4 * ONE_PLY
+				&& see_sign(pos, mv) <0 )
+				continue;
+
+			// We have not pruned the move that will be searched, but remember how
+			// far in the move list we are to be more aggressive in the child node.
+			ss->futilityMvCnt = moveCnt;
+		}
+		else // Futility pruning condition not met
+			ss->futilityMvCnt = 0;
+
+		// At Root we are guaranteed legal moves because of 'searchmoves' preprocessing
+		// Check for legality at non-roots
+		if (!isRoot && !pos.pseudo_is_legal(mv, ci.pinned))
+		{
+			moveCnt --;
+			continue;
+		}
+
+		isPvMove = isPV && moveCnt == 1;
+		ss->currentMv = mv;
+		
+		if (!isCaptOrPromo && quietCnt < 64)
+			quietMvsSearched[quietCnt++] = mv;
+
+		//####### Make the move #######//
+		pos.make_move(mv, nextSt, ci, renderCheck);
+
+		// Reduced LMR Search ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		// fullDepthMove here sets always to true ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		fullDepthSearch = true;
+
+		//####### Major searching force #######//
+		//####### Full depth NON_PV search, when LMR skipped or fails high #######//
+		if (fullDepthSearch)
+		{
+			value = newDepth < ONE_PLY ? 
+				(renderCheck ? -qsearch<NON_PV, true>(pos, ss+1, -alpha-1, -alpha, DEPTH_ZERO)
+									: -qsearch<NON_PV, false>(pos, ss+1, -alpha-1, -alpha, DEPTH_ZERO))
+						: - search<NON_PV>(pos, ss+1, -alpha-1, -alpha, newDepth, !cutNode);
+		}
+
+		//####### Full depth PV serach #######//
+		// Only for PV nodes do a full PV search on the first move or after a fail
+		// high, in the latter case search only if value < beta, otherwise let the
+		// parent node to fail low with value <= alpha and to try another move.
+		if (isPV && 
+			(isPvMove || (value > alpha && (isRoot || value < beta))) )
+			value = newDepth < ONE_PLY ? 
+				(renderCheck ? -qsearch<PV, true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+									: -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO))
+							: - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
+
+		//####### Unmak the move #######//
+		pos.unmake_move(mv);
+
+		//####### Finished searching on "mv" #######//
+		// If Signals.stop is true, the search
+		// was aborted because the user interrupted the search or because we
+		// ran out of time. In this case, the return value of the search cannot
+		// be trusted, and we don't update the best move and/or PV.
+		if (Signal.stop)
+			return value; // avoid returning INFINITE
+
+		//####### See if we've got new best moves #######//
+		if (isRoot)
+		{
+			// Rmv (an iterator-pointer) records the location of mv in RootMoveList. 
+			// Obtained at the beginning of this next_move() iteration
+			if (isPvMove || value > alpha) // PV more or new best move?
+			{
+				Rmv->score = value;
+				Rmv->tt2pv(pos);
+
+				// We record how often the best move has been changed in each
+				// iteration. This information is used for TimeKeeper: When
+				// the best move changes frequently, we allocate some more time.
+				// Done by Timer.unstable_pv_adjust() in iterative deepening
+				if (!isPvMove) // means value > alpha, our new best move
+					BestMoveChanges ++;
+			}
+			else
+				// All other moves but the PV are set to the lowest value, this
+				// is not a problem when sorting because sort is stable and move
+				// position in the list is preserved, just the PV is pushed up.
+				Rmv->score = -VALUE_INFINITE;
+		}
+
+		if (value > best) // update the best value
+		{
+			best = value;
+
+			if (value > alpha)
+			{
+				bestMv = mv;
+
+				if (isPV && value < beta)
+					alpha = value;  // update alpha. Always have alpha < beta
+				else // value >= beta, fail high
+					break;
+			}
+		}
+	} // EndWhile of MoveSorter.next_move(). Move generation and make/unmake moves complete.
+
+
+	//####### Mates and Stalemates #######//
+	// All legal moves have been searched and if there are no legal moves, it
+	// must be mate or stalemate. Note that we can have a false positive in
+	// case of Signals.stop are set, but this is
+	// harmless because return value is discarded anyhow in the parent nodes.
+	if (moveCnt == 0)
+		return excludedMv ? alpha 
+				: inCheck ? mated_value(ss->ply) : DrawValue[pos.turn];
+
+	// If we have pruned all the moves without searching return a fail-low score
+	if (best == -VALUE_INFINITE)
+		best = alpha;
+
+	//####### Write to Transposition table #######//
+	BoundType ttBound = best >= beta ? BOUND_LOWER
+				: isPV && bestMv ? BOUND_EXACT : BOUND_UPPER;
+	TT.store(key, value2tt(best, ss->ply),
+				ttBound, depth, bestMv, ss->staticEval, ss->staticMargin);
+
+
+	//####### Quiet best moves: update Killer, History and Refutations heuristics ##//
+	if ( best >= beta
+		&& pos.is_quiet(bestMv)
+		&& !inCheck )
+	{
+		if (ss->killerMvs[0] != bestMv)
+		{
+			ss->killerMvs[1] = ss->killerMvs[0];
+			ss->killerMvs[0] = bestMv;
+		}
+
+		// Increase history value of the cut-off move and decrease all the other
+		// played non-capture moves.
+		// Common value used for history heuristics is depth squared
+		Value bonus = depth * depth;
+		from = get_from(bestMv);
+		History.update(pos, from, get_to(bestMv), bonus);
+		for (int i = 0; i < quietCnt - 1; i++)
+		{
+			Move qm = quietMvsSearched[i];
+			from = get_from(qm);
+			History.update(pos, from, get_to(qm), -bonus);
+		}
+
+		if ( (ss-1)->currentMv != MOVE_NULL)
+			Refutations.update(pos, prevTo, prevTo, bestMv);
+	}
+
+	//####### ALL DONE #######//
+	return best;
 }
 
 

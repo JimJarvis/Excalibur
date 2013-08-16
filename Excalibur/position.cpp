@@ -125,7 +125,7 @@ void Position::parse_fen(string fen)
 		cntHalfMove = (turn == B);
 	}
 
-	st->capt = NON;
+	st->captured = NON;
 	st->checkerMap = attackers_to(king_sq(turn),  ~turn);
 
 	st->key = calc_key();
@@ -325,8 +325,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 		{ cout << "false cntFiftyMove: " << pos1.st->cntFiftyMove << " != " << pos2.st->cntFiftyMove << endl;	return false;}
 	if (pos1.cntHalfMove != pos2.cntHalfMove) 
 		{ cout << "false cntHalfMove: " << pos1.cntHalfMove << " != " << pos2.cntHalfMove << endl;	return false;}
-	if (pos1.st->capt != pos2.st->capt)
-		{ cout << "false capt: " << PIECE_FULL_NAME[pos1.st->capt] << " != " << PIECE_FULL_NAME[pos2.st->capt] << endl;	return false;}
+	if (pos1.st->captured != pos2.st->captured)
+		{ cout << "false captured: " << PIECE_FULL_NAME[pos1.st->captured] << " != " << PIECE_FULL_NAME[pos2.st->captured] << endl;	return false;}
 
 	for (Color c : COLORS)
 	{

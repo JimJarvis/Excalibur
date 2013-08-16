@@ -88,7 +88,7 @@ namespace Search
 	struct SignalListener
 	{
 		SignalListener() { memset(this, 0, sizeof(SignalListener)); } // Set all falgs to false
-		bool stopOnPonderhit, firstRootMove, stop, cutOff, failedLowAtRoot; 
+		bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; 
 	};
 
 	/// RootMove struct is used for moves at the root of the tree. For each root
