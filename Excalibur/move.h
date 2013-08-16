@@ -37,8 +37,12 @@ namespace Moves
 struct ScoredMove
 {
 	Move move;
-	Value val;
+	Value value;
 };
+
+// For sorting scheme in MoveSorter
+inline bool operator<(const ScoredMove& mv1, const ScoredMove& mv2)
+{ return mv1.value < mv2.value; }
 
 // MoveBuffer: used as a local variable for move generation and perft
 typedef ScoredMove MoveBuffer[MAX_MOVES];

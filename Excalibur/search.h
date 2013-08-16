@@ -17,7 +17,7 @@ namespace Search
 		int ply;
 		Move currentMv;
 		Move excludedMv;
-		Move killers[2];
+		Move killerMvs[2];
 		Depth reduction;
 		Value staticEval;
 		Value staticMargin;

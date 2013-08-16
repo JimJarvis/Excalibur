@@ -54,7 +54,7 @@ template<NodeType>
 Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
 // Quiescence search engine
-template<NodeType, bool Check>
+template<NodeType, bool inCheck>
 Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth);
 
 // Iterative deepening
@@ -598,8 +598,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	ss->futilityMvCnt = 0;
 	(ss+1)->skipNullMv = false;
 	(ss+1)->reduction = DEPTH_ZERO;
-	// Killer heuristics ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
-	//(ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NULL;
+	(ss+2)->killerMvs[0] = (ss+2)->killerMvs[1] = MOVE_NULL;
 
 	if (!isRoot)
 	{
@@ -645,7 +644,14 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		TT.update_generation(tte);
 		ss->currentMv = ttMv; // might be NULL
 
-		// Killer Heuristics ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+		// Update killer heuristics
+		if ( ttVal >= beta  && ttMv != MOVE_NULL
+			&& !(pos.is_capture(ttMv) || is_promo(ttMv))
+			&& ttMv != ss->killerMvs[0] )
+		{
+			ss->killerMvs[1] = ss->killerMvs[0]; 
+			ss->killerMvs[0] = ttMv; // overwrite the first killer entry (old)
+		}
 
 		return ttVal;
 	}
@@ -687,7 +693,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		&& ttMv == MOVE_NULL
 		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
 			// No pawns ready to promote.
-		&& !(pos.Pawnmap[turn] & rank_mask(relative_rank<RANK_N>(pos.turn, RANK_7))) )
+		&& !(pos.Pawnmap[pos.turn] & rank_mask(relative_rank<RANK_N>(pos.turn, RANK_7))) )
 	{
 		Value razBeta = beta - razor_margin(depth);
 		Value val = qsearch<NON_PV, false>(pos, ss, razBeta-1, razBeta, DEPTH_ZERO);
@@ -774,9 +780,25 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 	// ProbCut ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
+	//####### Internal iterative deepening (not in check) #######//
+	if (depth >= (isPV ? 5 * ONE_PLY : 8 * ONE_PLY)
+		&& ttMv == MOVE_NULL
+		&& (isPV || ss->staticEval + 256 >= beta) )
+	{
+		Depth d = depth  - 2 * ONE_PLY - (isPV ? DEPTH_ZERO : depth / 4);
 
+		ss->skipNullMv = true;
+		search<isPV ? PV : NON_PV>(pos, ss, alpha, beta, d, true);
+		ss->skipNullMv = false;
 
-	} // #EndIf (hundreds of lines ago). We complete all the search steps when !inCheck
+		tte = TT.probe(key);
+		ttMv = tte ? tte->move : MOVE_NULL; // iterative deepening result
+	}
+
+	} // #EndIf (hundreds of lines ago). We complete all the search steps when not inCheck
+
+	// Now deal with cases when we might be in check
+
 			
 }
 
@@ -786,7 +808,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 /*************** Quiesence Search ****************/
 /***********************************************/
 
-template<NodeType NT>
+template<NodeType NT, bool inCheck>
 Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth)
 {
 	return 0;

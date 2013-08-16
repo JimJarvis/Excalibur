@@ -227,6 +227,23 @@ inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
 
 
+/*************** A stable Insertion Sort *****************/
+// Type T must implement "<" comparison operator
+template<typename T>
+void insertion_sort(T* begin, T* end)
+{
+	T tmp, *p, *q;
+
+	for (p = begin + 1; p < end; ++p)
+	{
+		tmp = *p;
+		for (q = p; q != begin && *(q-1) < tmp; --q)
+			*q = *(q-1);
+		*q = tmp;
+	}
+}
+
+
 /****************** Timing ******************/
 // Platform-specific system time in ms
 #ifdef _WIN32  // Windows

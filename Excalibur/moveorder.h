@@ -19,7 +19,7 @@
 template<bool Gain, typename T>
 struct Stats
 {
-	static const Value MAX = Value(2000);
+	static const Value MAX = 2000;
 
 	const T get(Color c, PieceType pt, Square to) const { return table[c][pt][to]; }
 	void clear() { memset(table, 0, sizeof(table)); }
@@ -61,29 +61,26 @@ typedef Stats<false, pair<Move, Move> > RefutationStats;
 class MoveSorter
 {
 
-	MoveSorter& operator=(const MoveSorter&); // Silence a warning under MSVC
-
 public:
-	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Square);
-	MoveSorter(const Position&, Move, const HistoryStats&, PieceType);
-	MoveSorter(const Position&, Move, Depth, const HistoryStats&, Move*, Search::SearchInfo*);
+	MoveSorter(const Position&, Move ttm, Depth, const HistoryStats&, Square recaptSq);
+	MoveSorter(const Position&, Move ttm, Depth, const HistoryStats&, Move* refutations, Search::SearchInfo*);
 
 	Move next_move();
 
 private:
 	template<GenType> void score();
-	void generate_next_moves();
+	void gen_next_moves();
 
 	const Position& pos;
 	const HistoryStats& history;
 	Search::SearchInfo* ss;
-	Move* refutations;
+	Move* refutationMvs;
 	Depth depth;
-	Move ttMove;
-	ScoredMove killers[4];
+	Move ttMv;
+	ScoredMove killerMvs[4];
 	Square recaptureSq;
-	int captThresh, stage;
-	ScoredMove *cur, *end, *endQuiet, *endBadCapt;
+	int stage; // SorterStage enum defined in moveorder.cpp
+	ScoredMove *cur, *end, *endQuiet, *endBadCapture;
 	MoveBuffer mbuf;
 };
 
