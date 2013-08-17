@@ -6,7 +6,7 @@
 
 using namespace Board;
 
-#ifdef DEBUG
+#ifdef DEBUG_DISABLE
 #define DBG_MSG_1(msg) DBG_DISP(msg)
 #define DBG_MSG_2(msg, score) \
 	cout << fixed << setprecision(2) << setw(15) << msg << ": MG = "\
@@ -737,6 +737,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		// Analyze enemy's safe distance checks for sliders and knights
 		safe = ~(pos.piece_union(opp) | ei.attackedBy[us][ALL_PT]);
 
+		DBG_COND(ksq == SQ_NULL, "FATAL KING\n" << pos);
 		b1 = pos.attack_map<ROOK>(ksq) & safe;
 		b2 = pos.attack_map<BISHOP>(ksq) & safe;
 

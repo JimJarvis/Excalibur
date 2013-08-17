@@ -294,9 +294,11 @@ inline U64 now()
 #define P(pt) PIECE_FULL_NAME[pt]
 #define DBG_DO(command) command
 #define DBG_DISP(msg) cout << msg << endl
+#define DBG_COND(cond, msg) if (cond) cout << msg << endl
 #else
 #define DBG_DO(command) 
 #define DBG_DISP(msg)
+#define DBG_COND(cond, msg)
 #endif
 
 #endif // __utils_h__

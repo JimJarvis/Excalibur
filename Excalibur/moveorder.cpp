@@ -105,12 +105,10 @@ template<>
 void MoveSorter::score<QUIET>()
 {
 	Move mv;
-	Square from;
 	for (ScoredMove *it = mbuf; it != end; ++it)
 	{
 		mv = it->move;
-		from = get_from(mv);
-		it->value = history.get(pos, from, get_to(mv));
+		it->value = history.get(pos, get_from(mv), get_to(mv));
 	}
 }
 
@@ -134,22 +132,10 @@ void MoveSorter::score<EVASION>()
 			it->value = PIECE_VALUE[MG][pos.boardPiece[get_to(mv)]]
 							- pos.boardPiece[get_from(mv)] + HistoryStats::MAX;
 		else
-		{
-			Square from = get_from(mv);
-			it->value = history.get(pos, from, get_to(mv));
-		}
+			it->value = history.get(pos, get_from(mv), get_to(mv));
 	}
 }
 
-
-// Helper for gen_next_moves
-// Unary predicate used by std::partition to split positive scores from remaining
-// ones so to sort separately the two sets, and with the second sort delayed.
-// std::partition : Rearranges the elements from the range [first,last), 
-// in such a way that all the elements for which pred returns true 
-// precede all those for which it returns false. 
-// The iterator returned points to the first element of the second group.
-inline bool is_positive(const ScoredMove& mv) { return mv.value > 0; }
 
 /* Generates, scores and sorts the next group of moves */
 void MoveSorter::gen_next_moves()
@@ -186,7 +172,14 @@ void MoveSorter::gen_next_moves()
 	case S1QuietPositive: // sorts the positive partition. cur = 0
 		endQuiet = end = pos.gen_moves<QUIET>(mbuf);
 		score<QUIET>();
-		end = std::partition(cur, end, is_positive); // end marks the start of all negative-scored moves
+			// Unary predicate lambda used by std::partition to split positive scores from remaining
+			// ones so to sort separately the two sets, and with the second sort delayed.
+			// std::partition : Rearranges the elements from the range [first,last), 
+			// in such a way that all the elements for which pred returns true 
+			// precede all those for which it returns false. 
+			// The iterator returned points to the first element of the second group.
+			// end marks the start of all negative-scored moves
+		end = std::partition(cur, end, [](const ScoredMove& mv) { return mv.value > 0; }); 
 		insertion_sort<ScoredMove>(cur, end);
 		return;
 

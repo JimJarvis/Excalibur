@@ -259,10 +259,7 @@ do
 			if ( searchMoveList.empty() // no 'searchmoves' cmd specified. We add all legal moves as RootMove
 				// if a legal move is found within the UCI specified searchmoves, add it
 				|| std::find(searchMoveList.begin(), searchMoveList.end(), it->move) != searchMoveList.end())
-			{
-					RootMoveList.push_back(RootMove(it->move));
-					DBG_DISP(move2dbg(it->move));
-			}
+				RootMoveList.push_back(RootMove(it->move));
 
 		// Wake up and start our business!
 		Main->running = true;
@@ -271,7 +268,7 @@ do
 
 
 	/**********************************************/
-	// Sets the position. Syntax: position [startpos | fen] xxxx xxxx ...
+	// Sets the position. Syntax: position [startpos | fen] [moves] xxxx ...
 	/**********************************************/
 	else if (cmd == "position")
 	{
@@ -280,16 +277,16 @@ do
 		if (str == "startpos") // start position
 		{
 			fen = FEN_START;
-			iss >> str;  // Consume "move" if any
+			iss >> str;  // Consume "moves" if any
 		}
 		else if (str == "fen")
-			while (iss >> str && str != "move")	fen += str + " ";
+			while (iss >> str && str != "moves")	fen += str + " ";
 		else // sub-command not supported
 			continue;
 
 		pos.parse_fen(fen);
 		
-		// Optional UCI-format move list right after the fen string or 'startpos'
+		// Optional UCI-format move list after 'moves' sub-cmd
 		// Parse the move list and play them on the internal board
 		// First we clear the global SetupStates variable in search.cpp
 		while (!SetupStates.empty()) SetupStates.pop();

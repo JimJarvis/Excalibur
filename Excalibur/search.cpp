@@ -175,7 +175,7 @@ void Search::think()
 	// available time regularly, as allocated by Timer.talloc() at the beginning
 	Clock->ms = Limit.use_timer() ? 
 						min(100, max(Timer.optimum()/16, ClockThread::Resolution)) : 
-			Limit.nodes ? 2 * ClockThread::Resolution : 100;  
+				Limit.nodes ? 2 * ClockThread::Resolution : 100;  
 	
 	Clock->signal(); // wake up the recurring clock
 
@@ -186,7 +186,7 @@ void Search::think()
 
 	Clock->ms = 0; // stops the clock
 
-	}  // if-else case that RootMoveList isn't empty
+	}  // #EndIf  RootMoveList isn't empty
 
 	// If the search is stopped midway, the following code would never be reached
 	sync_print("info nodes " << RootPos.nodes << " time " << now() - SearchTime);
@@ -286,7 +286,9 @@ void RootMove::pv2tt(Position& pos)
 
 void iterative_deepen(Position& pos)
 {
-	SearchStack sstack; SearchInfo *ss = sstack; // To allow dereferencing (ss - 2)
+	SearchStack sstack; SearchInfo *ss = sstack + 2; // To allow dereferencing (ss - 2)
+	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
+
 	Depth depth = 0;
 	int prevBestMoveChanges;
 	BestMoveChanges = 0;
@@ -294,7 +296,8 @@ void iterative_deepen(Position& pos)
 	best = alpha = delta = -VALUE_INFINITE;
 	beta = VALUE_INFINITE; 
 
-	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
+	(ss-1)->currentMv = MOVE_NULL; // Skip update gains.
+
 	// clear the recording tables
 	TT.new_generation();
 	History.clear();
@@ -304,6 +307,8 @@ void iterative_deepen(Position& pos)
 	// Iterative deepening loop until requested to stop or target depth reached
 	while (++depth <= MAX_PLY && !Signal.stop && (!Limit.depth || depth <= Limit.depth))
 	{
+		DBG_DISP("Iterative deepen " << depth);
+
 		// Save last iteration's score
 		// RootMoveList won't be empty because that's already handled by Search::think()
 		for (int i = 0; i < RootMoveList.size(); i++)
@@ -325,7 +330,11 @@ void iterative_deepen(Position& pos)
 		// research with bigger window until not failing high/low anymore.
 		while (true)
 		{
+			DBG_DISP("Search depth " << depth * ONE_PLY);
 			best = search<ROOT>(pos, ss, alpha, beta, depth * ONE_PLY, false);
+			
+			DBG_DISP("best value = " << best);
+			DBG_DISP("RootSize " << RootMoveList.size());
 
 			// Bring to front the best move. It is critical that sorting is
 			// done with a stable algorithm because all the values but the first
@@ -337,6 +346,8 @@ void iterative_deepen(Position& pos)
 			// Write PV back to transposition table in case the relevant
 			// entries have been overwritten during the search.
 			RootMoveList[0].pv2tt(pos);
+
+			DBG_DISP("Store PV successful");
 
 			// If search has been stopped return immediately. Sorting and
 			// storing PV to TT is safe because those are values from the last iteration
@@ -352,16 +363,21 @@ void iterative_deepen(Position& pos)
 			// The aspiration window size will be increased exponentially
 			if (best <= alpha) // fail low
 			{
+				DBG_DISP("Fail Low");
 				alpha = max(best - delta, -VALUE_INFINITE);
 				// Send out signals
 				Signal.failedLowAtRoot = true;
 				Signal.stopOnPonderhit = false;
 			}
 			else if (best >= beta) // fail high
+			{
+				DBG_DISP("Fail High");
 				beta = min(best + delta, VALUE_INFINITE);
+			}
 			else // we've found the EXACT best value
 				break;
 
+				DBG_DISP("Increase aspiration window");
 			delta += delta / 2;  // Increase the window size by an exponent of 1.5
 
 		} // end of aspiration loop
@@ -372,7 +388,8 @@ void iterative_deepen(Position& pos)
 
 		// Have we found a mate-in-N ? Then stop. 
 		// Limit.mate will be flagged by UCI "go mate" command
-		if (Limit.mateInX && best >= VALUE_MATE_IN_MAX_PLY
+		if ( Limit.mateInX
+			&& best >= VALUE_MATE_IN_MAX_PLY
 			&& VALUE_MATE - best <= 2 * Limit.mateInX)
 			Signal.stop = true;
 
@@ -383,7 +400,7 @@ void iterative_deepen(Position& pos)
 			bool stopjug = false; // Can we stop searching?
 
 			// If PV is unstable, we need extra time
-			if (depth > 4)
+			if (depth > 4 && depth < 50)
 				Timer.unstable_pv_adjust(BestMoveChanges, prevBestMoveChanges);
 
 			// Stop searching if we seem to have insufficient time for the next iteration
@@ -393,12 +410,21 @@ void iterative_deepen(Position& pos)
 				stopjug = true;
 
 			// Stop early if one move seems much better than others
-			if ( !stopjug  &&  depth >= 12 
+			if (  !stopjug 
+				&& depth >= 12 
 				&& best > VALUE_MATED_IN_MAX_PLY
 				&& ( RootMoveList.size() == 1  // has only 1 legal move at root
 						|| now() - SearchTime > Timer.optimum() * 0.2))
 			{
-				// Verify this move's much better ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
+				Value redBeta = best - 2 * MG_PAWN;  // reduced beta
+				ss->excludedMv = RootMoveList[0].pv[0]; // exclude the PV move
+				ss->skipNullMv = true;
+				Value val = search<NON_PV>(pos, ss, redBeta - 1, redBeta, (depth - 3) * ONE_PLY, true);
+				ss->skipNullMv = false;
+				ss->excludedMv = MOVE_NULL;
+
+				if (val < redBeta)
+					stopjug = true;
 			}
 
 			if (stopjug)
@@ -412,6 +438,7 @@ void iterative_deepen(Position& pos)
 			}
 		}
 
+		DBG_DISP("Best move changes " << BestMoveChanges);
 	} // end of the main iter deepening while-loop
 }
 
@@ -587,7 +614,6 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	Depth extDepth, newDepth;
 	Value best, value, ttVal; // value is temp
 	Value eval, nullVal, futilityVal;
-	Square from, to;  // temp
 	bool inCheck, renderCheck, improving, isCaptOrPromo, fullDepthSearch, isPvMove, dangerous;
 	Move quietMvsSearched[64]; // indexed by quietCnt
 	int moveCnt, quietCnt;
@@ -606,7 +632,8 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	if (!isRoot)
 	{
 		//####### Aborted search and immediate draw  #######//
-		if (Signal.stop || pos.is_draw<false>()) // no full repetition check
+		// We don't use the full 3-repetition check.
+		if (Signal.stop || pos.is_draw<false>() || ss->ply > MAX_PLY)
 			return DrawValue[pos.turn];
 
 		//####### Mate distance pruning. #######//
@@ -624,6 +651,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	else if (pos.is_draw<true>()) // Enable full 3-repetition draw check only at Root
 		return DrawValue[pos.turn];
 
+
 	//####### Transposition lookup #######//
 	// We don't want the score of a partial search to overwrite a previous full search
 	// TT value, so we use a different position key in case of an excluded move.
@@ -631,7 +659,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	key = excludedMv ? (pos.key() ^ Zobrist::exclusion) : pos.key();
 	tte = TT.probe(key);
 	ttMv = isRoot ? RootMoveList[0].pv[0] : 
-				tte ? tte->move : MOVE_NULL;
+					tte ? tte->move : MOVE_NULL;
 	ttVal = tte ? tt2value(tte->value, ss->ply) : VALUE_NULL;
 
 	// At PV nodes we check for exact scores, while at non-PV nodes we check for
@@ -641,14 +669,14 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	if ( !isRoot
 		&& tte  && tte->depth >= depth // TT entry useful only with greater depth
 		&& ( isPV ? tte->bound == BOUND_EXACT :
-			ttVal >= beta ? (tte->bound & BOUND_LOWER) : // lower bound or exact
-								(tte->bound & BOUND_UPPER) )) // upper bound or exact
+			ttVal >= beta ? (tte->bound & BOUND_LOWER) // lower bound or exact
+								: (tte->bound & BOUND_UPPER) )) // upper bound or exact
 	{
 		TT.update_generation(tte);
 		ss->currentMv = ttMv; // might be NULL
 
 		// Update killer heuristics
-		if ( ttVal >= beta 
+		if (  ttVal >= beta 
 			&& ttMv != MOVE_NULL
 			&& pos.is_quiet(ttMv) // not capture or promotion
 			&& ttMv != ss->killerMvs[0] )
@@ -659,6 +687,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 		return ttVal;
 	}
+
 
 	//######## Evalulate statically #######//
 	if (inCheck)
@@ -674,7 +703,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 			eval = ss->staticEval = evaluate(pos, ss->staticMargin);
 
 		// ttVal can be used as better position eval
-		if ((ttVal != VALUE_NULL) &&
+		if (   (ttVal != VALUE_NULL) &&
 			(  ((tte->bound & BOUND_LOWER) && ttVal > eval)
 			 || ((tte->bound & BOUND_UPPER) && ttVal < eval) )  )
 			 eval = ttVal;
@@ -686,42 +715,45 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 						ss->staticEval, ss->staticMargin);
 	}
 
+
 	//####### Update GainStats  #######//
 	// Update gain for the parent non-capture move given the static position
 	// evaluation before and after the move.
-	if (  !pos.last_capture()
+	if (   pos.last_capture() == NON
 		&& ss->staticEval != VALUE_NULL
 		&& (ss-1)->staticEval != VALUE_NULL
 		&& (mv = (ss-1)->currentMv) != MOVE_NULL
 		&& is_normal(mv) )
 	{
-		to = get_to(mv);
+		Square to = get_to(mv);
 		Gains.update(pos, to, to, 
 				-(ss-1)->staticEval - ss->staticEval); // eval difference. (ss-1) Eval is negated because side changed.
 	}
 
 
 	//####### Razoring (skipped if inCheck) #######//
-	if (!isPV  && depth < 4 * ONE_PLY
+	if ( !isPV 
+		&& depth < 4 * ONE_PLY
 		&& eval + razor_margin(depth) < beta
 		&& ttMv == MOVE_NULL
 		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
 			// No pawns ready to promote.
 		&& !(pos.Pawnmap[pos.turn] & rank_mask(relative_rank<RANK_N>(pos.turn, RANK_7))) )
 	{
-		Value razBeta = beta - razor_margin(depth);
-		Value val = qsearch<NON_PV, false>(pos, ss, razBeta-1, razBeta);
-		if (val < razBeta)
+		Value redBeta = beta - razor_margin(depth); // reduced beta
+		Value val = qsearch<NON_PV, false>(pos, ss, redBeta-1, redBeta);
+		if (val < redBeta)
 			// Logically we should return (v + razor_margin(depth)), but
-				// surprisingly this did slightly weaker in tests.
-					return val;
+			// surprisingly this did slightly weaker in tests.
+				return val;
 	}
 
 
 	//####### Static null move pruning (not inCheck) #######//
 	// We're betting that the opponent doesn't have a move that will reduce
 	// the score by more than futility_margin(depth) if we do a null move.
-	if ( !isPV && !ss->skipNullMv // flag
+	if (  !isPV
+		&& !ss->skipNullMv // flag
 		&& depth < 4 * ONE_PLY
 		&& eval - futility_margin(depth, (ss-1)->futilityMvCnt) >= beta
 		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
@@ -735,7 +767,8 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	// then see if the score of the subtree search is still high enough to cause a beta cutoff. 
 	// Nodes are saved by reducing the depth of the subtree under the null move. 
 	// The value of this depth reduction is known as R.
-	if (!isPV && !ss->skipNullMv
+	if (  !isPV
+		&& !ss->skipNullMv
 		&& depth > ONE_PLY
 		&& eval >= beta
 		&& abs(beta) < VALUE_MATE_IN_MAX_PLY
@@ -817,6 +850,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	//// Now deal with cases when we might be in check
 
 	//####### Retrieve info from the RefutationStats table #######//
+	// prevTo will be later used to update Refutations table
 	Square prevTo = get_to((ss-1)->currentMv);
 	pair<Move, Move> refutEntry = Refutations.get(pos, prevTo, prevTo);
 	Move refutationMvs[2] = { refutEntry.first, refutEntry.second };
@@ -880,7 +914,10 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		newDepth = depth - ONE_PLY + extDepth;
 
 		//####### Futility pruning (for nonPV nodes) #######//
-		if (!isPV  && !isCaptOrPromo  && !inCheck  &&  !dangerous
+		if (  !isPV
+			&& !isCaptOrPromo
+			&& !inCheck 
+			&& !dangerous
 			&& best > VALUE_MATED_IN_MAX_PLY) // implies "mv != ttMv"
 		{
 			// Move count based pruning
@@ -895,10 +932,9 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 			// but fixing this made program slightly weaker.
 			Depth predictDepth = newDepth - reduction<isPV>(improving, depth, moveCnt);
 
-			from = get_from(mv);
 			futilityVal = ss->staticEval + ss->staticMargin 
 					+ futility_margin(predictDepth, moveCnt)
-					+ Gains.get(pos, from, get_to(mv));
+					+ Gains.get(pos, get_from(mv), get_to(mv));
 
 			if (futilityVal < beta)
 			{
@@ -935,6 +971,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		//####### Make the move #######//
 		pos.make_move(mv, nextSt, ci, renderCheck);
 
+
 		// Reduced LMR Search ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 		// fullDepthMove here sets always to true ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 		fullDepthSearch = true;
@@ -962,6 +999,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 		//####### Unmak the move #######//
 		pos.unmake_move(mv);
+
 
 		//####### Finished searching on "mv" #######//
 		// If Signals.stop is true, the search
@@ -1006,7 +1044,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 				if (isPV && value < beta)
 					alpha = value;  // update alpha. Always have alpha < beta
 				else // value >= beta, fail high
-					break;
+					break; // Beta cut off. Exit the MoveSorter loop. 
 			}
 		}
 	} // EndWhile of MoveSorter.next_move(). Move generation and make/unmake moves complete.
@@ -1025,9 +1063,11 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	if (best == -VALUE_INFINITE)
 		best = alpha;
 
+
 	//####### Write to Transposition table #######//
 	BoundType ttBound = best >= beta ? BOUND_LOWER
 				: isPV && bestMv ? BOUND_EXACT : BOUND_UPPER;
+
 	TT.store(key, value2tt(best, ss->ply),
 				ttBound, depth, bestMv, ss->staticEval, ss->staticMargin);
 
@@ -1045,15 +1085,13 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 		// Increase history value of the cut-off move and decrease all the other
 		// played non-capture moves.
-		// Common value used for history heuristics is depth squared
+		// Common value used for history heuristics is depth-squared
 		Value bonus = depth * depth;
-		from = get_from(bestMv);
-		History.update(pos, from, get_to(bestMv), bonus);
+		History.update(pos, get_from(bestMv), get_to(bestMv), bonus);
 		for (int i = 0; i < quietCnt - 1; i++)
 		{
 			Move qm = quietMvsSearched[i];
-			from = get_from(qm);
-			History.update(pos, from, get_to(qm), -bonus);
+			History.update(pos, get_from(qm), get_to(qm), -bonus);
 		}
 
 		if ( (ss-1)->currentMv != MOVE_NULL)
@@ -1166,6 +1204,7 @@ Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth dept
 
 	 while ((mv = Msorter.next_move()) != MOVE_NULL)
 	 {
+		 DBG_COND(!pos.is_pseudo(mv), "FATAL shit move " << move2dbg(mv));
 		 renderCheck = pos.is_check(mv, ci);
 
 		 //####### Futility pruning #######//
