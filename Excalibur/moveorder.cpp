@@ -38,7 +38,7 @@ MoveSorter::MoveSorter(const Position& p, Move ttm, Depth d, const HistoryStats&
 	: pos(p), history(hs), depth(d), cur(mbuf), end(mbuf)
 {
 	if (p.checker_map())
-		stage = EVASION;
+		stage = S2_EVASION;
 	else if (d > DEPTH_QS_NO_CHECKS)
 		stage = S3_QSEARCH;
 	else if (d > DEPTH_QS_RECAPTURES)
@@ -131,6 +131,7 @@ void MoveSorter::score<EVASION>()
 		else if (pos.is_capture(mv))
 			it->value = PIECE_VALUE[MG][pos.boardPiece[get_to(mv)]]
 							- pos.boardPiece[get_from(mv)] + HistoryStats::MAX;
+
 		else
 			it->value = history.get(pos, get_from(mv), get_to(mv));
 	}
@@ -229,7 +230,7 @@ void MoveSorter::gen_next_moves()
 // normally are the possible captures.
 inline ScoredMove* select_best(ScoredMove* begin, ScoredMove* end)
 {
-	swap(*begin, *max_element(begin, end));
+	std::swap(*begin, *std::max_element(begin, end));
 	return begin;
 }
 
@@ -273,7 +274,8 @@ Move MoveSorter::next_move()
 
 		case S1Killer: // Note: here cur/end refers to killerMvs[] array, not mbuf
 			mv = (cur++)->move;
-			if (mv != MOVE_NULL && pos.is_pseudo(mv)
+			if ( mv != MOVE_NULL
+				&& pos.is_pseudo(mv)
 				&& mv != ttMv  // don't overwrite good TT entry
 				&& !pos.is_capture(mv))
 				return mv;
@@ -281,9 +283,11 @@ Move MoveSorter::next_move()
 
 		case S1QuietPositive: case S1QuietNegative: // shouldn't be killer moves
 			mv = (cur++)->move;
-			if (mv != ttMv &&
-				mv != killerMvs[0].move && mv != killerMvs[1].move &&
-				mv != killerMvs[2].move && mv != killerMvs[3].move)
+			if ( mv != ttMv
+				&& mv != killerMvs[0].move
+				&& mv != killerMvs[1].move
+				&& mv != killerMvs[2].move
+				&& mv != killerMvs[3].move)
 				return mv;
 			break;
 

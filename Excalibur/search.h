@@ -73,7 +73,7 @@ namespace Search
 	 */
 	struct LimitListener
 	{
-		LimitListener() { memset(this, 0, sizeof(LimitListener)); } // Set all flags to false.
+		void clear() { memset(this, 0, sizeof(LimitListener)); } // set all flags to false
 		// Under 5 UCI scenarios, we don't use TimeKeeper
 		bool use_timer() const { return !(mateInX || moveTime || depth || nodes || infinite); }
 		Msec time[COLOR_N], increment[COLOR_N], moveTime; 
@@ -86,10 +86,7 @@ namespace Search
 	/// The flag stopOnPonderhit is defined because
 	/// normally we should continue searching on ponderhit unless we're out of time.
 	struct SignalListener
-	{
-		SignalListener() { memset(this, 0, sizeof(SignalListener)); } // Set all falgs to false
-		bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; 
-	};
+	{ bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; };
 
 	/// RootMove struct is used for moves at the root of the tree. For each root
 	/// move we store a score, and a PV (really a refutation in the
@@ -129,7 +126,8 @@ namespace Search
 	// of moves played on the internal board.
 	// Needed for functions like pos.is_draw(), which needs to trace
 	// back in state history.
-	extern stack<StateInfo> SetupStates;
+	typedef auto_ptr<stack<StateInfo>> SetupStatePtr;
+	extern SetupStatePtr SetupStates;
 
 	void init();
 

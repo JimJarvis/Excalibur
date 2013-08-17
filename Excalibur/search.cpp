@@ -22,7 +22,7 @@ namespace Search
 	volatile SignalListener Signal;
 	LimitListener Limit;
 
-	stack<StateInfo> SetupStates;
+	SetupStatePtr SetupStates;
 	vector<RootMove> RootMoveList;
 	Position RootPos;
 	Color RootColor;
@@ -37,7 +37,6 @@ enum NodeType { ROOT, PV, NON_PV};
 
 /**********************************************/
 /* Shared global variables and prototype for main searchers */
-
 
 // If the remaining available time drops below this percentage 
 // threshold, we don't start the next iteration. 
@@ -200,6 +199,7 @@ void Search::think()
 	{
 		Signal.stopOnPonderhit = true;
 		Main->wait_until(Signal.stop);
+		DBG_DISP("Wait finished");
 	}
 
 	// We print bestmove to console - ask the GUI to play the move!
@@ -211,6 +211,161 @@ void Search::think()
 	sync_print("bestmove " << move2uci(RootMoveList[0].pv[0])
 			<<  " ponder " << move2uci(RootMoveList[0].pv[1]) );
 }
+
+
+
+/**********************************************/
+/* Main iterative deepening */
+// Calls search() repeatedly with increasing depth until the
+// allocated thinking time has been consumed,
+// user stops the search, or the maximum search depth is reached.
+/**********************************************/
+
+void iterative_deepen(Position& pos)
+{
+	SearchStack sstack; SearchInfo *ss = sstack + 2; // To allow dereferencing (ss - 2)
+	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
+
+	Depth depth = 0;
+	int prevBestMoveChanges;
+	BestMoveChanges = 0;
+	Value best, alpha, beta, delta; // alpha's the lower limit and beta's the upper
+	best = alpha = delta = -VALUE_INFINITE;
+	beta = VALUE_INFINITE; 
+
+	(ss-1)->currentMv = MOVE_NULL; // Skip update gains.
+
+	// clear the recording tables
+	TT.new_generation();
+	History.clear();
+	Gains.clear();
+	Refutations.clear();
+
+	// Iterative deepening loop until requested to stop or target depth reached
+	while (++depth <= MAX_PLY && !Signal.stop && (!Limit.depth || depth <= Limit.depth))
+	{
+		// Save last iteration's score
+		// RootMoveList won't be empty because that's already handled by Search::think()
+		for (int i = 0; i < RootMoveList.size(); i++)
+			RootMoveList[i].prevScore = RootMoveList[i].score;
+
+		prevBestMoveChanges = BestMoveChanges;
+		BestMoveChanges = 0;
+
+		// Reset aspiration window starting size, 
+		// centered on the score from the previous iteration (+-delta)
+		if (depth >= 5)
+		{
+			delta = 16;
+			alpha = max(-VALUE_INFINITE, RootMoveList[0].prevScore - delta);
+			beta = min(VALUE_INFINITE, RootMoveList[0].prevScore + delta);
+		}
+
+		// Start with a small aspiration window and, in case of fail high/low,
+		// research with bigger window until not failing high/low anymore.
+		while (true)
+		{
+			best = search<ROOT>(pos, ss, alpha, beta, depth * ONE_PLY, false);
+			
+			// Bring to front the best move. It is critical that sorting is
+			// done with a stable algorithm because all the values but the first
+			// and eventually the new best one are set to -VALUE_INFINITE and
+			// we want to keep the same order for all the moves but the new
+			// PV that goes to the front. 
+			std::stable_sort(RootMoveList.begin(), RootMoveList.end());
+
+			// Write PV back to transposition table in case the relevant
+			// entries have been overwritten during the search.
+			RootMoveList[0].pv2tt(pos);
+
+			// If search has been stopped return immediately. Sorting and
+			// storing PV to TT is safe because those are values from the last iteration
+			if (Signal.stop)
+				return;
+
+			// When fail high/low give some update before re-searching
+			if ( (best <= alpha || best >= beta)
+				&& now() - SearchTime > 3000)
+				sync_print(pv2uci(pos, depth, alpha, beta));
+
+			// If we fail low/high, increase the aspiration window and re-search
+			// The aspiration window size will be increased exponentially
+			if (best <= alpha) // fail low
+			{
+				alpha = max(best - delta, -VALUE_INFINITE);
+				// Send out signals
+				Signal.failedLowAtRoot = true;
+				Signal.stopOnPonderhit = false;
+			}
+			else if (best >= beta) // fail high
+				beta = min(best + delta, VALUE_INFINITE);
+
+			else // we've found the EXACT best value
+				break;
+
+			delta += delta / 2;  // Increase the window size by an exponent of 1.5
+
+		} // end of aspiration loop
+		
+
+		/******* Succeed. No fail low or high! ********/
+		sync_print(pv2uci(pos, depth));
+
+		// Have we found a mate-in-N ? Then stop. 
+		// Limit.mate will be flagged by UCI "go mate" command
+		if ( Limit.mateInX
+			&& best >= VALUE_MATE_IN_MAX_PLY
+			&& VALUE_MATE - best <= 2 * Limit.mateInX)
+			Signal.stop = true;
+
+		// Under time control scenario:
+		// Decide if we have time for the next iteration. See if we can stop searching now
+		if (Limit.use_timer() && !Signal.stopOnPonderhit)
+		{
+			bool stopjug = false; // Can we stop searching?
+
+			// If PV is unstable, we need extra time
+			if (depth > 4 && depth < 50)
+				Timer.unstable_pv_adjust(BestMoveChanges, prevBestMoveChanges);
+
+			// Stop searching if we seem to have insufficient time for the next iteration
+			// Global const threshold decides the percentage of remaining time below which
+			// we'd choose not to start the next iteration. Typically set to 60-70%
+			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThresh)
+				stopjug = true;
+
+			// Stop early if one move seems much better than others
+			if (  !stopjug 
+				&& depth >= 12 
+				&& best > VALUE_MATED_IN_MAX_PLY
+				&& ( RootMoveList.size() == 1  // has only 1 legal move at root
+						|| now() - SearchTime > Timer.optimum() * 0.2))
+			{
+				Value redBeta = best - 2 * MG_PAWN;  // reduced beta
+				ss->excludedMv = RootMoveList[0].pv[0]; // exclude the PV move
+				ss->skipNullMv = true;
+				Value val = search<NON_PV>(pos, ss, redBeta - 1, redBeta, (depth - 3) * ONE_PLY, true);
+				ss->skipNullMv = false;
+				ss->excludedMv = MOVE_NULL;
+
+				if (val < redBeta)
+					stopjug = true;
+			}
+
+			if (stopjug)
+			{
+				// If we are in ponder state, don't stop the search now (as requested by UCI)
+				// until UCI sends 'ponderhit' or 'stop'
+				if (Limit.ponder)
+					Signal.stopOnPonderhit = true;
+				else
+					Signal.stop = true;
+			}
+		}
+
+	} // end of the main iter deepening while-loop
+}
+
 
 
 /**********************************************/
@@ -274,174 +429,6 @@ void RootMove::pv2tt(Position& pos)
 
 	while (ply--) pos.unmake_move(pv[ply]); // restore the state
 }
-
-
-
-/**********************************************/
-/* Main iterative deepening */
-// Calls search() repeatedly with increasing depth until the
-// allocated thinking time has been consumed,
-// user stops the search, or the maximum search depth is reached.
-/**********************************************/
-
-void iterative_deepen(Position& pos)
-{
-	SearchStack sstack; SearchInfo *ss = sstack + 2; // To allow dereferencing (ss - 2)
-	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
-
-	Depth depth = 0;
-	int prevBestMoveChanges;
-	BestMoveChanges = 0;
-	Value best, alpha, beta, delta; // alpha's the lower limit and beta's the upper
-	best = alpha = delta = -VALUE_INFINITE;
-	beta = VALUE_INFINITE; 
-
-	(ss-1)->currentMv = MOVE_NULL; // Skip update gains.
-
-	// clear the recording tables
-	TT.new_generation();
-	History.clear();
-	Gains.clear();
-	Refutations.clear();
-
-	// Iterative deepening loop until requested to stop or target depth reached
-	while (++depth <= MAX_PLY && !Signal.stop && (!Limit.depth || depth <= Limit.depth))
-	{
-		DBG_DISP("Iterative deepen " << depth);
-
-		// Save last iteration's score
-		// RootMoveList won't be empty because that's already handled by Search::think()
-		for (int i = 0; i < RootMoveList.size(); i++)
-			RootMoveList[i].prevScore = RootMoveList[i].score;
-
-		prevBestMoveChanges = BestMoveChanges;
-		BestMoveChanges = 0;
-
-		// Reset aspiration window starting size, 
-		// centered on the score from the previous iteration (+-delta)
-		if (depth >= 5)
-		{
-			delta = 16;
-			alpha = max(-VALUE_INFINITE, RootMoveList[0].prevScore - delta);
-			beta = min(VALUE_INFINITE, RootMoveList[0].prevScore + delta);
-		}
-
-		// Start with a small aspiration window and, in case of fail high/low,
-		// research with bigger window until not failing high/low anymore.
-		while (true)
-		{
-			DBG_DISP("Search depth " << depth * ONE_PLY);
-			best = search<ROOT>(pos, ss, alpha, beta, depth * ONE_PLY, false);
-			
-			DBG_DISP("best value = " << best);
-			DBG_DISP("RootSize " << RootMoveList.size());
-
-			// Bring to front the best move. It is critical that sorting is
-			// done with a stable algorithm because all the values but the first
-			// and eventually the new best one are set to -VALUE_INFINITE and
-			// we want to keep the same order for all the moves but the new
-			// PV that goes to the front. 
-			std::stable_sort(RootMoveList.begin(), RootMoveList.end());
-
-			// Write PV back to transposition table in case the relevant
-			// entries have been overwritten during the search.
-			RootMoveList[0].pv2tt(pos);
-
-			DBG_DISP("Store PV successful");
-
-			// If search has been stopped return immediately. Sorting and
-			// storing PV to TT is safe because those are values from the last iteration
-			if (Signal.stop)
-				return;
-
-			// When fail high/low give some update before re-searching
-			if ( (best <= alpha || best >= beta)
-				&& now() - SearchTime > 3000)
-				sync_print(pv2uci(pos, depth, alpha, beta));
-
-			// If we fail low/high, increase the aspiration window and re-search
-			// The aspiration window size will be increased exponentially
-			if (best <= alpha) // fail low
-			{
-				DBG_DISP("Fail Low");
-				alpha = max(best - delta, -VALUE_INFINITE);
-				// Send out signals
-				Signal.failedLowAtRoot = true;
-				Signal.stopOnPonderhit = false;
-			}
-			else if (best >= beta) // fail high
-			{
-				DBG_DISP("Fail High");
-				beta = min(best + delta, VALUE_INFINITE);
-			}
-			else // we've found the EXACT best value
-				break;
-
-				DBG_DISP("Increase aspiration window");
-			delta += delta / 2;  // Increase the window size by an exponent of 1.5
-
-		} // end of aspiration loop
-		
-
-		/******* Succeed. No fail low or high! ********/
-		sync_print(pv2uci(pos, depth));
-
-		// Have we found a mate-in-N ? Then stop. 
-		// Limit.mate will be flagged by UCI "go mate" command
-		if ( Limit.mateInX
-			&& best >= VALUE_MATE_IN_MAX_PLY
-			&& VALUE_MATE - best <= 2 * Limit.mateInX)
-			Signal.stop = true;
-
-		// Under time control scenario:
-		// Decide if we have time for the next iteration. See if we can stop searching now
-		if (Limit.use_timer() && !Signal.stopOnPonderhit)
-		{
-			bool stopjug = false; // Can we stop searching?
-
-			// If PV is unstable, we need extra time
-			if (depth > 4 && depth < 50)
-				Timer.unstable_pv_adjust(BestMoveChanges, prevBestMoveChanges);
-
-			// Stop searching if we seem to have insufficient time for the next iteration
-			// Global const threshold decides the percentage of remaining time below which
-			// we'd choose not to start the next iteration. Typically set to 60-70%
-			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThresh)
-				stopjug = true;
-
-			// Stop early if one move seems much better than others
-			if (  !stopjug 
-				&& depth >= 12 
-				&& best > VALUE_MATED_IN_MAX_PLY
-				&& ( RootMoveList.size() == 1  // has only 1 legal move at root
-						|| now() - SearchTime > Timer.optimum() * 0.2))
-			{
-				Value redBeta = best - 2 * MG_PAWN;  // reduced beta
-				ss->excludedMv = RootMoveList[0].pv[0]; // exclude the PV move
-				ss->skipNullMv = true;
-				Value val = search<NON_PV>(pos, ss, redBeta - 1, redBeta, (depth - 3) * ONE_PLY, true);
-				ss->skipNullMv = false;
-				ss->excludedMv = MOVE_NULL;
-
-				if (val < redBeta)
-					stopjug = true;
-			}
-
-			if (stopjug)
-			{
-				// If we are in ponder state, don't stop the search now (as requested by UCI)
-				// until UCI sends 'ponderhit' or 'stop'
-				if (Limit.ponder)
-					Signal.stopOnPonderhit = true;
-				else
-					Signal.stop = true;
-			}
-		}
-
-		DBG_DISP("Best move changes " << BestMoveChanges);
-	} // end of the main iter deepening while-loop
-}
-
 
 
 /**********************************************/
@@ -1204,7 +1191,6 @@ Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth dept
 
 	 while ((mv = Msorter.next_move()) != MOVE_NULL)
 	 {
-		 DBG_COND(!pos.is_pseudo(mv), "FATAL shit move " << move2dbg(mv));
 		 renderCheck = pos.is_check(mv, ci);
 
 		 //####### Futility pruning #######//

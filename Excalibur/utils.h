@@ -6,7 +6,7 @@
 #include "globals.h"
 
 // uncomment the following macro to show debug messages
-#define DEBUG 
+//#define DEBUG 
 // Huge performance gain when _MSC_VER is enabled
 // comment out the following lines to disable using assembly
 #define USE_BITSCAN 
@@ -295,10 +295,17 @@ inline U64 now()
 #define DBG_DO(command) command
 #define DBG_DISP(msg) cout << msg << endl
 #define DBG_COND(cond, msg) if (cond) cout << msg << endl
+#define DBG_LOOP(forcond, msg) for (forcond) cout << msg << endl;
+	// Write to debug file
+#define DBG_FILE_INIT(filename) ofstream fdbg(filename);
+#define DBG_FOUT(msg) fdbg << msg << endl
 #else
 #define DBG_DO(command) 
 #define DBG_DISP(msg)
 #define DBG_COND(cond, msg)
+#define DBG_LOOP(forcond, msg)
+#define DBG_FILE_INIT(filename)
+#define DBG_FOUT(msg)
 #endif
 
 #endif // __utils_h__

@@ -26,7 +26,7 @@ namespace ThreadPool
 	void wait_until_main_finish()
 	{
 		Main->mutex.lock();
-		while (Main->running)
+		while (Main->searching)
 			mainWaitCond.wait(Main->mutex);
 		Main->mutex.unlock();
 	}
@@ -47,7 +47,10 @@ void Thread::signal()
 // because we want to wait until a cond becomes true, 
 // EVEN WHEN we receive a cond_signal telling us to 
 // wake up else where, which might be a false signal.
-void Thread::wait_until(volatile bool cond)
+// Note that here the argument MUST BE bool&
+// Otherwise the 'cond' parameter gets copied and is not longer 
+// volatile any more. The signal might not be sent on time. 
+void Thread::wait_until(volatile bool& cond)
 {
 	mutex.lock();
 	while (!cond) sleepCond.wait(mutex);
@@ -60,8 +63,8 @@ void MainThread::execute()
 	while (true)
 	{
 		mutex.lock();
-		running = false;
-		while (!running && exist)
+		searching = false;
+		while (!searching && exist)
 		{
 			// Main has finished searching. Return to IO
 			// ask wait_until_main_finish() to stop waiting
@@ -72,10 +75,8 @@ void MainThread::execute()
 
 		if (!exist)	return;
 
-		searching = true;
 		// Main search engine starts. 
 		Search::think();
-		searching = false;
 	}
 }
 
@@ -88,9 +89,9 @@ void check_time()
 
 	U64 lapse = now() - SearchTime;
 
-	bool stillMove1 = Signal.firstRootMove && !Signal.failedLowAtRoot
+	bool stillFirstMove = Signal.firstRootMove && !Signal.failedLowAtRoot
 			&& lapse > Timer.optimum();
-	bool timeRunOut = stillMove1 ||
+	bool timeRunOut = stillFirstMove ||
 					lapse > Timer.maximum() - 2 * ClockThread::Resolution;
 
 	if ( (Limit.use_timer() && timeRunOut) 

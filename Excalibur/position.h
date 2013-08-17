@@ -34,6 +34,7 @@ struct StateInfo
 // Instance can be obtained by pos.check_info()
 struct CheckInfo
 {
+	CheckInfo() {}
 	Bit discv;  // discovered checkers
 	Bit pinned;
 	// Record locations of a piecetype where it can check the opponent's king square

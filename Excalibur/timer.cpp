@@ -109,6 +109,8 @@ void TimeKeeper::talloc(Color us, int curPly)
 
 	// Final verification: assert(tOptimal < tMax)
 	tOptimal = min(tOptimal, tMax);
+
+	//DBG_DISP("Optimal time = "<< setprecision(2) << tOptimal/1000.0 << " s");
 }
 
 
@@ -118,4 +120,5 @@ void TimeKeeper::unstable_pv_adjust(int bestMoveChanges, int prevBestMoveChanges
 {
 	tUnstablePV = bestMoveChanges * (tOptimal / 2)
 					+ prevBestMoveChanges * (tOptimal / 3);
+	//DBG_DISP("Unstable extra time = " << setprecision(2) << tUnstablePV/1000.0 << " s");
 }

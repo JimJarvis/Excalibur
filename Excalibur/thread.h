@@ -104,8 +104,12 @@ struct Thread
 	Thread() : exist(false) {};
 	virtual void execute() = 0;
 	void signal();
+
 	// wait until the condition becomes true
-	void wait_until(volatile bool cond);
+	// Note that here the argument MUST BE bool&
+	// Otherwise the 'cond' parameter gets copied and is not longer 
+	// volatile any more. The signal might not be sent on time. 
+	void wait_until(volatile bool& cond);
 
 	Mutex mutex;
 	ConditionVar sleepCond;
@@ -116,11 +120,10 @@ struct Thread
 // Main thread
 struct MainThread : public Thread
 {
-	MainThread() : running(true) {}
+	MainThread() : searching(true) {}
 	virtual void execute();
-	volatile bool searching;
 	// avoid a race condition with 'searching'
-	volatile bool running;
+	volatile bool searching;
 };
 
 // Clock

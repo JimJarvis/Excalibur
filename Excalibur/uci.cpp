@@ -75,6 +75,8 @@ string options2str()
 }
 
 
+Search::SetupStatePtr SetupStatesTmp;
+
 /***************** Helper for perft thread **********************/
 struct PerftHelper 
 {	PerftHelper() : epdFile("perftsuite.epd"), useHash(false) {}; 
@@ -151,13 +153,16 @@ void process()
 	Position pos;
 	string str, cmd, strlast;
 	PerftThread *pth = nullptr;
+	DBG_FILE_INIT("UCI_log.txt"); // debugging output
 
 do
 {
 	if (!getline(cin, str))  // waiting for input. EOF means quit
 		str = "quit";
+	DBG_FOUT(str);
 	if (str == ".") // repeat the last command
 	{	sync_print(strlast); str = strlast; }
+
 	 strlast = str;  // holds the last command line
 	istringstream iss(str);
 
@@ -171,6 +176,10 @@ do
 		if (pth && !Signal.stop) // Show abort perft message
 			sync_print("aborting perft ...");
 
+		//DBG_DISP("Signal stop = " << Signal.stop);
+		//DBG_DISP("Signal stopOnPonderHit = " << Signal.stopOnPonderhit);
+		//DBG_DISP("Limit ponder = " << Limit.ponder);
+
 		// In case Signal.stopOnPonderhit is set we are
 		// waiting for 'ponderhit' to stop the search (for instance because we
 		// already ran out of time), otherwise we should continue searching but
@@ -178,7 +187,13 @@ do
 		if (cmd != "ponderhit" || Signal.stopOnPonderhit)
 		{
 			Signal.stop = true;
-			Main->signal(); // wake up the main thread
+
+			// Might be waiting for a stop signal before it 
+			// prints out the bestmoves. Possible scenario:
+			// we've searched all the way up to the maximal depth (like mate)
+			// in pondering mode. Then we have to wait for a 'ponderhit'
+			// or 'stop' before we print the bestmoves, as required by UCI
+			Main->signal();
 		}
 		else
 			Limit.ponder = false;
@@ -207,6 +222,9 @@ do
 	{
 		vector<Move> searchMoveList;
 
+		// Clear the LimitListener in namespace Search first
+		Limit.clear();  
+
 		while (iss >> str) // all supported sub-cmd after 'go'
 		{
 			// Restrict search to these moves only
@@ -234,8 +252,8 @@ do
 			// Start searching in pondering mode
 			else if (str == "ponder")		Limit.ponder = true;
 		}
-		
-		// We need to wait until Main thread finishes running
+
+		// We need to wait until Main thread finishes searching
 		ThreadPool::wait_until_main_finish();
 
 		//** Most of the variables below are globals critical to search.cpp **//
@@ -252,6 +270,9 @@ do
 		RootMoveList.clear();
 		RootPos = pos;
 
+		if (SetupStatesTmp.get())
+			Search::SetupStates = SetupStatesTmp;
+
 		// Check whether searchMoveList has all legal moves
 		MoveBuffer mbuf;
 		ScoredMove *it, *end = pos.gen_moves<LEGAL>(mbuf);
@@ -262,7 +283,7 @@ do
 				RootMoveList.push_back(RootMove(it->move));
 
 		// Wake up and start our business!
-		Main->running = true;
+		Main->searching = true;
 		Main->signal();
 	}
 
@@ -289,14 +310,14 @@ do
 		// Optional UCI-format move list after 'moves' sub-cmd
 		// Parse the move list and play them on the internal board
 		// First we clear the global SetupStates variable in search.cpp
-		while (!SetupStates.empty()) SetupStates.pop();
+		SetupStatesTmp = SetupStatePtr(new stack<StateInfo>());
 
 		Move mv;
 		while (iss >> str && (mv = uci2move(pos, str)) != MOVE_NULL )
 		{
-			SetupStates.push(StateInfo());
+			SetupStatesTmp->push(StateInfo());
 			// play the move with the most recently created state.
-			pos.make_move(mv, SetupStates.top());
+			pos.make_move(mv, SetupStatesTmp->top());
 		}
 
 	}  // cmd 'position'
@@ -420,7 +441,7 @@ do
 
 } while (cmd != "quit"); // infinite stdin loop
 
-	// Cannot quit while search is running
+	// Cannot quit while search is searching
 	ThreadPool::wait_until_main_finish();
 
 } // main UCI::process() function
@@ -614,7 +635,7 @@ string move2san(Position& pos, Move mv)
 string pv2uci(const Position& pos, Depth depth, Value alpha, Value beta)
 {
 	ostringstream oss;
-	U64 lapse = now() - SearchTime;
+	U64 lapse = now() - SearchTime + 1; // plus 1 to avoid division by 0
 	Value val = RootMoveList[0].score;
 
 	oss << "info depth " << depth
