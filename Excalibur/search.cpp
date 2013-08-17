@@ -69,7 +69,7 @@ inline Value razor_margin(Depth d)	{ return 512 + 16 * d; }
 
 // Futility lookup tables (init at startup) and their access functions
 Value FutilityMargins[16][64]; // [depth][moveNumber]
-int FutilityMoveCounts[2][32]; // [improving][depth]
+int FutilityMoveCounts[2][32]; // [isImproved][depth]
 
 inline Value futility_margin(Depth d, int moveNum)
 {
@@ -79,7 +79,7 @@ inline Value futility_margin(Depth d, int moveNum)
 }
 
 // Reduction lookup table (init at startup) and its access function
-byte Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
+byte Reductions[2][2][64][64]; // [pv][isImproved][depth][moveNumber]
 
 template <bool PvNode> inline Depth reduction(bool improving, Depth d, int moveNum)
 {
@@ -199,7 +199,6 @@ void Search::think()
 	{
 		Signal.stopOnPonderhit = true;
 		Main->wait_until(Signal.stop);
-		DBG_DISP("Wait finished");
 	}
 
 	// We print bestmove to console - ask the GUI to play the move!
@@ -601,7 +600,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 	Depth extDepth, newDepth;
 	Value best, value, ttVal; // value is temp
 	Value eval, nullVal, futilityVal;
-	bool inCheck, renderCheck, improving, isCaptOrPromo, fullDepthSearch, isPvMove, dangerous;
+	bool inCheck, renderCheck, isImproved, isCaptOrPromo, fullDepthSearch, isPvMove, isDangerous;
 	Move quietMvsSearched[64]; // indexed by quietCnt
 	int moveCnt, quietCnt;
 
@@ -814,7 +813,6 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		}
 	}
 
-	// ProbCut ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
 	//####### Internal iterative deepening (not in check) #######//
 	if (depth >= (isPV ? 5 * ONE_PLY : 8 * ONE_PLY)
@@ -833,6 +831,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 	} // #EndIf (hundreds of lines ago). We complete all the search steps when not inCheck
 
+
 	/***************************************/
 	//// Now deal with cases when we might be in check
 
@@ -847,11 +846,10 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 
 	value = best;
 	
-	improving = ss->staticEval >= (ss-2)->staticEval
+	isImproved = ss->staticEval >= (ss-2)->staticEval
 						|| ss->staticEval == VALUE_NULL
 						|| (ss-2)->staticEval == VALUE_NULL;
 
-	// Singular Extension boolean ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
 	/****************************************/
 	//####### Move generation and looping  #######//
@@ -874,29 +872,20 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		moveCnt ++;
 
 		if (isRoot) // print out info about current move
-		{
 			// Used by the function check_time() in ClockThread to determine if we stop or not
 			Signal.firstRootMove = (moveCnt == 1);
-
-			if (now() - SearchTime > 3000)
-				sync_print("info depth " << depth / ONE_PLY 
-						<< " currmove " << move2uci(mv)  // display the move we're currently searching
-						<< " currmovenumber " << moveCnt); 
-		}
 
 		extDepth = DEPTH_ZERO; // extended depth
 		isCaptOrPromo = !pos.is_quiet(mv);
 		renderCheck = pos.is_check(mv, ci);  // Whether this move checks the opp
-		dangerous = renderCheck || pos.create_passed_pawn(mv) || is_castle(mv);
+		isDangerous = renderCheck || pos.create_passed_pawn(mv) || is_castle(mv);
 
 		//####### Extend checks and dangerous moves depth #######//
-		if (isPV && dangerous)
+		if (isPV && isDangerous)
 			extDepth = ONE_PLY;
 		
 		else if (renderCheck && see_sign(pos, mv) >= 0)
 			extDepth = ONE_PLY / 2;
-
-		// Singular Extension Search ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
 
 		newDepth = depth - ONE_PLY + extDepth;
 
@@ -904,12 +893,12 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		if (  !isPV
 			&& !isCaptOrPromo
 			&& !inCheck 
-			&& !dangerous
+			&& !isDangerous
 			&& best > VALUE_MATED_IN_MAX_PLY) // implies "mv != ttMv"
 		{
 			// Move count based pruning
 			if ( depth < 16 * ONE_PLY
-				&& moveCnt >= FutilityMoveCounts[improving][depth]
+				&& moveCnt >= FutilityMoveCounts[isImproved][depth]
 					// A threat move is created when a null move search fails low
 				&& (!threatMv || !refutes(pos, mv, threatMv)) )
 				continue;
@@ -917,7 +906,7 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 			// Value based pruning
 			// We illogically ignore reduction condition depth >= 3*ONE_PLY for predicted depth,
 			// but fixing this made program slightly weaker.
-			Depth predictDepth = newDepth - reduction<isPV>(improving, depth, moveCnt);
+			Depth predictDepth = newDepth - reduction<isPV>(isImproved, depth, moveCnt);
 
 			futilityVal = ss->staticEval + ss->staticMargin 
 					+ futility_margin(predictDepth, moveCnt)
@@ -959,9 +948,38 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		pos.make_move(mv, nextSt, ci, renderCheck);
 
 
-		// Reduced LMR Search ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
-		// fullDepthMove here sets always to true ??? ??? ??? ??? ??? ADD LATER ??? ??? ??? ??? ??? 
-		fullDepthSearch = true;
+		//####### Late Move Reduction (reduced depth search) #######//
+		// If the move fails high, will be re-searched at full depth. 
+		// This will be decided by the bool fullDepthSearch
+		
+		if (  depth > 3 * ONE_PLY
+			&& !isPvMove
+			&& !isCaptOrPromo
+			&& !isDangerous
+			&& mv != ttMv
+			&& mv != ss->killerMvs[0]
+			&& mv != ss->killerMvs[1] )
+		{
+			ss->reduction = reduction<isPV>(isImproved, depth, moveCnt);
+
+			if (isPV && cutNode)
+				ss->reduction += ONE_PLY;
+
+			if (mv == refutationMvs[0] || mv == refutationMvs[1])
+				ss->reduction = max(DEPTH_ZERO, ss->reduction - ONE_PLY);
+
+			Depth d = max(newDepth - ss->reduction, ONE_PLY);
+
+			value = -search<NON_PV>(pos, ss+1, -alpha-1, -alpha, d, true);
+
+			// This bool decides if we fail high and must re-search at full
+			fullDepthSearch = ( value > alpha && ss->reduction != DEPTH_ZERO);
+			ss->reduction = DEPTH_ZERO; // complete reduction and reset
+		}
+		else
+			// we do a full depth re-search if it isn't already a PV move
+			fullDepthSearch = !isPvMove;
+
 
 		//####### Major searching force #######//
 		//####### Full depth NON_PV search, when LMR skipped or fails high #######//

@@ -127,6 +127,7 @@ const Score ThreatenedByPawn[] =
 /* Bonus/Penalty constants */
 const Score Tempo            = S(24, 11);
 const Score BishopPin        = S(66, 11);
+const Score MinorBehindPawn = S(16, 0);
 const Score RookOn7th        = S(11, 20);
 const Score QueenOn7th       = S( 3,  8);
 // Rooks and queens attacking pawns on the same rank
@@ -597,7 +598,7 @@ Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score& mobility, Bit mo
 			// Bonus for pawns in front of knight/bishop
 			if ( relative_rank(us, sq) < RANK_5
 				&& (pos.piece_union(PAWN) & pawn_push(us, sq)) )
-				score += make_score(16, 0);
+				score += MinorBehindPawn;
 		}
 
 		if (  (PT == ROOK || PT == QUEEN)

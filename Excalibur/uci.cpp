@@ -75,8 +75,6 @@ string options2str()
 }
 
 
-Search::SetupStatePtr SetupStatesTmp;
-
 /***************** Helper for perft thread **********************/
 struct PerftHelper 
 {	PerftHelper() : epdFile("perftsuite.epd"), useHash(false) {}; 
@@ -270,9 +268,6 @@ do
 		RootMoveList.clear();
 		RootPos = pos;
 
-		if (SetupStatesTmp.get())
-			Search::SetupStates = SetupStatesTmp;
-
 		// Check whether searchMoveList has all legal moves
 		MoveBuffer mbuf;
 		ScoredMove *it, *end = pos.gen_moves<LEGAL>(mbuf);
@@ -309,15 +304,15 @@ do
 		
 		// Optional UCI-format move list after 'moves' sub-cmd
 		// Parse the move list and play them on the internal board
-		// First we clear the global SetupStates variable in search.cpp
-		SetupStatesTmp = SetupStatePtr(new stack<StateInfo>());
+		// First we clear the global SetupStates variable in Search namespace
+		SetupStates = SetupStatePtr(new stack<StateInfo>());
 
 		Move mv;
 		while (iss >> str && (mv = uci2move(pos, str)) != MOVE_NULL )
 		{
-			SetupStatesTmp->push(StateInfo());
+			SetupStates->push(StateInfo());
 			// play the move with the most recently created state.
-			pos.make_move(mv, SetupStatesTmp->top());
+			pos.make_move(mv, SetupStates->top());
 		}
 
 	}  // cmd 'position'

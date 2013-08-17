@@ -81,7 +81,7 @@ void MainThread::execute()
 }
 
 
-// Checks the time for ClockThread
+// Checks the system time for ClockThread
 void check_time()
 {
 	if (Limit.ponder)
