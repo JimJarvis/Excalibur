@@ -1,7 +1,7 @@
 /* Multithreading utilities */
 #ifndef __thread_h__
 #define __thread_h__
-#include "utils.h"
+#include "globals.h"
 
 #ifdef _WIN32  // windows
 

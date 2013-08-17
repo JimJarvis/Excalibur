@@ -82,7 +82,7 @@ namespace UCI
 	};
 
 	// Init default options
-	void init();
+	void init_options();
 	// Main stdin processor (infinite loop)
 	void process();
 

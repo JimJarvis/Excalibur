@@ -1,7 +1,8 @@
+/* Zobrist keys and PieceSquareTable will be init by Utils::init() at program startup */
 #ifndef __zobrist_h__
 #define __zobrist_h__
 
-#include "utils.h"
+#include "globals.h"
 
 // Accessed as constants in movegen.
 extern Score PieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
@@ -18,10 +19,6 @@ namespace Zobrist
 
 	extern U64 turn;
 	extern U64 exclusion;
-
-	// Init zobrist keys and PieceSquareTable. 
-	// Called at program startup. 
-	void init_keys_psqt();
 }
 
 #endif // __zobrist_h__

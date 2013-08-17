@@ -81,6 +81,10 @@ void MainThread::execute()
 }
 
 
+// UCI 'movetime' is also an Xboard time control: each move should take maximum ms
+// Thus we have to subtract 80 ms (xboard's time resolution) to workaround the bug.
+// Now we set to 0 to keep the standard.
+const int MoveTimeThreshold = 0;
 // Checks the system time for ClockThread
 void check_time()
 {
@@ -96,7 +100,7 @@ void check_time()
 
 	if ( (Limit.use_timer() && timeRunOut) 
 			// UCI 'movetime' requires that we search exactly x msec
-		|| ( Limit.moveTime && lapse >= Limit.moveTime )
+		|| ( Limit.moveTime && lapse >= Limit.moveTime - MoveTimeThreshold)
 			// UCI 'nodes' requires that we search exactly x nodes
 		|| (Limit.nodes && RootPos.nodes >= Limit.nodes) )
 		Signal.stop = true;

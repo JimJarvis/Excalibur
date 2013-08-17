@@ -16,8 +16,8 @@ void changer_clear_hash() { TT.clear(); }
 void changer_eval_weights() { Eval::init(); } // refresh weights
 void changer_contempt_factor() { Search::update_contempt_factor(); }
 
-// initialize default UCI options
-void init()
+// Initialize default UCI options
+void init_options()
 {
 	// The first three won't be shown explicitly in dialogue box. Handled internally
 	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner. Not shown

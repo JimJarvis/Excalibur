@@ -12,7 +12,8 @@
 #define USE_BITSCAN 
 #define USE_BITCOUNT
 
-// initialize utility arrays/tools and RKiss random generator
+// Initialize utility arrays/tools, RKiss random generator, 
+// Zobrist keys and PieceSquareTable
 namespace Utils
 { void init(); }
 
@@ -30,8 +31,8 @@ namespace RKiss
  * BitScan and get the position of the least significant bit 
  * bitmap = 0 would be undefined for this func */
 const U64 LSB_MAGIC = 0x07EDD5E59A4E28C2ull;  // ULL literal
-extern int LSB_TABLE[64]; // initialized in Utils::init()
-extern int MSB_TABLE[256]; // initialized in Utils::init() 
+extern int LsbTbl[64]; // initialized in Utils::init()
+extern int MsbTbl[256]; // initialized in Utils::init() 
 
 // Use built-in bit scan? 
 #ifdef USE_BITSCAN
@@ -80,7 +81,7 @@ INLINE int msb(U64 b)
 
 #else  // use algorithm implementation instead of assembly
 inline int lsb(U64 bitmap)
-{ return LSB_TABLE[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58]; }
+{ return LsbTbl[((bitmap & (~bitmap + 1)) * LSB_MAGIC) >> 58]; }
 inline int msb(U64 bitmap) {
 	uint b32;  int result = 0;
 	if (bitmap > 0xFFFFFFFF)
@@ -90,7 +91,7 @@ inline int msb(U64 bitmap) {
 	{ b32 >>= 16; result += 16; }
 	if (b32 > 0xFF)
 	{ b32 >>= 8; result += 8; }
-	return result + MSB_TABLE[b32];
+	return result + MsbTbl[b32];
 }
 #endif // !USE_BITSCAN
  // return LSB and set LSB to 0

@@ -3,11 +3,6 @@
 #include "uci.h"
 #include "thread.h"
 
-
-#include "timer.h"
-using namespace Search;
-
-
 /* Excalibur engine entry point */
 int main(int argc, char **argv)
 {
@@ -15,8 +10,7 @@ int main(int argc, char **argv)
 
 	Utils::init();
 	Board::init_tables();
-	Zobrist::init_keys_psqt();
-	UCI::init();
+	UCI::init_options();
 	Eval::init();
 	Search::init();
 	TT.set_size((int) OptMap["Hash"]); // set transposition table size
@@ -26,17 +20,6 @@ int main(int argc, char **argv)
 	UCI::process();
 
 	ThreadPool::terminate();
-
-	// Static evaluation debugging
-	/*string fen = concat_args(argc, argv);
-	Position pos(fen);
-	Value margin = 0;
-	Search::RootColor = pos.turn;
-	Value value = Eval::evaluate(pos, margin);
-	cout << "~~~~~~~~~~~~~~~~~~~" << endl;
-	cout << "Value = " << fixed << setprecision(2) 
-	<< centi_pawn(value) << endl;
-	cout << "Margin = " << centi_pawn(margin) << endl;*/
 
 	return 0;
 }

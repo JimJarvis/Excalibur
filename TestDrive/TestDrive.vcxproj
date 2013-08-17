@@ -38,7 +38,6 @@
     <ClCompile Include="..\Excalibur\ttable.cpp" />
     <ClCompile Include="..\Excalibur\uci.cpp" />
     <ClCompile Include="..\Excalibur\utils.cpp" />
-    <ClCompile Include="..\Excalibur\zobrist.cpp" />
     <ClCompile Include="board_test.cpp" />
     <ClCompile Include="move_test.cpp" />
     <ClCompile Include="other_test.cpp" />
