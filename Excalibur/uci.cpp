@@ -2,14 +2,15 @@
 #include "thread.h"
 #include "search.h"
 #include "openbook.h"
+#include <functional> // for std::function<> lambda, fancy trick in options2str
+
 using namespace Search;
 using namespace ThreadPool;
 
-// instantiate global option map
-map<string, UCI::Option> OptMap;
-
 namespace UCI
 {
+// Instantiate global option map
+map<string, Option> OptMap;
 
 // on-demand ChangeListeners
 void changer_hash_size() { TT.set_size(OptMap["Hash"]); } // auto cast to int
@@ -18,9 +19,9 @@ void changer_eval_weights() { Eval::init(); } // refresh weights
 void changer_contempt_factor()
 	{ Search::update_contempt_factor(); }
 void changer_book_load()
-	{ Polyglot::load(OptMap["Opening Book File"]); }
+	{ Polyglot::load(OptMap["Book File"]); }
 void changer_book_variation()
-	{ Polyglot::AllowBookVariation = (bool)OptMap["Allow Book Variation"]; }
+	{ Polyglot::AllowBookVariation = (bool)OptMap["Book Variation"]; }
 
 // Initialize default UCI options
 void init_options()
@@ -40,8 +41,8 @@ void init_options()
 
 	// Opening book options
 	OptMap["Use Opening Book"] = Option(true);
-	OptMap["Opening Book File"] = Option("Excalibur_book.bin", changer_book_load);
-	OptMap["Allow Book Variation"] = Option(true, changer_book_variation);
+	OptMap["Book Variation"] = Option(true, changer_book_variation);
+	OptMap["Book File"] = Option(string("Excalibur_book.bin"), changer_book_load);
 }
 
 // Assigns a new value to an Option
@@ -62,16 +63,31 @@ Option& Option::operator=(const string& newval)
 	return *this;
 }
 
-// print all the default option values (in the global OptMap) to the GUI
+// Print all the default option values (in the global OptMap) to the GUI
+// Force display in the same sequence we add them to avoid GUI mess. 
 template<bool Default>
 string options2str()
 {
 	ostringstream oss;
 	oss << std::left;  // iomanip left alignment
+
+	// Sort the options according to the sequence we hard-code them. 
+	// Use a fancy trick: reverse the role of key and value - let 'string' 
+	// be the value and 'Option' class be the key. Then we can ask map.insert to sort internally
+	// Supply a custom comparator to map class. Follow the formula:
+	// map<T1, T2, std::function<returnType(args)>> MapName( [](lambda){} );
+	// 
+	map<Option, string, std::function<bool(const Option&, const Option&)>> 
+		OptMapReverse([](const Option& o1, const Option& o2) { return o1.index < o2.index; });
+	
+	// Fill out the reversed map. 
 	for (auto iter = OptMap.begin(); iter != OptMap.end(); ++ iter)
+		OptMapReverse[iter->second] = iter->first;
+
+	for (auto iter = OptMapReverse.begin(); iter != OptMapReverse.end(); ++ iter)
 	{
-		oss << (Default ? "option name " : "") << setw(17) << iter->first;
-		Option opt = iter->second;
+		oss << (Default ? "option name " : "") << setw(17) << iter->second;
+		Option opt = iter->first;
 		oss << " type " << setw(6) <<  opt.type;
 		if (opt.type != "button")
 		{
@@ -185,10 +201,6 @@ do
 	{
 		if (pth && !Signal.stop) // Show abort perft message
 			sync_print("aborting perft ...");
-
-		//DBG_DISP("Signal stop = " << Signal.stop);
-		//DBG_DISP("Signal stopOnPonderHit = " << Signal.stopOnPonderhit);
-		//DBG_DISP("Limit ponder = " << Limit.ponder);
 
 		// In case Signal.stopOnPonderhit is set we are
 		// waiting for 'ponderhit' to stop the search (for instance because we

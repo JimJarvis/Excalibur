@@ -8,6 +8,10 @@
 const string engine_name = "Excalibur 1.0";
 const string engine_author = "Jim Fan";
 
+// Reports engine id to UCI
+const string engine_id = "id name " + engine_name + 
+		"\nid author " + engine_author + "\n";
+
 // Try to display the copyright (c) unicode symbol
 #ifdef _WIN32  // Windows
 // we must awkwardly set the stdout mode to wchar first, then restore. 
@@ -37,10 +41,13 @@ const string engine_author = "Jim Fan";
 
 namespace UCI
 {
-	// Reports engine id to UCI
-	const string engine_id = "id name " + engine_name + 
-			"\nid author " + engine_author + "\n";
+	// Global UCI option map
+	class Option; // forward declaration
+	extern map<string, Option> OptMap;
 
+	// We want the options to be displayed in the sequence we hard-code them. 
+	// Otherwise would be alphabetical ordering, which isn't conceptually good. 
+	static int DisplayIndex = 0;  // used by options2str
 	class Option
 	{
 	 // A function that changes the engine state on demand
@@ -51,21 +58,21 @@ namespace UCI
 		// ctors for different types of options. 
 		/* Button */
 		Option(ChangeListener c = nullptr) : 
-			type("button"), changer(c) {}
+			type("button"), changer(c), index(DisplayIndex++) {}
 
 		/* Checkbox */
 		Option(bool val, ChangeListener c = nullptr) : 
-			type("check"), changer(c)
+			type("check"), changer(c), index(DisplayIndex++)
 			{ currentVal = defaultVal = (val ? "true":"false"); }
 
 		/* Spinner */
 		Option(int val, int minValue, int maxValue, ChangeListener c = nullptr) : 
-			type("spin"), changer(c), minval(minValue), maxval(maxValue)
+			type("spin"), changer(c), minval(minValue), maxval(maxValue), index(DisplayIndex++)
 			{ currentVal = defaultVal = int2str(val); }
 
 		/* String: for file paths */
 		Option(string filePath, ChangeListener c = nullptr):
-			type("string"), changer(c)
+			type("string"), changer(c), index(DisplayIndex++)
 			{ currentVal = defaultVal = filePath; }
 
 		operator int() const // convert to the int value or bool
@@ -79,6 +86,7 @@ namespace UCI
 		// <true> shows all default values. <false> shows all current values.
 		template<bool> friend string options2str();
 
+		int index; // for GUI display sequence concerns. Increments by the static 'DisplayIndex'
 	private:
 		// for checkbox, the values are string "true" or "false"
 		string currentVal, defaultVal;
@@ -91,6 +99,7 @@ namespace UCI
 
 	// Init default options
 	void init_options();
+
 	// Main stdin processor (infinite loop)
 	void process();
 
@@ -107,7 +116,5 @@ namespace UCI
 	string move2dbg(Move mv);
 }
 
-// global UCI option map
-extern map<string, UCI::Option> OptMap;
 
 #endif // __uci_h__

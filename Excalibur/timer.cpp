@@ -95,7 +95,7 @@ void TimeKeeper::talloc(Color us, int curPly)
 	Msec inc = Limit.increment[us];
 
 	// Read from UCI optionmap: minimum time
-	int tMin = OptMap["Min Thinking Time"];
+	int tMin = UCI::OptMap["Min Thinking Time"];
 
 	// Shouldn't cross the hard deadline
 	tOptimal = min(Limit.time[us], 
@@ -104,7 +104,7 @@ void TimeKeeper::talloc(Color us, int curPly)
 				tMin + min_total<false>(totalBase, inc, mtg, curPly));
 
 	// Read from UCI: is ponder enabled
-	if (OptMap["Ponder"]) // give more time to pondering
+	if (UCI::OptMap["Ponder"]) // give more time to pondering
 		tOptimal += tOptimal / 4;
 
 	// Final verification: assert(tOptimal < tMax)

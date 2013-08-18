@@ -199,7 +199,7 @@ Score Weights[4]; // will be determined by UCI option.
 // Options will be read from the global OptMap
 void set_weight_option(EvalOptionType opt, const string& name)
 {
-	int val = OptMap[name] * 256 / 100;
+	int val = UCI::OptMap[name] * 256 / 100;
 	Weights[opt] = apply_weight(make_score(val, val), WeightsDefault[opt]);
 }
 

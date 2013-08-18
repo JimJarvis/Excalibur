@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 	UCI::init_options();
 	Eval::init();
 	Search::init();
-	TT.set_size((int) OptMap["Hash"]); // set transposition table size
+	TT.set_size(UCI::OptMap["Hash"]); // set transposition table size
 
 	ThreadPool::init();
 
