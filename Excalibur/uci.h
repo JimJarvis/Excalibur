@@ -43,24 +43,32 @@ namespace UCI
 
 	class Option
 	{
-	 // a function that changes the engine state on demand
+	 // A function that changes the engine state on demand
 	 // The ChangeListener will be applied at assignment operator=
 	typedef void (*ChangeListener)(); 
 
 	public:
-		// ctors for different types of options. Currently supports button, check and spin
+		// ctors for different types of options. 
+		/* Button */
 		Option(ChangeListener c = nullptr) : 
 			type("button"), changer(c) {}
 
+		/* Checkbox */
 		Option(bool val, ChangeListener c = nullptr) : 
 			type("check"), changer(c)
 			{ currentVal = defaultVal = (val ? "true":"false"); }
 
+		/* Spinner */
 		Option(int val, int minValue, int maxValue, ChangeListener c = nullptr) : 
 			type("spin"), changer(c), minval(minValue), maxval(maxValue)
 			{ currentVal = defaultVal = int2str(val); }
 
-		operator int() const
+		/* String: for file paths */
+		Option(string filePath, ChangeListener c = nullptr):
+			type("string"), changer(c)
+			{ currentVal = defaultVal = filePath; }
+
+		operator int() const // convert to the int value or bool
 		{ return (type == "spin") ? str2int(currentVal) : (currentVal == "true"); }
 
 		operator string() const { return currentVal; }

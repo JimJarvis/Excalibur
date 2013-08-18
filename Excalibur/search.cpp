@@ -2,6 +2,7 @@
 #include "moveorder.h"
 #include "uci.h"
 #include "thread.h"
+#include "openbook.h"
 
 using namespace Eval;
 using namespace Search;
@@ -165,9 +166,25 @@ void Search::think()
 		RootMoveList.push_back(MOVE_NULL);
 		sync_print("info depth 0 score " 
 			<< score2uci(RootPos.checker_map() ? -VALUE_MATE : VALUE_DRAW) );
+		goto finished;
 	}
-	else // Legal moves available. Launch our search engine
+
+	if (OptMap["Use Opening Book"] && !Limit.infinite && !Limit.mateInX)
 	{
+		Move bookMv = Polyglot::probe(RootPos);
+
+		// Iterator to see if bookMv is in the list of moves we are to consider
+		decltype(RootMoveList.begin()) Rmv;
+
+		if (bookMv != MOVE_NULL
+			&& (Rmv = std::find(RootMoveList.begin(), RootMoveList.end(), bookMv))
+									!= RootMoveList.end())
+		{
+			std::swap(RootMoveList[0], *Rmv);
+			goto finished; // already made the book move
+		}
+	}
+
 	update_contempt_factor();
 
 	// Set Clock check interval to avoid lagging. Clock thread checks for remaining 
@@ -185,8 +202,8 @@ void Search::think()
 
 	Clock->ms = 0; // stops the clock
 
-	}  // #EndIf  RootMoveList isn't empty
-
+	/**********************************************/
+finished:  // goto label
 	// If the search is stopped midway, the following code would never be reached
 	sync_print("info nodes " << RootPos.nodes << " time " << now() - SearchTime);
 
@@ -863,9 +880,12 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 		// Move List, as a consequence any illegal move is also skipped. 
 		// Rmv (iterator-pointer) records the location of mv, if present, in RootMoveList
 		// If mv returns a good value, Rmv will be updated accordingly after all the search.
-		auto Rmv = std::find(RootMoveList.begin(), RootMoveList.end(), mv);
+		// Rmv will be referenced later on
+		decltype(RootMoveList.begin()) Rmv;
 		 // If find() returns the end iterator, then the element isn't found
-		if (isRoot && Rmv == RootMoveList.end())
+		if ( isRoot &&
+			(Rmv = std::find(RootMoveList.begin(), RootMoveList.end(), mv)) 
+					== RootMoveList.end())
 			continue;
 
 		moveCnt ++;

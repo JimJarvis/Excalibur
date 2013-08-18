@@ -1,6 +1,7 @@
 #include "uci.h"
 #include "thread.h"
 #include "search.h"
+#include "openbook.h"
 using namespace Search;
 using namespace ThreadPool;
 
@@ -11,10 +12,15 @@ namespace UCI
 {
 
 // on-demand ChangeListeners
-void changer_hash_size() { TT.set_size((int)OptMap["Hash"]); }
+void changer_hash_size() { TT.set_size(OptMap["Hash"]); } // auto cast to int
 void changer_clear_hash() { TT.clear(); }
 void changer_eval_weights() { Eval::init(); } // refresh weights
-void changer_contempt_factor() { Search::update_contempt_factor(); }
+void changer_contempt_factor()
+	{ Search::update_contempt_factor(); }
+void changer_book_load()
+	{ Polyglot::load(OptMap["Opening Book File"]); }
+void changer_book_variation()
+	{ Polyglot::AllowBookVariation = (bool)OptMap["Allow Book Variation"]; }
 
 // Initialize default UCI options
 void init_options()
@@ -25,11 +31,17 @@ void init_options()
 	OptMap["Ponder"] = Option(true); // checkbox. Not shown
 	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
+
 	// Evaluation weights 
 	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Pawn Shield"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
+
+	// Opening book options
+	OptMap["Use Opening Book"] = Option(true);
+	OptMap["Opening Book File"] = Option("Excalibur_book.bin", changer_book_load);
+	OptMap["Allow Book Variation"] = Option(true, changer_book_variation);
 }
 
 // Assigns a new value to an Option

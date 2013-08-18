@@ -21,6 +21,7 @@ namespace Utils
 // Special RKISS random number generator for hash keys
 namespace RKiss
 {
+	// Default seed 73, a good prime
 	void init_seed(int seed = 73);
 	U64 rand64();
 	inline U64 rand64_sparse()  { return rand64() & rand64(); }  // the more & the sparser 

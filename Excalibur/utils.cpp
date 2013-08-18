@@ -24,28 +24,26 @@ Score PieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
  */
 namespace RKiss 
 {
-	// Keep variables always together
+	// Keep random controllers together
 	struct RKissHelper { U64 a, b, c, d; } s;
 
-	inline U64 rotate(U64 x, U64 k) {
-		return (x << k) | (x >> (64 - k));
-	}
+	inline U64 rotate(U64 x, U64 k)
+		{ return (x << k) | (x >> (64 - k)); }
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
-	U64 rand64() {
-
-		const U64
-			e = s.a - rotate(s.b,  7);
+	U64 rand64()
+	{
+		const U64 e = s.a - rotate(s.b,  7);
 		s.a = s.b ^ rotate(s.c, 13);
 		s.b = s.c + rotate(s.d, 37);
 		s.c = s.d + e;
 		return s.d = e + s.a;
 	}
 
-	void init_seed(int seed) {
-
-		s.a = 0xf1ea5eed;
-		s.b = s.c = s.d = 0xd4e12c77;
+	void init_seed(int seed)
+	{
+		s.a = 0xF1EA5EED;
+		s.b = s.c = s.d = 0xD4E12C77;
 		for (int i = 0; i < seed; i++) // Scramble a few rounds
 			rand64();
 	}
@@ -130,7 +128,7 @@ namespace Zobrist
 				for (int sq = 0; sq < SQ_N; sq ++)
 					psq[c][pt][sq] = RKiss::rand64();
 
-		for (int file = 0; file < FILE_N; file++)
+		for (int file = FILE_A; file < FILE_N; file++)
 			ep[file] = RKiss::rand64();
 
 		for (Color c : COLORS)
