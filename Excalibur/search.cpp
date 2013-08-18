@@ -293,7 +293,6 @@ void iterative_deepen(Position& pos)
 			{
 				alpha = max(best - delta, -VALUE_INFINITE);
 				// Send out signals
-				Signal.failedLowAtRoot = true;
 				Signal.stopOnPonderhit = false;
 			}
 			else if (best >= beta) // fail high
@@ -870,10 +869,6 @@ Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth
 			continue;
 
 		moveCnt ++;
-
-		if (isRoot) // print out info about current move
-			// Used by the function check_time() in ClockThread to determine if we stop or not
-			Signal.firstRootMove = (moveCnt == 1);
 
 		extDepth = DEPTH_ZERO; // extended depth
 		isCaptOrPromo = !pos.is_quiet(mv);

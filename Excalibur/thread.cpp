@@ -93,10 +93,7 @@ void check_time()
 
 	U64 lapse = now() - SearchTime;
 
-	bool stillFirstMove = Signal.firstRootMove && !Signal.failedLowAtRoot
-			&& lapse > Timer.optimum();
-	bool timeRunOut = stillFirstMove ||
-					lapse > Timer.maximum() - 2 * ClockThread::Resolution;
+	bool timeRunOut = lapse > Timer.maximum() - 2 * ClockThread::Resolution;
 
 	if ( (Limit.use_timer() && timeRunOut) 
 			// UCI 'movetime' requires that we search exactly x msec

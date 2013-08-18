@@ -86,7 +86,7 @@ namespace Search
 	/// The flag stopOnPonderhit is defined because
 	/// normally we should continue searching on ponderhit unless we're out of time.
 	struct SignalListener
-	{ bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot; };
+		{ bool stopOnPonderhit, stop; };
 
 	/// RootMove struct is used for moves at the root of the tree. For each root
 	/// move we store a score, and a PV (really a refutation in the

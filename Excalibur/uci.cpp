@@ -256,8 +256,7 @@ do
 
 		//** Most of the variables below are globals critical to search.cpp **//
 		// Main is idle now. Reset all signals
-		Signal.stopOnPonderhit = Signal.firstRootMove
-			= Signal.stop = Signal.failedLowAtRoot = false;
+		Signal.stopOnPonderhit = Signal.stop = false;
 
 		// Start our clock: SearchTime global var in the search.cpp records the 
 		// starting point at which we begin thinking on the current move.
