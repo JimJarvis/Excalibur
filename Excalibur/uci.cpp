@@ -42,7 +42,7 @@ void init_options()
 	// Opening book options
 	OptMap["Use Opening Book"] = Option(true);
 	OptMap["Book Variation"] = Option(true, changer_book_variation);
-	OptMap["Book File"] = Option(string("Excalibur_book.bin"), changer_book_load);
+	OptMap["Book File"] = Option(string("Excalibur.book"), changer_book_load);
 }
 
 // Assigns a new value to an Option
@@ -80,7 +80,7 @@ string options2str()
 	map<Option, string, std::function<bool(const Option&, const Option&)>> 
 		OptMapReverse([](const Option& o1, const Option& o2) { return o1.index < o2.index; });
 	
-	// Fill out the reversed map. 
+	// Fill out the reversed map. Auto-sort. 
 	for (auto iter = OptMap.begin(); iter != OptMap.end(); ++ iter)
 		OptMapReverse[iter->second] = iter->first;
 

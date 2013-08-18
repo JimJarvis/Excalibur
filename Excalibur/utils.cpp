@@ -25,7 +25,7 @@ Score PieceSquareTable[COLOR_N][PIECE_TYPE_N][SQ_N];
 namespace RKiss 
 {
 	// Keep random controllers together
-	struct RKissHelper { U64 a, b, c, d; } s;
+	struct { U64 a, b, c, d; } s;
 
 	inline U64 rotate(U64 x, U64 k)
 		{ return (x << k) | (x >> (64 - k)); }

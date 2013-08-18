@@ -17,11 +17,11 @@ namespace Moves
 {
 	inline void clear(Move& mv) { mv = Move(0); }  // clear all except the color bit
 
-	// bits 0 to 5 and 6 to 11 for from/to
+	// bits 0 to 5 for to; 6 to 11 for from
 	// set_from_to clears any special flags
-	inline Move set_from_to(Move& mv, Square from, Square to) 	{ return mv = Move(from | (to << 6)); }
-	inline Square get_from(Move& mv) {  return mv & 0x3f;  }
-	inline Square get_to(Move& mv) { return (mv >> 6) & 0x3f; }
+	inline Move set_from_to(Move& mv, Square from, Square to) 	{ return mv = Move(to | (from << 6)); }
+	inline Square get_from(Move& mv) { return (mv >> 6) & 0x3f; }
+	inline Square get_to(Move& mv) {  return mv & 0x3f;  }
 	// bits 12 to 13, 2 bits 00 to 11 for promoted pieces, if any: N-00, B-01, R-10, Q-11
 	inline void set_promo(Move& mv, PieceType pt) { mv = Move(mv & 0x0fff | (0xc000 |  PROMO_MASK[pt])); }
 	inline PieceType get_promo(Move& mv) { return PIECE_PROMO[(mv >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo
@@ -50,7 +50,7 @@ typedef ScoredMove MoveBuffer[MAX_MOVES];
 
 // Constants for castling
 const Move CastleMoves[COLOR_N][CASTLE_TYPES_N] = 
-{{Move(0x4184), Move(0x4084)}, {Move(0x4fbc), Move(0x4ebc)}};
+{{Move(0x4106), Move(0x4102)}, {Move(0x4f3e), Move(0x4f3a)}};
 
 // Castling right query
 template<CastleType> inline bool can_castle(byte castleRight);

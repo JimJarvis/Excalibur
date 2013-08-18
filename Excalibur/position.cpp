@@ -169,13 +169,13 @@ string Position::to_fen() const
 
 	fen << " " << (turn == W ? "w" : "b") << " ";  // side to move
 
-	if (st->castleRights[W] == 0 && st->castleRights[B] == 0) // castle rights
+	if (castle_rights(W) == 0 && castle_rights(B) == 0) // castle rights
 		fen << "-";
 	else
-		fen << (can_castle<CASTLE_OO>(st->castleRights[W]) ? "K":"") 
-			<< (can_castle<CASTLE_OOO>(st->castleRights[W]) ? "Q":"")
-			<< (can_castle<CASTLE_OO>(st->castleRights[B]) ? "k":"") 
-			<< (can_castle<CASTLE_OOO>(st->castleRights[B]) ? "q":"");  
+		fen << (can_castle<CASTLE_OO>(castle_rights(W)) ? "K":"") 
+			<< (can_castle<CASTLE_OOO>(castle_rights(W)) ? "Q":"")
+			<< (can_castle<CASTLE_OO>(castle_rights(B)) ? "k":"") 
+			<< (can_castle<CASTLE_OOO>(castle_rights(B)) ? "q":"");  
 
 	fen << " " << (st->epSquare == SQ_NULL ? "-" : sq2str(st->epSquare)); // enpassant
 		// convert cntHalfMove (start 0) back to cntFullMove (start 1) for FEN standard 
@@ -196,12 +196,7 @@ U64 Position::calc_key() const
 {
 	U64 key = 0;
 	for (Color c : COLORS)  // castling hash
-	{
-		if (can_castle<CASTLE_OO>(st->castleRights[c]))
-			key ^= Zobrist::castle[c][1];
-		if (can_castle<CASTLE_OOO>(st->castleRights[c]))
-			key ^= Zobrist::castle[c][2];
-	}
+		key ^= Zobrist::castle[c][st->castleRights[c]];
 
 	PieceType pt;
 	for (int sq = 0; sq < SQ_N; sq++)
@@ -568,8 +563,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 {
 	if (pos1.turn != pos2.turn) 
 		{ cout << "false turn: " << pos1.turn << " != " << pos2.turn << endl;	return false;}
-	if (pos1.st->epSquare != pos2.st->epSquare) 
-		{ cout << "false state->epSquare: " << pos1.st->epSquare << " != " << pos2.st->epSquare << endl;	return false;}
+	if (pos1.ep_sq() != pos2.ep_sq()) 
+		{ cout << "false state->epSquare: " << pos1.ep_sq() << " != " << pos2.ep_sq() << endl;	return false;}
 	if (pos1.st->cntFiftyMove != pos2.st->cntFiftyMove) 
 		{ cout << "false cntFiftyMove: " << pos1.st->cntFiftyMove << " != " << pos2.st->cntFiftyMove << endl;	return false;}
 	if (pos1.cntHalfMove != pos2.cntHalfMove) 
@@ -579,8 +574,8 @@ bool operator==(const Position& pos1, const Position& pos2)
 
 	for (Color c : COLORS)
 	{
-		if (pos1.st->castleRights[c] != pos2.st->castleRights[c]) 
-			{ cout << "false castleRights for Color " << c << ": " << pos1.st->castleRights[c] << " != " << pos2.st->castleRights[c] << endl;	return false;}
+		if (pos1.castle_rights(c) != pos2.castle_rights(c)) 
+			{ cout << "false castleRights for Color " << c << ": " << pos1.castle_rights(c) << " != " << pos2.castle_rights(c) << endl;	return false;}
 	
 		for (PieceType pt : PIECE_TYPES)
 		{

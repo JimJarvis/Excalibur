@@ -207,7 +207,7 @@ inline void clear_osstr(ostringstream& ss)
 // ugly workaround wrapper for gcc
 typedef int (*UnaryFn)(int);
 inline string str2lower(string str)  // lower case transformation
-{ transform(str.begin(), str.end(), str.begin(), static_cast<UnaryFn>(tolower)); return str; }
+{ std::transform(str.begin(), str.end(), str.begin(), static_cast<UnaryFn>(tolower)); return str; }
 
 // concatenate char* arguments into a single string delimited by space
 string concat_args(int argc, char **argv); 
@@ -229,23 +229,6 @@ inline Score operator/(Score s, int i)
 { return make_score(mg_value(s) / i, eg_value(s) / i); }
 
 
-/*************** A stable Insertion Sort *****************/
-// Type T must implement "<" comparison operator
-template<typename T>
-void insertion_sort(T* begin, T* end)
-{
-	T tmp, *p, *q;
-
-	for (p = begin + 1; p < end; ++p)
-	{
-		tmp = *p;
-		for (q = p; q != begin && *(q-1) < tmp; --q)
-			*q = *(q-1);
-		*q = tmp;
-	}
-}
-
-
 /****************** Timing ******************/
 // Platform-specific system time in ms
 #ifdef _WIN32  // Windows
@@ -265,6 +248,66 @@ inline U64 now()
 	return t.tv_sec * 1000LL + t.tv_usec / 1000;
 }
 #endif // !_WIN32
+
+
+/*************** A stable Insertion Sort *****************/
+// Type T must implement "<" comparison operator
+template<typename T>
+void insertion_sort(T* begin, T* end)
+{
+	T tmp, *p, *q;
+
+	for (p = begin + 1; p < end; ++p)
+	{
+		tmp = *p;
+		for (q = p; q != begin && *(q-1) < tmp; --q)
+			*q = *(q-1);
+		*q = tmp;
+	}
+}
+
+/*********** Binary I/O with Endianness ************/
+enum Endianness { BigEndian, LittleEndian };
+
+// Static class methods in order to use default template parameter
+// Still needs the angle brackets  BinaryIO<>::get(  );
+template<Endianness Ed = LittleEndian>
+struct BinaryIO
+{
+	// Reads sizeof(T) chars from the binary to a number type T. 
+	// Big-endian for Polyglot bin book
+	// Little-endian for the text file (keys) <default>
+	template<typename T>
+	static ifstream& get(ifstream& fin, T& getter)
+	{
+		if (Ed == BigEndian)
+		{
+			getter = 0;
+			for (int i = 0; i < sizeof(T); i++)
+				getter = T((getter << 8) + fin.get());
+		}
+		else // Little-endian, the system convention
+			fin.read((char *)&getter, sizeof(T));
+
+		return fin;
+	}
+
+	// Writer for ofstream: writes sizeof(T) as binary. 
+	template<typename T>
+	static ofstream& put(ofstream& fout, T& putter)
+	{
+		if (Ed == BigEndian)  // Big-endian
+		{
+			for (int i = sizeof(T) - 1; i >= 0; i--)
+				fout.put((char)(putter >> (8 * i)));
+		}
+		else // Little-endian, the system convention
+			fout.write((char *)&putter, sizeof(T));
+
+		return fout;
+	}
+};
+
 
 /*************** Prefetch ***************/
 /// prefetch() preloads the given address in L1/L2 cache. This is a non

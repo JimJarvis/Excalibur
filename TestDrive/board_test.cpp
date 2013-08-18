@@ -139,10 +139,10 @@ TEST(Board, Between)
 TEST(Board, Init)
 {
 	pos.parse_fen("rnbqkbnr/pp1ppppp/8/2pP4/4P3/8/PPP2PPP/RNBQKBNR w KQq c6 21 33");
-	ASSERT_TRUE(can_castle<CASTLE_OO>(pos.st->castleRights[W]));
-	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[W]));
-	ASSERT_FALSE(can_castle<CASTLE_OO>(pos.st->castleRights[B]));
-	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.st->castleRights[B]));
+	ASSERT_TRUE(can_castle<CASTLE_OO>(pos.castle_rights(W)));
+	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.castle_rights(W)));
+	ASSERT_FALSE(can_castle<CASTLE_OO>(pos.castle_rights(B)));
+	ASSERT_TRUE(can_castle<CASTLE_OOO>(pos.castle_rights(B)));
 	ASSERT_EQ(pos.st->cntFiftyMove, 21);
 	ASSERT_EQ(pos.cntHalfMove, 64);
 	ASSERT_EQ(pos.st->epSquare, 42);

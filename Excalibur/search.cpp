@@ -169,7 +169,9 @@ void Search::think()
 		goto finished;
 	}
 
-	if (OptMap["Use Opening Book"] && !Limit.infinite && !Limit.mateInX)
+	if (  OptMap["Use Opening Book"]
+	&& RootPos.st->cntInternalFiftyMove < 20
+	&& !Limit.infinite && !Limit.mateInX)
 	{
 		Move bookMv = Polyglot::probe(RootPos);
 

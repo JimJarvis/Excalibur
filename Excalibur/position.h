@@ -134,6 +134,7 @@ public:
 
 	// More getter methods
 	byte castle_rights(Color c) const { return st->castleRights[c]; }
+	Square ep_sq() const { return st->epSquare; }
 	Bit piece_union(PieceType pt) const { return Pieces[pt][W] | Pieces[pt][B]; }
 	Bit piece_union(Color c) const { return Colormap[c]; }
 	Bit piece_union(Color c, PieceType pt1, PieceType pt2) const { return Pieces[pt1][c] | Pieces[pt2][c]; }

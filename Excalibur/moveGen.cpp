@@ -236,7 +236,7 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned, B
 	if (GT != CAPTURE && GT != EVASION) // generate castling
 	{
 		// King side castling O-O
-		if (can_castle<CASTLE_OO>(st->castleRights[turn])
+		if (can_castle<CASTLE_OO>(castle_rights(turn))
 					// no pieces between the king and rook
 			&& !(CastleMask[turn][CASTLE_FG] & Occupied)
 					// no squares attacked in between
@@ -245,7 +245,7 @@ ScoredMove* Position::gen_all_pieces(ScoredMove* mbuf, Bit target, Bit pinned, B
 			&& (!qcheck || (attack_map<ROOK>(RookCastleSq[turn][CASTLE_OO][1]) & Kingmap[~turn]))  )
 						add_move(CastleMoves[turn][CASTLE_OO]);  // prestored king's castling move
 
-		if (can_castle<CASTLE_OOO>(st->castleRights[turn])
+		if (can_castle<CASTLE_OOO>(castle_rights(turn))
 				// no pieces between the king and rook
 			&& !(CastleMask[turn][CASTLE_BD] & Occupied)
 					// no squares attacked in between
