@@ -166,7 +166,7 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 
 namespace Pawnshield 
 {
-	HashTable<Entry, 16384> PawnshieldTable;
+	HashTable<Entry, 16384> Table;
 
 	/// probe() takes a position object as input, computes a Entry object, and returns
 	/// a pointer to it. The result is also stored in a hash table, so we don't have
@@ -175,7 +175,7 @@ namespace Pawnshield
 	Entry* probe(const Position& pos) 
 	{
 		U64 key = pos.pawn_key();
-		Entry* ent = PawnshieldTable[key];
+		Entry* ent = Table[key];
 
 		if (ent->key == key)
 			return ent;

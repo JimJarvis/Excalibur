@@ -265,6 +265,20 @@ inline U64 now()
 }
 #endif // !_WIN32
 
+/*************** Prefetch ***************/
+/// prefetch() preloads the given address in L1/L2 cache. This is a non
+/// blocking function and do not stalls the CPU waiting for data to be
+/// loaded from memory, that can be quite slow.
+/// Used mainly in make/unmake moves to prefetch transposition table entry
+inline void prefetch(char* addr)
+{
+#ifdef _MSC_VER
+	_mm_prefetch(addr, _MM_HINT_T0);
+#else
+	__builtin_prefetch(addr);
+#endif
+}
+
 
 /* **************************************************
  *	Variadic MACRO utilities. Used mainly for debugging

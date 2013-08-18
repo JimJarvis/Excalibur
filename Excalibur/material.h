@@ -45,7 +45,7 @@ namespace Material
 	};
 
 	// stores all the probed entries
-	extern HashTable<Entry, 8192> MaterialTable;
+	extern HashTable<Entry, 8192> Table;
 
 	Entry* probe(const Position& pos);
 	Phase game_phase(const Position& pos);

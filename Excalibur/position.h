@@ -140,9 +140,24 @@ public:
 	Bit piece_union(PieceType pt1, PieceType pt2) const 
 	{ return Pieces[pt1][W] | Pieces[pt1][B] | Pieces[pt2][W] | Pieces[pt2][B]; }
 
+	// Testing moves and mate status
+	CheckInfo check_info() const; // Get a CheckInfo instance that keeps all shared data about checking
+	bool is_check(Move mv, const CheckInfo& ci) const; // test if a move gives check
+	INLINE bool is_capture(Move mv) const
+		{ return boardPiece[Moves::get_to(mv)] != NON || Moves::is_ep(mv); }
+	INLINE bool is_quiet(Move mv) const // == not capture or promotion
+		{ return !(is_capture(mv) || Moves::is_promo(mv)); }
+	INLINE bool create_passed_pawn(Move mv) const // does this move create a passed pawn?
+		{ return boardPiece[Moves::get_from(mv)]==PAWN && is_pawn_passed(turn, Moves::get_to(mv)); }
+	bool is_pseudo(Move mv) const;
+	bool pseudo_is_legal(Move mv, Bit pinned) const;  // test if a pseudo-legal move is legal, given the pinned map.
 	template<bool Do3RepCheck> bool is_draw() const;
 	bool is_checkmate() const { return st->checkerMap && count_legal() == 0; }
 	bool is_stalemate() const { return !st->checkerMap && count_legal() == 0; }
+	// Maps relevant with checking
+	Bit checker_map() const { return st->checkerMap; }
+	Bit pinned_map() const { return hidden_check_map<true>(); }; // a bitmap of all pinned pieces
+	Bit discv_map() const { return hidden_check_map<false>(); }; // a bitmap of all discovered checkers
 
 	/**********************************************/
 	// movegen.cpp: 
@@ -153,20 +168,7 @@ public:
 	template<GenType>
 	ScoredMove* gen_moves(ScoredMove* mbuf) const;
 
-	CheckInfo check_info() const; // obtain a CheckInfo obj
-	bool is_check(Move mv, const CheckInfo& ci) const; // test if a move gives check
-	INLINE bool is_capture(Move mv) const
-		{ return boardPiece[Moves::get_to(mv)] != NON || Moves::is_ep(mv); }
-	INLINE bool is_quiet(Move mv) const // == not capture or promotion
-		{ return !(is_capture(mv) || Moves::is_promo(mv)); }
-	INLINE bool create_passed_pawn(Move mv) const // does this move create a passed pawn?
-		{ return boardPiece[Moves::get_from(mv)]==PAWN && is_pawn_passed(turn, Moves::get_to(mv)); }
-	bool is_pseudo(Move mv) const;
-	bool pseudo_is_legal(Move mv, Bit pinned) const;  // test if a pseudo-legal move is legal, given the pinned map.
-	int count_legal() const; // count the number of legal moves
-	Bit checker_map() const { return st->checkerMap; }
-	Bit pinned_map() const { return hidden_check_map<true>(); }; // a bitmap of all pinned pieces
-	Bit discv_map() const { return hidden_check_map<false>(); }; // a bitmap of all discovered checkers
+	int count_legal() const; // count the number of legal moves (gen<LEGAL> locally)
 
 	// The new state will be recorded in nextState output parameter
 	// Make the move and update a new checkerMap, given CheckInfo and bool does this move give check to opp.

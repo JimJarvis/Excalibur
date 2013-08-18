@@ -48,7 +48,7 @@ namespace Pawnshield
 	};
 
 	// stores all the probed entries
-	extern HashTable<Entry, 16384> PawnshieldTable;
+	extern HashTable<Entry, 16384> Table;
 
 	Entry* probe(const Position& pos);
 

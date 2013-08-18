@@ -60,7 +60,7 @@ position.o: position.h
 
 perft.o: search.h
 
-movegen.o: position.h
+movegen.o: position.h material.h pawnshield.h ttable.h
 
 moveorder.o: moveorder.h
 

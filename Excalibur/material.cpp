@@ -104,7 +104,7 @@ int imbalance(const Position& pos)
 namespace Material
 {
 // Stores the material evaluation hash table
-HashTable<Entry, 8192> MaterialTable;
+HashTable<Entry, 8192> Table;
 
 using Endgame::probe_eval_func;
 using Endgame::probe_scaling_func;
@@ -117,7 +117,7 @@ using Endgame::probe_non_unique_func;
 Entry* probe(const Position& pos)
 {
 	U64 key = pos.material_key();
-	Entry* ent = MaterialTable[key];
+	Entry* ent = Table[key];
 
 	// If ent->key matches the position's material hash key, it means that we
 	// have analyzed this material configuration before, and we can simply

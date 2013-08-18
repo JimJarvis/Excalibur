@@ -1,4 +1,10 @@
 #include "position.h"
+// Include material, pawnshield and ttable in order for prefetch() to load 
+// the address in pawn/material/TT hash table into cache
+#include "material.h"
+#include "pawnshield.h"
+#include "ttable.h"
+
 using namespace Board;
 using namespace Moves;
 
@@ -381,7 +387,8 @@ ScoredMove* Position::gen_moves<LEGAL>(ScoredMove* mbuf) const
 	return end;
 }; */ 
 
-// 218 moves: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
+
+// 218 legal moves: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 int Position::count_legal() const
 { 
 	MoveBuffer mbuf;
@@ -389,252 +396,7 @@ int Position::count_legal() const
 }
 
 
-/* Obtain a CheckInfo object that keeps together all useful check-related data */
-CheckInfo Position::check_info() const
-{
-	CheckInfo ci;
-	Color opp = ~turn;
-	Square oppKsq = king_sq(opp);
-	ci.oppKsq = oppKsq;
-	ci.pinned = pinned_map();
-	ci.discv = discv_map();
-
-	ci.pieceCheckMap[PAWN] = pawn_attack(opp, oppKsq);
-	ci.pieceCheckMap[KNIGHT] = knight_attack(oppKsq);
-	ci.pieceCheckMap[BISHOP] = attack_map<BISHOP>(oppKsq);
-	ci.pieceCheckMap[ROOK] = attack_map<ROOK>(oppKsq);
-	ci.pieceCheckMap[QUEEN] = ci.pieceCheckMap[ROOK] | ci.pieceCheckMap[BISHOP];
-	ci.pieceCheckMap[KING] = 0;
-
-	return ci;
-}
-
-
-// Get a bitmap of all pinned pieces
-template<bool UsInCheck>
-Bit Position::hidden_check_map() const
-{
-	const Color opp = UsInCheck ? ~turn : turn;
-	const Color us = UsInCheck ? turn : ~turn;
-	Bit middle, pinners, pin = 0;
-	Square ksq = king_sq(us);
-	// Pinners must be sliders. Use pseudo-attack maps
-	pinners = (piece_union(opp, QUEEN, ROOK) & ray_mask(ROOK, ksq))
-		| (piece_union(opp, QUEEN, BISHOP) & ray_mask(BISHOP, ksq));
-	while (pinners)
-	{
-		middle = between_mask(ksq, pop_lsb(pinners)) & Occupied;
-		// one and only one in between, which must be a friendly piece
-		if (!more_than_one_bit(middle) && (middle & piece_union(turn)))
-			pin |= middle;
-	}
-	return pin;
-}
-// Explicit instantiation
-template Bit Position::hidden_check_map<true>() const;
-template Bit Position::hidden_check_map<false>() const;
-
-
-// Test if a move is a pseudo-legal move. 
-// Used to validate hash key collision in the transposition table
-bool Position::is_pseudo(Move mv) const
-{
-	// If it's a special move, test in the naive way: generate all legals and check one-by-one
-	if (!is_normal(mv))
-	{
-		MoveBuffer mbuf;
-		ScoredMove *it, *end = gen_moves<LEGAL>(mbuf);
-		for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
-			if (it->move == mv) return true;
-		return false;
-	}
-
-	Square from = get_from(mv);
-	Square to = get_to(mv);
-	Bit toMap = setbit(to);
-	PieceType pt = boardPiece[from];
-	PieceType destPt = boardPiece[to]; // destination piece
-
-	// If the from square is not occupied by a piece belonging to the side to
-	// move, the move is obviously not legal.
-	if (pt == NON || boardColor[from] != turn)
-		return false;
-
-	// The destination square cannot be occupied by a friendly piece
-	if (piece_union(turn) & toMap)
-		return false;
-
-	// Handle the special case of a pawn move
-	if (pt == PAWN)
-	{
-		// Move direction must be compatible with pawn color
-		int direction = to - from;
-		if ((turn == W) != (direction > 0))
-			return false;
-
-		// We have already handled promotion moves, so destination
-		// cannot be on the 8/1th rank.
-		if (sq2rank(to) == RANK_8 || sq2rank(to) == RANK_1)
-			return false;
-
-		// Proceed according to the square delta between the origin and
-		// destination squares.
-		switch (direction)
-		{
-		case DELTA_NW: case DELTA_NE:
-		case DELTA_SW: case DELTA_SE:
-			// Capture. The destination square must be occupied by an enemy
-			// piece (en passant captures was handled earlier).
-			if (destPt == NON || boardColor[to] != ~turn)
-				return false;
-
-			// From and to files must be one file apart, avoids a7h5
-			if (abs(sq2file(from) - sq2file(to)) != 1)
-				return false;
-			break;
-
-		case DELTA_N: case DELTA_S:
-			// Pawn push. The destination square must be empty.
-			if (destPt != NON)
-				return false;
-			break;
-
-		case DELTA_N + DELTA_N:
-			// Double white pawn push. The destination square must be on the fourth
-			// rank, and both the destination square and the square between the
-			// source and destination squares must be empty.
-			if (    sq2rank(to) != RANK_4
-				|| destPt != NON
-				|| boardPiece[from + DELTA_N] != NON )
-				return false;
-			break;
-
-		case DELTA_S + DELTA_S:
-			// Double black pawn push. The destination square must be on the fifth
-			// rank, and both the destination square and the square between the
-			// source and destination squares must be empty.
-			if (    sq2rank(to) != RANK_5
-				|| destPt != NON
-				|| boardPiece[from + DELTA_S] != NON )
-				return false;
-			break;
-
-		default:
-			return false;
-		}
-	} // done with pawns
-	// Check if other pieces can actually get to the destination
-	else if (!(attack_map(pt, from) & toMap))
-		return false;
-
-	// gen<EVASION> already filters out a bunch of moves. 
-	// thus we have to check if this move is on the same standard as 
-	// those pseudos generated by gen<EVASION>
-	Bit checkMap = checker_map();
-	if (checkMap)
-	{
-		if (pt != KING) // King's not moving
-		{
-			// Double check? Then it's not pseudo-legal because gen<EVASION>
-			// ensures that the king must move himself
-			if (more_than_one_bit(checkMap))
-				return false;
-
-			// Our move must be a blocking evasion or a capture of the checking piece
-			if (!( (between_mask(lsb(checkMap), king_sq(turn)) | checkMap) & toMap))
-				return false;
-		}
-		// If it's a king move, the king must not be checked again. 
-		// In case of king moves along the check-ray we have to remove king so to catch
-		// as invalid pseudos like c2b2 when the enemy rook is on d2. (to == b2)
-		else if (attackers_to(to, Occupied ^ setbit(from)) & piece_union(~turn))
-			return false;
-	}
-	// Pass all tests
-	return true;
-}
-
-
-// Check if a pseudo-legal move is actually legal
-bool Position::pseudo_is_legal(Move mv, Bit pinned) const
-{
-	Square from = get_from(mv);
-	Square to = get_to(mv);
-	if (boardPiece[from] == KING)  // we already checked castling legality
-		return is_castle(mv) || !is_sq_attacked(to, ~turn);
-
-	// EP is a very special "pin": K(a6), p(b6), P(c6), q(h6) - if P(c6)x(b7) ep, then q attacks K
-	if (is_ep(mv)) // we do it by testing if the king is attacked after the move s made
-	{
-		Square ksq = king_sq(turn);
-		Color opp = ~turn;
-		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | pawn_push(~turn, to) );
-		// only slider "pins" are possible
-		return !(rook_attack(ksq, newOccup) & piece_union(opp, QUEEN, ROOK))
-			&& !(bishop_attack(ksq, newOccup) & piece_union(opp, QUEEN, BISHOP));
-	}
-
-	// A non-king move is legal iff :
-	return !pinned ||		// it isn't pinned at all
-		!(pinned & setbit(from)) ||    // pinned but doesn't move
-		( is_aligned(from, to, king_sq(turn)) );  // the ksq, from and to squares are aligned: move along the pin direction.
-}
-
-
-// Test if a move gives check to the opponent, given the discovered checker map
-bool Position::is_check(Move mv, const CheckInfo& ci) const
-{
-	Square from = get_from(mv);
-	Square to = get_to(mv);
-	PieceType pt = boardPiece[from];
-
-	// Direct check
-	if (ci.pieceCheckMap[pt] & setbit(to))
-		return true;
-
-	Square oppKsq = ci.oppKsq;
-
-	// Discovered check
-	if (ci.discv && (ci.discv & setbit(from)) )
-		// If this piece (which blocks another slider's check-ray) is also
-		// a slider, then it must be of a different ray type. Thus if it moves
-		// it must give check. If a knight-blocker moves it always reveals the 
-		// discv check ray. But a pawn- or king-blocker might move in the 
-		// direction of discv check ray. Need to verify alignment
-		if ( (pt != PAWN && pt != KING) || !is_aligned(from, to, oppKsq) )
-			return true;
-
-	if (is_normal(mv))	return false;
-
-	if (is_promo(mv))
-		return attack_map(get_promo(mv), to, Occupied ^ setbit(from)) & setbit(oppKsq);
-
-	if (is_ep(mv)) // handle the extremely rare 'double discovered check'
-	{
-		// Same as the EP procedure in pseudo_is_legal()
-		// Occupied ^ (From | To | Capt)
-		Bit newOccup = Occupied ^ ( setbit(from) | setbit(to) | pawn_push(~turn, to) );
-		// only slider "pins" are possible
-		return (rook_attack(oppKsq, newOccup) & piece_union(turn, QUEEN, ROOK))
-			|| (bishop_attack(oppKsq, newOccup) & piece_union(turn, QUEEN, BISHOP));
-	}
-
-	if (is_castle(mv))
-	{
-		// RookCastleMask[color][0=O-O, 1=O-O-O]
-		int castleType = sq2file(to) == FILE_C;
-		Bit rFromToMap = RookCastleMask[turn][castleType];
-		Square rto = RookCastleSq[turn][castleType][1];
-
-		return (ray_mask(ROOK, rto) & setbit(oppKsq))
-			&& (rook_attack(rto, Occupied ^ rFromToMap ^ setbit(from) ^ setbit(to)) & setbit(oppKsq) );
-	}
-
-	return false; // should never be reached.
-}
-
-
+/**********************************************/
 /*
  *	Make move and update the Position internal states by change the state pointer.
  * Otherwise you can manually generate the checkerMap by attacks_to(kingSq, ~turn)
@@ -743,7 +505,10 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 			st->pawnKey ^= Zobrist::psq[opp][PAWN][captSq];
 		else
 			st->npMaterial[opp] -= PIECE_VALUE[MG][capt];
+
 		st->materialKey ^= Zobrist::psq[opp][capt][pieceCount[opp][capt]];
+		prefetch((char *) Material::Table[st->materialKey]); // load to cache material key is updated
+
 		st->psqScore -= PieceSquareTable[opp][capt][captSq];
 	} // end of captures
 
@@ -756,8 +521,10 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 	if (piece == PAWN)
 	{
 		st->cntFiftyMove = 0;  // any pawn move resets the fifty-move clock
-		// update pawn structure key
+
+		// Update pawn structure key and prefetch access
 		st->pawnKey ^= Zobrist::psq[turn][PAWN][from] ^ Zobrist::psq[turn][PAWN][to];
+		prefetch((char *) Pawnshield::Table[st->pawnKey]); // load to cache
 
 		// Set enpassant only if the moved pawn can be attacked
 		Square ep;
@@ -785,9 +552,14 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 
 			// update hash keys and incremental scores
 			key ^= Zobrist::psq[turn][PAWN][to] ^ Zobrist::psq[turn][promo][to];
+
 			st->pawnKey ^= Zobrist::psq[turn][PAWN][to];
+			prefetch((char *) Pawnshield::Table[st->pawnKey]); // load to cache
+
 			st->materialKey ^= Zobrist::psq[turn][promo][pieceCount[turn][promo]++]
 					^ Zobrist::psq[turn][PAWN][pieceCount[turn][PAWN]];
+			prefetch((char *) Material::Table[st->materialKey]); // load to cache material key is updated
+
 			st->psqScore += PieceSquareTable[turn][promo][to] - PieceSquareTable[turn][PAWN][to];
 			st->npMaterial[turn] += PIECE_VALUE[MG][promo];
 		}
@@ -814,6 +586,9 @@ void Position::make_move_helper(Move& mv, StateInfo& nextSt, const CheckInfo& ci
 		// update incremental score
 		st->psqScore += PieceSquareTable[turn][ROOK][rto] - PieceSquareTable[turn][ROOK][rfrom];
 	}
+
+	// Load transposition entry access as soon as we get the new position zobrist key
+	prefetch((char *) TT.first_entry(key));
 
 	st->captured = capt;
 	st->key = key;
@@ -955,6 +730,7 @@ void Position::make_null_move(StateInfo& nextSt)
 	st = &nextSt;
 
 	st->key ^= Zobrist::turn;
+	prefetch((char*)TT.first_entry(st->key)); // Load TT access to cache
 
 	st->cntFiftyMove ++;  // will be set to 0 later if it's a pawn move or capture
 	st->cntInternalFiftyMove = 0; // explained in the header comment
