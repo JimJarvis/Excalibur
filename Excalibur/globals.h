@@ -19,7 +19,9 @@
 #include <map>
 #include <stack>
 #include <unordered_set>
+#include <unordered_map>
 #include <memory>
+#include <functional> //std::greater and std::function
 #include "stddef.h"
 using namespace std;
 
@@ -224,7 +226,8 @@ DEF_OPERATOR(PieceType);
 
 // Suppress noisy VC++ compiler warning
 #ifdef _MSC_VER
-#pragma warning (disable : 4800)
+#pragma warning (disable : 4800) // Bitboard to bool
+#pragma warning (disable : 4244) // U64 to int
 #endif
 
 // disable windows macros min() and max()

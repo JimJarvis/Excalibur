@@ -1,9 +1,11 @@
 #include "openbook.h"
 
+using namespace Moves;
+
 namespace Polyglot
 {
-map<U64, vector<ScoredMove>> OpeningBook;
-bool AllowBookVariation;
+PolyglotBookMap OpeningBook;
+bool AllowBookVariation = true;
 bool ValidBook = false;
 
 // Polyglot's Zobrist keys. 781 in total
@@ -19,6 +21,9 @@ struct // anonymous
 void load(string filePath)
 {
 	ifstream fbook(filePath, ifstream::binary);
+	if (!fbook.is_open())
+		{ ValidBook = false; return; }
+
 	U64 key;
 	// First read polyglot Zobrist keys
 	int fp = 0; // file pointer: 0 to 780
@@ -31,7 +36,8 @@ void load(string filePath)
 	black queen   8  white queen   9
 	black king   10  white king   11*/
 	// Keys are in little-endian (default template parameter)
-	while (BinaryIO<>::get(fbook, key) && fp < 781)
+	// 0ull is the end sentinel we've set in adapt()
+	while (BinaryIO<>::get(fbook, key) && key != 0ull)
 	{
 		if (fp < 768) // 64 * 12
 		{
@@ -51,7 +57,7 @@ void load(string filePath)
 
 		++fp;
 	}
-	if (fp < 781)  // invalid polyglot key set
+	if (fp != 781)  // Invalid polyglot key set
 		{ ValidBook = false; return; }
 
 	// Adjust castling using a trick. 
@@ -61,37 +67,24 @@ void load(string filePath)
 		Zobrist.castle[c][3] = Zobrist.castle[c][1] ^ Zobrist.castle[c][2];
 	}
 
+
 	// Read the opening lines. Originally Polyglot format is in big-endian
 	// our adapt() helps make that little-endian
 	// Here key holds the opening position key in the book
-	ScoredMove smv;
 	Move mv;
 	ushort count;
+
 	while (BinaryIO<>::get(fbook, key))
 	{
 		// Continue reading the next 2 fields:
 		BinaryIO<>::get(fbook, count); // reuse hack
 		mv = Move(count);
 		BinaryIO<>::get(fbook, count);
-		smv.value = count;
 
-		// We need to translate the move to Excalibur style.
-		// A PolyGlot book move is encoded as follows:
-		// bit  0- 5: to
-		// bit  6-11: from
-		// bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
-		//
-		// Castling moves follow "king captures rook" representation. So in case book
-		// move is a promotion we have to convert to our representation, in all the
-		// other cases we can directly compare with a Move after having masked out
-		// the special Move's flags (bit 14-15) that are not supported by PolyGlot.
-
-		smv.move = mv;
-		
-		OpeningBook[key].push_back(smv);
+		// unordered_map<map<>>
+		// Descending sort (internally) by 'count'
+		OpeningBook[key][count] = mv; 
 	}
-
-
 
 	ValidBook = true;
 }
@@ -117,20 +110,49 @@ Move probe(const Position& pos)
 	if (pos.turn == W)
 		key ^= Zobrist.turn;
 
+	// Probe the opening book
+	auto moveList = OpeningBook[key];
 
+	if (moveList.empty())  return MOVE_NULL;
+
+	Move mv;
+	if (AllowBookVariation)
+	{
+		int rnd = RKiss::rand64() % moveList.size();
+		auto iter = moveList.begin();
+		while (rnd-- > 0)  ++iter; // effect equivalent to (iter + rnd)
+		mv = iter->second;
+	}
+	else  // we always play the best move, already sorted by load()
+		mv = moveList.begin()->second;
+
+	// Polyglot castling moves follow "king captures friendly rook" representation. 
+	// We have to look at the internal to see if there's really a king there. 
+	// If yes, add the castle flag. 
+	Square from = get_from(mv);
+	Square to = get_to(mv);
+
+	for (int cas = 0; cas < CASTLE_TYPES_N; cas++)
+		for (Color c : COLORS)
+			if (  from == Board::relative_square(c, SQ_E1)
+				&& from == pos.king_sq(c)
+				&& (to == Board::relative_square(c, SQ_H1) || to == Board::relative_square(c, SQ_A1)))
+				set_castle(mv);
+
+	// Similar case with EP
+	if ( pos.boardPiece[from] == PAWN 
+		&& pos.boardPiece[to] == NON
+		&& sq2file(from) != sq2file(to))
+		set_ep(mv);
+
+	if (pos.pseudo_is_legal(mv, pos.pinned_map()))
+		return mv;
 
 	return MOVE_NULL;
 }
 
 
 /**********************************************/
-struct PolyglotEntry // Orignal entries
-{
-	U64 key; // 64
-	ushort move; // 16
-	ushort count; // 16
-	uint learn; //32
-};
 
 // Won't actually be run in the engine. Pre-transformed book stored as Excalibur.book
 // First load 781 Zobrist keys from "Polyglot.key" text file. 
@@ -138,7 +160,6 @@ struct PolyglotEntry // Orignal entries
 void adapt(string polyglotKeyPath, string bookBinPath)
 {
 	ifstream fikey(polyglotKeyPath); // text
-	ifstream fibook(bookBinPath, ifstream::binary);
 	// Our own book being created:
 	ofstream fnew("Excalibur.book", ofstream::binary);
 
@@ -146,20 +167,43 @@ void adapt(string polyglotKeyPath, string bookBinPath)
 	// Make all Zobrist keys little-endian continuous binary stream
 	while (fikey >> hex >> key)
 		BinaryIO<>::put(fnew, key);
+	// IMPORTANT: put an end sentinel at the closure of 781 keys
+	BinaryIO<>::put(fnew, 0ULL);
 
-	PolyglotEntry entry;
+	fnew.flush();
+	fikey.close();
+
+	ifstream fibook(bookBinPath, ifstream::binary);
+	ushort move, count; // 16
+	uint learn; // 32
+
 	// Read the polyglot book bin big-endian but output little-endian
-	while (BinaryIO<BigEndian>::get(fibook, entry.key))
+	while (BinaryIO<BigEndian>::get(fibook, key))
 	{
 		// Continue reading the fields after "key"
-		BinaryIO<BigEndian>::get(fibook, entry.move);
-		BinaryIO<BigEndian>::get(fibook, entry.count);
-		BinaryIO<BigEndian>::get(fibook, entry.learn);
+		BinaryIO<BigEndian>::get(fibook, move);
+		BinaryIO<BigEndian>::get(fibook, count);
+		BinaryIO<BigEndian>::get(fibook, learn);
+
+		// We need to translate the move to Excalibur style.
+		// A PolyGlot book move is encoded as follows:
+		// bit  0- 5: to
+		// bit  6-11: from
+		// bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
+		// Castling and EP needs position info. Can only be dealt with in probe()
+		 int pt = (move >> 12) & 7;
+		 if (pt)
+		 {
+			 Move tmp = (Move) move;
+			 set_from_to(tmp, get_from(tmp), get_to(tmp));
+			 set_promo(tmp, PieceType(pt + 1));
+			 move = ushort(tmp);
+		 }
 
 		// Output little-endian. Also omit the field "learn"
-		BinaryIO<>::put(fnew, entry.key);
-		BinaryIO<>::put(fnew, entry.move);
-		BinaryIO<>::put(fnew, entry.count);
+		BinaryIO<>::put(fnew, key);
+		BinaryIO<>::put(fnew, move);
+		BinaryIO<>::put(fnew, count);
 	}
 	
 	fnew.close();

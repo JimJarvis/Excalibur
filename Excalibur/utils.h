@@ -294,7 +294,7 @@ struct BinaryIO
 
 	// Writer for ofstream: writes sizeof(T) as binary. 
 	template<typename T>
-	static ofstream& put(ofstream& fout, T& putter)
+	static ofstream& put(ofstream& fout, T putter)
 	{
 		if (Ed == BigEndian)  // Big-endian
 		{

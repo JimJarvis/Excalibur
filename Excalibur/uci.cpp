@@ -2,7 +2,6 @@
 #include "thread.h"
 #include "search.h"
 #include "openbook.h"
-#include <functional> // for std::function<> lambda, fancy trick in options2str
 
 using namespace Search;
 using namespace ThreadPool;
@@ -18,8 +17,8 @@ void changer_clear_hash() { TT.clear(); }
 void changer_eval_weights() { Eval::init(); } // refresh weights
 void changer_contempt_factor()
 	{ Search::update_contempt_factor(); }
-void changer_book_load()
-	{ Polyglot::load(OptMap["Book File"]); }
+void changer_book_load() // Also randomize Rkiss
+	{ Polyglot::load((string)OptMap["Book File"]); RKiss::init_seed(now() % 2000); }
 void changer_book_variation()
 	{ Polyglot::AllowBookVariation = (bool)OptMap["Book Variation"]; }
 
@@ -40,7 +39,7 @@ void init_options()
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
 
 	// Opening book options
-	OptMap["Use Opening Book"] = Option(true);
+	OptMap["Use Opening Book"] = Option(false, changer_book_load);
 	OptMap["Book Variation"] = Option(true, changer_book_variation);
 	OptMap["Book File"] = Option(string("Excalibur.book"), changer_book_load);
 }
@@ -74,7 +73,7 @@ string options2str()
 	// Sort the options according to the sequence we hard-code them. 
 	// Use a fancy trick: reverse the role of key and value - let 'string' 
 	// be the value and 'Option' class be the key. Then we can ask map.insert to sort internally
-	// Supply a custom comparator to map class. Follow the formula:
+	// Supply a custom comparator to map class. Follow the formula: #include <functional>
 	// map<T1, T2, std::function<returnType(args)>> MapName( [](lambda){} );
 	// 
 	map<Option, string, std::function<bool(const Option&, const Option&)>> 

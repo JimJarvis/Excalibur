@@ -13,9 +13,13 @@
 namespace Polyglot
 {
 	// Maps a Polyglot-format key to an array of ScoredMove
-	// We hack the 'score' in ScoredMove: actually they are "counts" that measure
-	// the weight of this particular opening variation move. Typically the larger the better.
-	extern std::map<U64, vector<ScoredMove>> OpeningBook;
+	// Outer unordered_map gives us the map of move-counts(weights) from a polyglot position key
+	// Inner map contains opening variations of the same position, sorted descendingly by 'count'
+	// Polyglot: count = 2*win + draw;
+	// If we don't AllowBookVariation, we simply return the first move in the map (with the largest count)
+	// if we do, we randomly  choose a move from the map
+	typedef unordered_map<U64, map<ushort, Move, std::greater<ushort>>> PolyglotBookMap; 
+	extern PolyglotBookMap OpeningBook;
 
 	// True when we favor variation over the best move 
 	// set to false if we strictly plays the move with the largest "counts"
