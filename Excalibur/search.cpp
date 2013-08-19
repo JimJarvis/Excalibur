@@ -32,13 +32,16 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 	Depth extDepth, newDepth;
 	Value best, value, ttVal; // value is temp
 	Value eval, nullVal, futilityVal;
-	bool inCheck, renderCheck, isImproved, isCaptOrPromo, fullDepthSearch, isPvMove, isDangerous;
+	bool inCheck, renderCheck, isImproved, 
+		isCaptOrPromo, fullDepthSearch, 
+		isSingularExtension, isPvMove, isDangerous;
 	Move quietMvsSearched[64]; // indexed by quietCnt
 	int moveCnt, quietCnt;
 
 	//####### Init #######//
 	inCheck = pos.checker_map();
 	moveCnt = quietCnt = 0;
+	value = 0;
 	best = -VALUE_INFINITE;
 	ss->currentMv = (ss+1)->excludedMv = threatMv = bestMv = MOVE_NULL;
 	ss->ply = (ss - 1)->ply + 1;
@@ -77,7 +80,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 	key = excludedMv ? (pos.key() ^ Zobrist::exclusion) : pos.key();
 	tte = TT.probe(key);
 	ttMv = isRoot ? RootMoveList[0].pv[0] : 
-		tte ? tte->move : MOVE_NULL;
+				tte ? tte->move : MOVE_NULL;
 	ttVal = tte ? tt2value(tte->value, ss->ply) : VALUE_NULL;
 
 	// At PV nodes we check for exact scores, while at non-PV nodes we check for
@@ -88,7 +91,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		&& tte  && tte->depth >= depth // TT entry useful only with greater depth
 		&& ( isPV ? tte->bound == BOUND_EXACT :
 		ttVal >= beta ? (tte->bound & BOUND_LOWER) // lower bound or exact
-		: (tte->bound & BOUND_UPPER) )) // upper bound or exact
+							: (tte->bound & BOUND_UPPER) )) // upper bound or exact
 	{
 		TT.update_generation(tte);
 		ss->currentMv = ttMv; // might be NULL
@@ -130,7 +133,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		{
 			eval = ss->staticEval = evaluate(pos, ss->staticMargin);
 			TT.store(key, VALUE_NULL, BOUND_NULL, DEPTH_NULL, MOVE_NULL, 
-				ss->staticEval, ss->staticMargin);
+						ss->staticEval, ss->staticMargin);
 		}
 
 
@@ -247,7 +250,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 
 
 		//####### Internal iterative deepening (not in check) #######//
-		if (depth >= (isPV ? 5 * ONE_PLY : 8 * ONE_PLY)
+		if (depth >= (isPV ? 5 : 8) * ONE_PLY
 			&& ttMv == MOVE_NULL
 			&& (isPV || ss->staticEval + 256 >= beta) )
 		{
@@ -276,11 +279,17 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 	//####### Init a MoveSorter with the refutation entry #######//
 	MoveSorter Msorter(pos, ttMv, depth, History, refutationMvs, ss);
 
-	value = best;
-
 	isImproved = ss->staticEval >= (ss-2)->staticEval
 		|| ss->staticEval == VALUE_NULL
 		|| (ss-2)->staticEval == VALUE_NULL;
+
+	// Singular Extension node jug
+	isSingularExtension = !isRoot
+						&& depth >= (isPV ? 6 : 8) * ONE_PLY
+						&& ttMv != MOVE_NULL
+						&& excludedMv == MOVE_NULL // avoid recursive singular extension
+						&& (tte->bound & BOUND_LOWER) // either lower or exact
+						&& tte->depth >= depth - 3 * ONE_PLY;
 
 
 	/****************************************/
@@ -318,6 +327,30 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		else if (renderCheck && see_sign(pos, mv) >= 0)
 			extDepth = ONE_PLY / 2;
 
+		//####### Singular Extension search #######//
+		// If all moves but one fail low on a search of
+		// (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
+		// is singular and should be extended. To verify this we do a reduced search
+		// on all the other moves but the ttMove, if result is lower than ttValue minus
+		// a margin then we extend ttMove.
+		if (  isSingularExtension
+			&& mv == ttMv
+			&& extDepth == DEPTH_ZERO
+			&& pos.pseudo_is_legal(mv, ci.pinned)
+			&& abs(ttVal) < VALUE_KNOWN_WIN )
+		{
+			Value redBeta = ttVal - depth;
+			ss->excludedMv = mv;
+			ss->skipNullMv = true;
+			value = search<NON_PV>(pos, ss, redBeta - 1, redBeta, depth / 2, cutNode);
+			ss->skipNullMv = false;
+			ss->excludedMv = MOVE_NULL;
+
+			if (value < redBeta)
+				extDepth = ONE_PLY;
+		}
+
+		// Update depth: must be done after Singular Extension
 		newDepth = depth - ONE_PLY + extDepth;
 
 		//####### Futility pruning (for nonPV nodes) #######//
@@ -340,8 +373,8 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 			Depth predictDepth = newDepth - reduction<isPV>(isImproved, depth, moveCnt);
 
 			futilityVal = ss->staticEval + ss->staticMargin 
-				+ futility_margin(predictDepth, moveCnt)
-				+ Gains.get(pos, get_from(mv), get_to(mv));
+					+ futility_margin(predictDepth, moveCnt)
+					+ Gains.get(pos, get_from(mv), get_to(mv));
 
 			if (futilityVal < beta)
 			{
@@ -389,7 +422,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 			&& !isDangerous
 			&& mv != ttMv
 			&& mv != ss->killerMvs[0]
-		&& mv != ss->killerMvs[1] )
+			&& mv != ss->killerMvs[1] )
 		{
 			ss->reduction = reduction<isPV>(isImproved, depth, moveCnt);
 
@@ -417,9 +450,9 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		if (fullDepthSearch)
 		{
 			value = newDepth < ONE_PLY ? 
-				(renderCheck ? -qsearch<NON_PV, true>(pos, ss+1, -alpha-1, -alpha)
-				: -qsearch<NON_PV, false>(pos, ss+1, -alpha-1, -alpha))
-				: - search<NON_PV>(pos, ss+1, -alpha-1, -alpha, newDepth, !cutNode);
+					(renderCheck ? -qsearch<NON_PV, true>(pos, ss+1, -alpha-1, -alpha)
+										: -qsearch<NON_PV, false>(pos, ss+1, -alpha-1, -alpha))
+							: - search<NON_PV>(pos, ss+1, -alpha-1, -alpha, newDepth, !cutNode);
 		}
 
 		//####### Full depth PV serach #######//
@@ -429,9 +462,9 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		if (isPV && 
 			(isPvMove || (value > alpha && (isRoot || value < beta))) )
 			value = newDepth < ONE_PLY ? 
-			(renderCheck ? -qsearch<PV, true>(pos, ss+1, -beta, -alpha)
-			: -qsearch<PV, false>(pos, ss+1, -beta, -alpha))
-			: - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
+					(renderCheck ? -qsearch<PV, true>(pos, ss+1, -beta, -alpha)
+										: -qsearch<PV, false>(pos, ss+1, -beta, -alpha))
+							: - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
 
 		//####### Unmak the move #######//
 		pos.unmake_move(mv);
@@ -493,7 +526,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 	// harmless because return value is discarded anyhow in the parent nodes.
 	if (moveCnt == 0)
 		return excludedMv ? alpha 
-		: inCheck ? mated_value(ss->ply) : DrawValue[pos.turn];
+					: inCheck ? mated_value(ss->ply) : DrawValue[pos.turn];
 
 	// If we have pruned all the moves without searching return a fail-low score
 	if (best == -VALUE_INFINITE)
@@ -505,7 +538,7 @@ Value Search::search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Dep
 		: isPV && bestMv ? BOUND_EXACT : BOUND_UPPER;
 
 	TT.store(key, value2tt(best, ss->ply),
-		ttBound, depth, bestMv, ss->staticEval, ss->staticMargin);
+				ttBound, depth, bestMv, ss->staticEval, ss->staticMargin);
 
 
 	//####### Quiet best moves: update Killer, History and Refutations heuristics ##//
@@ -581,7 +614,7 @@ Value Search::qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, De
 	// TT entry depth that we are going to use. Note that in qsearch we use
 	// only two types of depth in TT: DEPTH_QS_CHECKS or DEPTH_QS_NO_CHECKS.
 	ttDepth = UsInCheck || depth >= DEPTH_QS_CHECKS ? 
-DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
+						DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 
 	//####### Transposition Lookup #######//
 	key = pos.key();
@@ -592,7 +625,7 @@ DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 	if (tte && tte->depth >= ttDepth
 		&& ( isPV ? tte->bound == BOUND_EXACT :
 		ttVal >= beta ? (tte->bound & BOUND_LOWER) : // lower bound or exact
-		(tte->bound & BOUND_UPPER) )) // upper bound or exact
+							(tte->bound & BOUND_UPPER) )) // upper bound or exact
 	{
 		ss->currentMv = ttMv; // can be MOVE_NULL
 		return ttVal;
@@ -621,8 +654,8 @@ DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 		{
 			if (!tte)
 				TT.store(key, value2tt(best, ss->ply), 
-				BOUND_LOWER, DEPTH_NULL, MOVE_NULL, 
-				ss->staticEval, ss->staticMargin);
+							BOUND_LOWER, DEPTH_NULL, MOVE_NULL, 
+							ss->staticEval, ss->staticMargin);
 			return best;
 		}
 
@@ -728,8 +761,8 @@ DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 				else // Fail high - beta cutoff
 				{
 					TT.store(key, value2tt(value, ss->ply), 
-						BOUND_LOWER, ttDepth, mv, 
-						ss->staticEval, ss->staticMargin);
+								BOUND_LOWER, ttDepth, mv, 
+								ss->staticEval, ss->staticMargin);
 					return value;
 				}
 			}
@@ -744,8 +777,8 @@ DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 
 	// Write to Transposition table
 	TT.store( key, value2tt(best, ss->ply), 
-		isPV && best > alpha  ? BOUND_EXACT : BOUND_UPPER,
-		ttDepth, bestMv, ss->staticEval, ss->staticMargin);
+				isPV && best > alpha  ? BOUND_EXACT : BOUND_UPPER,
+				ttDepth, bestMv, ss->staticEval, ss->staticMargin);
 
 	return best;
 }
