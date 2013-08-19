@@ -1,7 +1,9 @@
-#include "position.h"
 #include "search.h"
 #include "uci.h"
 #include "thread.h"
+
+using Transposition::TT;
+using UCI::OptMap;
 
 /* Excalibur engine entry point */
 int main(int argc, char **argv)
@@ -13,7 +15,7 @@ int main(int argc, char **argv)
 	UCI::init_options();
 	Eval::init();
 	Search::init();
-	TT.set_size(UCI::OptMap["Hash"]); // set transposition table size
+	TT.set_size(OptMap["Hash"]); // set transposition table size
 
 	ThreadPool::init();
 

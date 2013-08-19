@@ -38,6 +38,7 @@ namespace Polyglot
 	Move probe(const Position& pos);
 
 	// Transforms a standard polyglot book to Excalibur-compatible format.
+	// "Ployglot.key" and "book.bin"
 	void adapt(string polyglotKeyPath, string bookBinPath);
 }
 

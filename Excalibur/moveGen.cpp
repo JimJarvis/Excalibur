@@ -4,6 +4,7 @@
 #include "material.h"
 #include "pawnshield.h"
 #include "ttable.h"
+using Transposition::TT;
 
 using namespace Board;
 using namespace Moves;

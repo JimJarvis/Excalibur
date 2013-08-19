@@ -12,6 +12,7 @@ using namespace Board;
 using namespace UCI;
 
 using Transposition::Entry;
+using Transposition::TT;
 
 /**********************************************/
 // Search related global variables shared across the entire program
@@ -170,7 +171,7 @@ void Search::think()
 	}
 
 	if (  OptMap["Use Opening Book"]
-	&& RootPos.st->cntInternalFiftyMove < 20
+	&& RootPos.st->cntInternalFiftyMove < 27
 	&& !Limit.infinite && !Limit.mateInX)
 	{
 		Move bookMv = Polyglot::probe(RootPos);

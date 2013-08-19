@@ -5,6 +5,7 @@
 
 using namespace Search;
 using namespace ThreadPool;
+using Transposition::TT;
 
 namespace UCI
 {

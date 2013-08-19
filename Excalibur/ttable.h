@@ -15,6 +15,10 @@
 
 namespace Transposition
 {
+	class Table; // forward decl
+	// Global shared transposition table instance
+	extern Table TT; 
+
 	struct Entry
 	{
 		void store(U64 key0, Value v, BoundType bt, int d, Move m, byte g, Value s_val, Value s_margin)
@@ -78,7 +82,5 @@ namespace Transposition
 
 
 }  // namespace Transposition
-
-extern Transposition::Table TT;  // will be instantiated in transposition.cpp
 
 #endif // __ttable_h__

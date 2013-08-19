@@ -2,10 +2,10 @@
 
 #include "ttable.h"
 
-Transposition::Table TT; // global transposition table
-
 namespace Transposition
 {
+	Table TT;  // Global extern instantiation
+
 	/// sets the size of the transposition table, measured in megabytes. 
 	/// Transposition table consists of a power of 2 number
 	/// of clusters and each cluster consists of ClusterSize number of entries.

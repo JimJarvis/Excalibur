@@ -132,21 +132,24 @@ Move probe(const Position& pos)
 	Square from = get_from(mv);
 	Square to = get_to(mv);
 
-	for (int cas = 0; cas < CASTLE_TYPES_N; cas++)
-		for (Color c : COLORS)
-			if (  from == Board::relative_square(c, SQ_E1)
-				&& from == pos.king_sq(c)
-				&& (to == Board::relative_square(c, SQ_H1) || to == Board::relative_square(c, SQ_A1)))
-				set_castle(mv);
+	for (Color c : COLORS)
+		if (  from == Board::relative_square(c, SQ_E1)
+			&& from == pos.king_sq(c))
+		{
+			if (to == Board::relative_square(c, SQ_H1))
+				mv = CastleMoves[c][CASTLE_OO];
+			else if (to == Board::relative_square(c, SQ_A1))
+				mv = CastleMoves[c][CASTLE_OOO];
+		}
 
-	// Similar case with EP
-	if ( pos.boardPiece[from] == PAWN 
-		&& pos.boardPiece[to] == NON
-		&& sq2file(from) != sq2file(to))
-		set_ep(mv);
+	Move cleanMv = get_from_to(mv);  // without any special flags
 
-	if (pos.pseudo_is_legal(mv, pos.pinned_map()))
-		return mv;
+	// Test legality. Note that EP is automatically dealt with
+	MoveBuffer mbuf;
+	ScoredMove *it, *end = pos.gen_moves<LEGAL>(mbuf);
+	for (it = mbuf, end->move = MOVE_NULL; it != end; ++it)
+		if (cleanMv == get_from_to(it->move))
+			return mv;
 
 	return MOVE_NULL;
 }

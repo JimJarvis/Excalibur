@@ -22,6 +22,7 @@ namespace Moves
 	inline Move set_from_to(Move& mv, Square from, Square to) 	{ return mv = Move(to | (from << 6)); }
 	inline Square get_from(Move& mv) { return (mv >> 6) & 0x3f; }
 	inline Square get_to(Move& mv) {  return mv & 0x3f;  }
+	inline Move get_from_to(Move& mv) { return Move(mv & 0xfff); } // clean move without any special flags
 	// bits 12 to 13, 2 bits 00 to 11 for promoted pieces, if any: N-00, B-01, R-10, Q-11
 	inline void set_promo(Move& mv, PieceType pt) { mv = Move(mv & 0x0fff | (0xc000 |  PROMO_MASK[pt])); }
 	inline PieceType get_promo(Move& mv) { return PIECE_PROMO[(mv >> 12) & 0x3]; }   // ALWAYS call is_promo before get_promo
