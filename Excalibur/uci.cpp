@@ -231,20 +231,6 @@ do
 	}
 
 	/**********************************************/
-	// Indicate our support of UCI protocol
-	else if (cmd == "uci")
-		sync_print(engine_id << options2str<true>() << "uciok");
-
-	/**********************************************/
-	// Starts a new game. Clears the hash.
-	else if (cmd == "ucinewgame")
-		TT.clear();
-
-	else if (cmd == "isready")
-		sync_print("readyok");
-
-
-	/**********************************************/
 	/*********** go: main game driver ****************/
 	/**********************************************/
 	else if (cmd == "go")
@@ -346,6 +332,20 @@ do
 		}
 
 	}  // cmd 'position'
+
+
+	/**********************************************/
+	// Indicate our support of UCI protocol
+	else if (cmd == "uci")
+		sync_print(engine_id << options2str<true>() << "uciok");
+
+	/**********************************************/
+	// Starts a new game. Clears the hash.
+	else if (cmd == "ucinewgame")
+		TT.clear();
+
+	else if (cmd == "isready")
+		sync_print("readyok");
 
 
 	/**********************************************/
@@ -458,6 +458,29 @@ do
 		sync_print(Board::magicU64_generate<ROOK>());
 		sync_print(Board::magicU64_generate<BISHOP>());
 	}
+
+	/**********************************************/
+	// Easter eggs
+	else if (cmd == "excalibur") // display poem
+		sync_print(engine_poem);
+	else if (cmd == "jim")
+		sync_print("I love you ;)\n");
+	else if (cmd == "clock")
+		sync_print("Current time: " << current_date_time()
+						<< "\nNever skip a meal!\n");
+	else if (cmd == "bug")
+		sync_print("If you can beat Excalibur alone as a human\n... "  \
+			"I'd seriously consider that a bug. \nHa, just kidding.\n" \
+			"If you've found any replicable bugs,\nplease report to me ASAP."\
+			"\nContact please refer to README.\n"\
+			"Thanks in advance for your support.\n");
+	else if (cmd == "chess")
+		sync_print(right << setw(7) << "Leap" << " like a Knight\n"
+			<< setw(7) << "Sweep" << " like a Pawn\n"
+			<< setw(7) << "Smash" << " like a Rook\n"
+			<< setw(7) << "Thrash" << " like a Bishop\n"
+			<< setw(7) << "Ponder" << " like a Queen\n"
+			<< setw(7) << "Conquer" << " like a King\n");
 
 	/**********************************************/
 	// politely rejects the command

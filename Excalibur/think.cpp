@@ -95,9 +95,9 @@ void Search::init()
 	// Init futility move count array
 	for (d = 0; d < 32; d++)
 	{
-		FutilityMoveCounts[1][d] = int(3.001 + 0.3 * pow(double(d), 1.8));
-		FutilityMoveCounts[0][d] = d < 5 ? FutilityMoveCounts[1][d]
-												: 3 * FutilityMoveCounts[1][d] / 4;
+		// when depth >= 5, multiply by 3/4, else no change
+		FutilityMoveCounts[0][d] = int(3.001 + 0.3 * pow(double(d), 1.8) ) * (d>=5 ? 3 : 4) /4;
+		FutilityMoveCounts[1][d] = int(3.001 + 0.3 * pow(double(d + 0.98), 1.8) );
 	}
 }
 

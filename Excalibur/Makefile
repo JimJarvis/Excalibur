@@ -47,7 +47,7 @@ LDFLAGS = -pthread $(CXXFLAGS)
 CFLAGS = $(CXXFLAGS)
 
 Excalibur: utils.o board.o position.o perft.o movegen.o kpkbase.o\
-	moveorder.o ttable.o endgame.o material.o pawnshield.o\
+	movesort.o ttable.o endgame.o material.o pawnshield.o\
 	eval.o search.o think.o uci.o thread.o timer.o openbook.o
 
 Excalibur.o: search.h uci.h thread.h eval.h

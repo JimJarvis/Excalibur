@@ -235,6 +235,17 @@ void init_piece_sq_tbl()
 }
 /**********************************************/
 
+// Display current date and time in pretty print
+#include <ctime>
+string current_date_time()
+{
+	time_t now = time(0);
+	tm tstruct;
+	char buf[80];
+	tstruct = *localtime(&now);
+	strftime(buf, sizeof(buf), "%Y-%m-%d  %X", &tstruct);
+	return buf;
+}
 
 // Display the bitmap. Only for debugging
 Bit dispbit(Bit bitmap)

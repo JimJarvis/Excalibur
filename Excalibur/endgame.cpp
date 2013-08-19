@@ -139,10 +139,10 @@ template<>
 Value EndEvaluator<KXK>::operator()(const Position& pos) const 
 {
 	DBG_MSG(KXK);
-	// Stalemate detection with lone king
-	if ( pos.turn == weakerSide && !pos.checker_map()
+	// Stalemate detection with lone king. Eval is never called when in check
+	if ( pos.turn == weakerSide
 		&& pos.count_legal() == 0)
-			return VALUE_DRAW;
+		return VALUE_DRAW;
 
 	Square winnerKSq = pos.king_sq(strongerSide);
 	Square loserKSq = pos.king_sq(weakerSide);

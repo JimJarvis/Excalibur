@@ -13,6 +13,16 @@ const string engine_author = "Jim Fan";
 const string engine_id = "id name " + engine_name + 
 		"\nid author " + engine_author + "\n";
 
+// My poem :D
+// displayed in easter egg command 'Excalibur'
+const string engine_poem = 
+	"The silent war storms the enchanted board\n" \
+	"The lonely warrior wields the sacred sword\n" \
+	"Behold! A symphony of black and white\n" \
+	"Echoes a millennium of masters' might\n" \
+	"Let wisdom inspire us in the glorious test\n" \
+	"May Excalibur bless us on the lofty quest\n";
+
 // Try to display the copyright (c) unicode symbol
 #ifdef _WIN32  // Windows
 // we must awkwardly set the stdout mode to wchar first, then restore. 
@@ -31,13 +41,8 @@ const string engine_id = "id name " + engine_name +
 #define display_engine_info \
 	cout << engine_name << endl; \
 	display_copyright_symbol; \
-	cout << "2013 " + engine_author + "\n\n" \
-		<< "The silent war storms the enchanted board\n" \
-			"The lonely warrior wields the sacred sword\n" \
-			"Behold! A symphony of black and white\n" \
-			"Echoes a millennium of masters' might\n" \
-			"Let wisdom inspire us in the glorious test\n" \
-			"May Excalibur bless us on the lofty quest\n" << endl
+	cout << "2013 " + engine_author + "\n"\
+			<< current_date_time() + "\n\n"
 
 
 namespace UCI

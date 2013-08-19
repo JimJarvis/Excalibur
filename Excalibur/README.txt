@@ -1,4 +1,6 @@
 Jarvis Initiative :: project Excalibur
+(c) 2013  Jim Fan
+
 The state-of-the-art chess engine.
 
 The silent war storms the enchanted board
@@ -8,5 +10,4 @@ Echoes a millennium of masters' might
 Let wisdom inspire us in the glorious test
 May Excalibur bless us on the lofty quest
 
-Author: Jim Fan (jimfanspire@gmail.com)
-Jarvis Institute. 2013.
+Hope you enjoy my little poem.

@@ -226,6 +226,7 @@ DEF_OPERATOR(PieceType);
 
 // Suppress noisy VC++ compiler warning
 #ifdef _MSC_VER
+#pragma warning (disable : 4996) // time.. struct usafe
 #pragma warning (disable : 4800) // Bitboard to bool
 #pragma warning (disable : 4244) // U64 to int
 #endif

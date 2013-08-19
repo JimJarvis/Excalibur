@@ -236,7 +236,7 @@ inline Score operator/(Score s, int i)
 inline U64 now()
 {
 	_timeb t;
-	_ftime_s(&t);
+	_ftime(&t);
 	return t.time * 1000LL + t.millitm;
 }
 #else   // Linux
@@ -248,6 +248,9 @@ inline U64 now()
 	return t.tv_sec * 1000LL + t.tv_usec / 1000;
 }
 #endif // !_WIN32
+
+// Cross-platform portable date/time display
+string current_date_time();
 
 
 /*************** A stable Insertion Sort *****************/
