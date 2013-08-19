@@ -66,6 +66,8 @@ void Search::init()
 {
 	TimeKeeper::init(); // Init Timer's heuristic data
 
+	TT.set_size(OptMap["Hash"]); // set Transposition table size
+
 	Depth d; // full, one ply = 2
 	Depth hd; // half, one ply = 1
 	int mc; // move count
@@ -338,7 +340,7 @@ void Search::iterative_deepen(Position& pos)
 
 // Updates contempt factor collected by UCI OptMap
 // Contempt factor that determines when we should consider draw
-// unit: centi-pawn. Normally a good CF is -50 for opening, -25 general, and 0 engame.
+// unit: centi-pawn. Normally a good CF is 50 for opening, 25 general, and 0 engame.
 void Search::update_contempt_factor()
 {
 	if (OptMap["Contempt Factor"])

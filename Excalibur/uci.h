@@ -14,7 +14,7 @@ const string engine_id = "id name " + engine_name +
 		"\nid author " + engine_author + "\n";
 
 // My poem :D
-// displayed in easter egg command 'Excalibur'
+// displayed in easter egg command 'Jim'
 const string engine_poem = 
 	"The silent war storms the enchanted board\n" \
 	"The lonely warrior wields the sacred sword\n" \

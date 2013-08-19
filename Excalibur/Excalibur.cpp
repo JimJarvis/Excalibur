@@ -1,13 +1,14 @@
+/*
+ *	Excalibur Engine Entry
+ *	(c) 2013  Jim Fan
+ */
+
 #include "search.h"
 #include "eval.h"
 #include "uci.h"
 #include "thread.h"
 
-using Transposition::TT;
-using UCI::OptMap;
-
-/* Excalibur engine entry point */
-int main(int argc, char **argv)
+int main()
 {
 	display_engine_info;
 
@@ -16,8 +17,6 @@ int main(int argc, char **argv)
 	UCI::init_options();
 	Eval::init();
 	Search::init();
-	TT.set_size(OptMap["Hash"]); // set transposition table size
-
 	ThreadPool::init();
 
 	UCI::process();

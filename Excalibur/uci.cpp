@@ -460,20 +460,21 @@ do
 	}
 
 	/**********************************************/
-	// Easter eggs
-	else if (cmd == "excalibur") // display poem
+	// Easter eggs  ;)
+	else if (cmd == "excalibur" || cmd == "sword") // ASCII art!
+		sync_print("       ;\\\n"
+					   "       | \\___\n"
+					 "[_]]]]]|  |============================--------\n"
+					 " \\    / .'\n"
+					 "  `==;.'");
+	else if (cmd == "jim") // display poem
 		sync_print(engine_poem);
-	else if (cmd == "jim")
-		sync_print("I love you ;)\n");
 	else if (cmd == "clock")
 		sync_print("Current time: " << current_date_time()
 						<< "\nNever skip a meal!\n");
 	else if (cmd == "bug")
-		sync_print("If you can beat Excalibur alone as a human\n... "  \
-			"I'd seriously consider that a bug. \nHa, just kidding.\n" \
-			"If you've found any replicable bugs,\nplease report to me ASAP."\
-			"\nContact please refer to README.\n"\
-			"Thanks in advance for your support.\n");
+		sync_print("If you can beat Excalibur alone as a human\n... "
+			"I'd seriously consider that a bug. \nJust kidding.\n");
 	else if (cmd == "chess")
 		sync_print(right << setw(7) << "Leap" << " like a Knight\n"
 			<< setw(7) << "Sweep" << " like a Pawn\n"

@@ -9,7 +9,7 @@
 
 namespace Search
 {
-	void init(); // Tables and TimeKeeper
+	void init(); // Lookup tables, Transposition reset and TimeKeeper
 	void think(); // External main interface
 
 	/// The SearchInfo keeps track of the information we need to remember from
