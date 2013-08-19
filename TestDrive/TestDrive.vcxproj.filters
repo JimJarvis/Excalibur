@@ -71,10 +71,13 @@
     <ClCompile Include="..\Excalibur\timer.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\moveorder.cpp">
+    <ClCompile Include="..\Excalibur\openbook.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Excalibur\openbook.cpp">
+    <ClCompile Include="..\Excalibur\think.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Excalibur\movesort.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,6 +2,7 @@
 #include "thread.h"
 #include "search.h"
 #include "openbook.h"
+#include "eval.h"
 
 using namespace Search;
 using namespace ThreadPool;
@@ -19,7 +20,13 @@ void changer_eval_weights() { Eval::init(); } // refresh weights
 void changer_contempt_factor()
 	{ Search::update_contempt_factor(); }
 void changer_book_load() // Also randomize Rkiss
-	{ Polyglot::load((string)OptMap["Book File"]); RKiss::init_seed(now() % 2000); }
+{  
+	if ((bool)OptMap["Use Opening Book"])
+	{
+		Polyglot::load((string)OptMap["Book File"]);
+		RKiss::init_seed(now() % 2000); 
+	}
+}
 void changer_book_variation()
 	{ Polyglot::AllowBookVariation = (bool)OptMap["Book Variation"]; }
 

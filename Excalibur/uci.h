@@ -1,4 +1,5 @@
 /* UCI protocol driver */
+// http://wbec-ridderkerk.nl/html/UCIProtocol.html
 
 #ifndef __uci_h__
 #define __uci_h__

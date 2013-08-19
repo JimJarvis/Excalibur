@@ -46,11 +46,11 @@ CXXFLAGS = -std=c++11 -O3 -fno-rtti -march=native -flto -fwhole-program
 LDFLAGS = -pthread $(CXXFLAGS)
 CFLAGS = $(CXXFLAGS)
 
-Excalibur: utils.o board.o position.o perft.o movegen.o\
+Excalibur: utils.o board.o position.o perft.o movegen.o kpkbase.o\
 	moveorder.o ttable.o endgame.o material.o pawnshield.o\
-	kpkbase.o eval.o search.o uci.o thread.o timer.o openbook.o
+	eval.o search.o think.o uci.o thread.o timer.o openbook.o
 
-Excalibur.o: search.h uci.h thread.h
+Excalibur.o: search.h uci.h thread.h eval.h
 
 utils.o: utils.h zobrist.h
 
@@ -62,7 +62,7 @@ perft.o: search.h
 
 movegen.o: position.h material.h pawnshield.h ttable.h
 
-moveorder.o: moveorder.h
+movesort.o: movesort.h eval.h search.h
 
 ttable.o: ttable.h
 
@@ -76,9 +76,11 @@ kpkbase.o: endgame.h
 
 eval.o: eval.h material.h pawnshield.h search.h uci.h
 
-search.o: search.h thread.h moveorder.h uci.h openbook.h
+search.o: search.h eval.h uci.h
 
-uci.o: uci.h search.h thread.h openbook.h
+think.o: search.h eval.h uci.h thread.h openbook.h
+
+uci.o: uci.h search.h eval.h thread.h openbook.h
 
 thread.o: thread.h search.h
 

@@ -1,7 +1,9 @@
-#ifndef __moveorder_h__
-#define __moveorder_h__
+#ifndef __movesort_h__
+#define __movesort_h__
 
-#include "search.h"
+#include "position.h"
+// Forward declaration to avoid a mutual #include with "search.h"
+namespace Search { struct SearchInfo; }
 
 /// The Stats struct stores moves statistics. According to the template parameter
 /// the class can store History, Gains and Refutations. 
@@ -93,9 +95,9 @@ private:
 	Move ttMv;
 	ScoredMove killerMvs[4];
 	Square recaptureSq;
-	int stage; // SorterStage enum defined in moveorder.cpp
+	int stage; // SorterStage enum defined in movesort.cpp
 	ScoredMove *cur, *end, *endQuiet, *endBadCapture;
 	MoveBuffer mbuf;
 };
 
-#endif // __moveorder_h__
+#endif // __movesort_h__

@@ -44,9 +44,6 @@
     <ClCompile Include="kpkbase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="search.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ttable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -59,13 +56,19 @@
     <ClCompile Include="pawnshield.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="moveorder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="openbook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="think.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="search.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="movesort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -112,13 +115,13 @@
     <ClInclude Include="pawnshield.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="moveorder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="openbook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="movesort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

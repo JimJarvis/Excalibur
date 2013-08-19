@@ -1,4 +1,7 @@
-#include "moveorder.h"
+#include "movesort.h"
+#include "eval.h"
+#include "search.h"
+
 using namespace Moves;
 
 enum SorterStage

@@ -2,13 +2,16 @@
 #define __search_h__
 
 #include "position.h"
-#include "eval.h"
 #include "material.h"
 #include "ttable.h"
+#include "movesort.h"
 #include "timer.h"
 
 namespace Search
 {
+	void init(); // Tables and TimeKeeper
+	void think(); // External main interface
+
 	/// The SearchInfo keeps track of the information we need to remember from
 	/// nodes shallower and deeper in the tree during the search. Each search thread
 	/// has its own array of SearchInfo objects, indexed by the current ply.
@@ -24,53 +27,30 @@ namespace Search
 		bool skipNullMv;
 		int futilityMvCnt;
 	};
-
 	typedef SearchInfo SearchStack[MAX_PLY + 3];
 	typedef StateInfo StateStack[MAX_PLY + 3];
 
+	
+	// If the remaining available time drops below this percentage 
+	// threshold, we don't start the next iteration. 
+	const double IterativeTimePercentThresh = 0.67; 
+	void iterative_deepen(Position& pos); // called in think()
+
+	enum NodeType { ROOT, PV, NON_PV};
+
+	// Main search engine
+	template<NodeType>
+	Value search(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+	// Quiescence search engine
+	template<NodeType, bool UsInCheck>
+	Value qsearch(Position& pos, SearchInfo* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
+
+	void update_contempt_factor();
+
+
 	/// The struct stores information sent by GUI 'go' command about available time
-	/*  copied from UCI protocol:
-	*	 go
-	start calculating on the current position set up with the "position" command.
-	There are a number of commands that can follow this command, all will be sent in the same string.
-	If one command is not send its value should be interpreted as it would not influence the search.
-	* searchmoves  .... 
-	restrict search to this moves only
-	Example: After "position startpos" and "go infinite searchmoves e2e4 d2d4"
-	the engine should only search the two moves e2e4 and d2d4 in the initial position.
-	* ponder
-	start searching in pondering mode.
-	Do not exit the search in ponder mode, even if it's mate!
-	This means that the last move sent in in the position string is the ponder move.
-	The engine can do what it wants to do, but after a "ponderhit" command
-	it should execute the suggested move to ponder on. This means that the ponder move sent by
-	the GUI can be interpreted as a recommendation about which move to ponder. However, if the
-	engine decides to ponder on a different move, it should not display any mainlines as they are
-	likely to be misinterpreted by the GUI because the GUI expects the engine to ponder
-	on the suggested move.
-	* wtime 
-	white has x msec left on the clock
-	* btime 
-	black has x msec left on the clock
-	* winc 
-	white increment per move in mseconds if x > 0
-	* binc 
-	black increment per move in mseconds if x > 0
-	* movestogo 
-	there are x moves to the next time control,
-	this will only be sent if x > 0,
-	if you don't get this and get the wtime and btime it's sudden death
-	* depth 
-	search x plies only.
-	* nodes 
-	search x nodes only,
-	* mate 
-	search for a mate in x moves
-	* movetime 
-	search exactly x mseconds
-	* infinite
-	search until the "stop" command. Do not exit the search without being told so in this mode!
-	 */
+	/// Each entry corresponds to a UCI command
 	struct LimitListener
 	{
 		void clear() { memset(this, 0, sizeof(LimitListener)); } // set all flags to false
@@ -112,6 +92,8 @@ namespace Search
 		vector<Move> pv; // will be null terminated (MOVE_NULL).
 	};
 
+
+	/*** Globals shared through the program, not just search-related functions */
 	extern LimitListener Limit;
 	// the program will re-read the value every time 
 	// instead of using a backup copy in the register
@@ -128,15 +110,75 @@ namespace Search
 	// back in state history.
 	typedef auto_ptr<stack<StateInfo>> SetupStatePtr;
 	extern SetupStatePtr SetupStates;
+	
+} // namespace Search
 
-	void init();
 
-	// Updates contempt factor collected by UCI OptMap
-	// Contempt factor that determines when we should consider draw
-	// unit: centi-pawn. Normally a good CF is -50 for opening, -25 general, and 0 engame.
-	void update_contempt_factor();
+/**********************************************/
+namespace SearchUtils
+{
+	// Globals shared by search-related functions
+	extern int BestMoveChanges;
+	extern Value DrawValue[COLOR_N]; // set by contempt factor
+	extern HistoryStats History;
+	extern GainStats Gains;
+	extern RefutationStats Refutations;
 
-	void think(); // external main interface
-}
+	/**** Search data tables and their access functions ****/
+	// Dynamic razoring margin based on depth
+	inline Value razor_margin(Depth d)	{ return 512 + 16 * d; }
+
+	// Futility lookup tables (init at startup) and their access functions
+	extern Value FutilityMargins[16][64]; // [depth][moveNumber]
+	extern int FutilityMoveCounts[2][32]; // [isImproved][depth]
+
+	inline Value futility_margin(Depth d, int moveNum)
+	{
+		return d < 7 * ONE_PLY ?
+			FutilityMargins[max(d, 1)][min(moveNum, 63)]
+		: 2 * VALUE_INFINITE;
+	}
+
+	// Reduction lookup table (init at startup) and its access function
+	extern byte Reductions[2][2][64][64]; // [pv][isImproved][depth][moveNumber]
+
+	template <bool PvNode> inline Depth reduction(bool improving, Depth d, int moveNum)
+	{
+		return Reductions[PvNode][improving][min(d / ONE_PLY, 63)][min(moveNum, 63)];
+	}
+
+	/********** Value functions ********/
+	// Large positive
+	inline Value mate_value(int ply) { return VALUE_MATE - ply; }
+	// Large negative
+	inline Value mated_value(int ply) { return -VALUE_MATE + ply; }
+
+	// Adjusts a mate score from "plies to mate from the root" to
+	// "plies to mate from the current position". Non-mate scores are unchanged.
+	// The function is called before storing a value to the transposition table.
+	//
+	inline Value value2tt(Value v, int ply)
+	{
+		return  v >= VALUE_MATE_IN_MAX_PLY  ? v + ply
+			: v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
+	}
+
+	// The inverse of value_to_tt(): It adjusts a mate score
+	// from the transposition table (where refers to the plies to mate/be mated
+	// from current position) to "plies to mate/be mated from the root".
+	//
+	inline Value tt2value(Value v, int ply)
+	{
+		return  v == VALUE_NULL  ? VALUE_NULL
+			: v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
+			: v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
+	}
+
+	/*********** Other utility functions *************/
+	bool is_check_dangerous(const Position& pos, Move mv, Value futilityBase, Value beta);
+	bool allows(const Position& pos, Move mv1, Move mv2);
+	bool refutes(const Position& pos, Move mv1, Move mv2);
+
+} // namespace SearchUtils
 
 #endif // __search_h__

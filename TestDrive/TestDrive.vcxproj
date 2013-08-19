@@ -28,12 +28,13 @@
     <ClCompile Include="..\Excalibur\kpkbase.cpp" />
     <ClCompile Include="..\Excalibur\material.cpp" />
     <ClCompile Include="..\Excalibur\movegen.cpp" />
-    <ClCompile Include="..\Excalibur\moveorder.cpp" />
+    <ClCompile Include="..\Excalibur\movesort.cpp" />
     <ClCompile Include="..\Excalibur\openbook.cpp" />
     <ClCompile Include="..\Excalibur\pawnshield.cpp" />
     <ClCompile Include="..\Excalibur\perft.cpp" />
     <ClCompile Include="..\Excalibur\position.cpp" />
     <ClCompile Include="..\Excalibur\search.cpp" />
+    <ClCompile Include="..\Excalibur\think.cpp" />
     <ClCompile Include="..\Excalibur\thread.cpp" />
     <ClCompile Include="..\Excalibur\timer.cpp" />
     <ClCompile Include="..\Excalibur\ttable.cpp" />

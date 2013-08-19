@@ -19,6 +19,7 @@ using namespace std;
 #include "thread.h"
 #include "uci.h"
 #include "timer.h"
+#include "eval.h"
 using namespace Board;
 using namespace Moves;
 using namespace Search;
