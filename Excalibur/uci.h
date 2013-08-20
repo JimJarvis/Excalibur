@@ -61,9 +61,11 @@ namespace UCI
 	typedef void (*ChangeListener)(); 
 
 	public:
+		Option() {} // MUST provide a default c'tor
+
 		// ctors for different types of options. 
 		/* Button */
-		Option(ChangeListener c = nullptr) : 
+		Option(ChangeListener c) : 
 			type("button"), changer(c), index(DisplayIndex++) {}
 
 		/* Checkbox */

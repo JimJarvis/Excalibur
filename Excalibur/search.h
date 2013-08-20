@@ -110,6 +110,10 @@ namespace Search
 	// back in state history.
 	typedef auto_ptr<stack<StateInfo>> SetupStatePtr;
 	extern SetupStatePtr SetupStates;
+  
+	// When playing handicap, limit the depth
+	// range from 0*2 to 10*2 - 10 being ELO unlimited
+	extern Depth handicap;
 	
 } // namespace Search
 

@@ -29,6 +29,8 @@ void changer_book_load() // Also randomize Rkiss
 }
 void changer_book_variation()
 	{ Polyglot::AllowBookVariation = (bool)OptMap["Book Variation"]; }
+void changer_power()  // skill level
+	{ Search::handicap = OptMap["Power Level"] * 2; }
 
 // Initialize default UCI options
 void init_options()
@@ -36,7 +38,8 @@ void init_options()
 	// The first three won't be shown explicitly in dialogue box. Handled internally
 	OptMap["Hash"] = Option(128, 1, 8192, changer_hash_size); // spinner. Not shown
 	OptMap["Clear Hash"] = Option(changer_clear_hash); // button. Not shown
-	OptMap["Ponder"] = Option(true); // checkbox. Not shown
+	OptMap["Ponder"] = Option(true); // checkbox. Not shown. Alloc more time if we're allowed to ponder
+
 	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
 
@@ -45,6 +48,9 @@ void init_options()
 	OptMap["Pawn Shield"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
+
+	// If not 10, plays handicap. 1 <= depth <= power * 2
+	OptMap["Power Level"] = Option(10, 0, 10, changer_power); 
 
 	// Opening book options
 	OptMap["Use Opening Book"] = Option(false, changer_book_load);
@@ -88,7 +94,7 @@ string options2str()
 		OptMapReverse([](const Option& o1, const Option& o2) { return o1.index < o2.index; });
 	
 	// Fill out the reversed map. Auto-sort. 
-	for (auto iter = OptMap.begin(); iter != OptMap.end(); ++ iter)
+	for (auto iter = OptMap.begin(); iter != OptMap.end(); ++iter)
 		OptMapReverse[iter->second] = iter->first;
 
 	for (auto iter = OptMapReverse.begin(); iter != OptMapReverse.end(); ++ iter)
@@ -265,7 +271,7 @@ do
 			// Search until 'stop'. Otherwise never exit
 			else if (str == "infinite")		Limit.infinite = true;
 			// Start searching in pondering mode
-			else if (str == "ponder")		Limit.ponder = true;
+			else if (str == "ponder")		Limit.ponder;
 		}
 
 		// We need to wait until Main thread finishes searching

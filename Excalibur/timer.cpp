@@ -103,8 +103,8 @@ void TimeKeeper::talloc(Color us, int curPly)
 	tMax = min(Limit.time[us], 
 				tMin + min_total<false>(totalBase, inc, mtg, curPly));
 
-	// Read from UCI: is ponder enabled
-	if (UCI::OptMap["Ponder"]) // give more time to pondering
+	// Read from UCI: give more time if we're allowed to ponder
+	if (UCI::OptMap["Ponder"])
 		tOptimal += tOptimal / 4;
 
 	// Final verification: assert(tOptimal < tMax)

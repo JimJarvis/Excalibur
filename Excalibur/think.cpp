@@ -36,6 +36,8 @@ namespace Search
 
 	TimeKeeper Timer;
 	U64 SearchTime;
+
+	Depth handicap = 20; 
 }  // namespace Search
 
 /**********************************************/
@@ -302,7 +304,12 @@ void Search::iterative_deepen(Position& pos)
 			// Stop searching if we seem to have insufficient time for the next iteration
 			// Global const threshold decides the percentage of remaining time below which
 			// we'd choose not to start the next iteration. Typically set to 60-70%
+			// 'handicap from 1*2 to 10*2 (max) to limit search time
 			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThresh)
+				stopjug = true;
+
+			// Play handicap: limit search depth. When level 10 we don't limit anything
+			if (handicap != 20 && depth >= handicap)
 				stopjug = true;
 
 			// Stop early if one move seems much better than others
@@ -332,7 +339,10 @@ void Search::iterative_deepen(Position& pos)
 				else
 					Signal.stop = true;
 			}
-		}
+		}  // #endif we use time managment
+		// When pondering, we also ponder handicap
+		else if (handicap != 20 && Limit.ponder && depth >= handicap)
+			Signal.stop = true;
 
 	} // end of the main iter deepening while-loop
 }
