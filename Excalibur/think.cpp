@@ -36,6 +36,7 @@ namespace Search
 
 	TimeKeeper Timer;
 	U64 SearchTime;
+	double IterativeTimePercentThreshold = 0.67;
 
 	Depth handicap = 20; 
 }  // namespace Search
@@ -305,7 +306,7 @@ void Search::iterative_deepen(Position& pos)
 			// Global const threshold decides the percentage of remaining time below which
 			// we'd choose not to start the next iteration. Typically set to 60-70%
 			// 'handicap from 1*2 to 10*2 (max) to limit search time
-			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThresh)
+			if (now() - SearchTime > Timer.optimum() * IterativeTimePercentThreshold)
 				stopjug = true;
 
 			// Play handicap: limit search depth. When level 10 we don't limit anything
@@ -355,7 +356,7 @@ void Search::update_contempt_factor()
 {
 	if (OptMap["Contempt Factor"])
 	{
-		int cf = MG_PAWN * OptMap["Contempt Factor"] / 100;
+		int cf = OptMap["Contempt Factor"] * MG_PAWN / 100;
 		cf *= Material::game_phase(RootPos) / PHASE_MG;
 		DrawValue[RootColor] = VALUE_DRAW - cf;
 		DrawValue[~RootColor] = VALUE_DRAW + cf;
@@ -404,7 +405,7 @@ void RootMove::tt2pv(Position& pos)
 // Called at the end of a search iteration, and
 // puts the PV back into the TT. This makes sure the old PV moves are searched
 // first, even if the old TT entries have been overwritten.
-// 
+	// 
 void RootMove::pv2tt(Position& pos)
 {
 	StateStack ststack; StateInfo *st = ststack;

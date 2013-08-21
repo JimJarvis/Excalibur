@@ -528,7 +528,7 @@ string Board::magicU64_generate()
 		}
 
 		// for pretty display
-		string endchar = sq==63 ? "\n};" : ((sq % 4)==3 ? ",\n" : ", ");
+		string endchar = sq==63 ? "\n};" : ((sq % 3)==2 ? ",\n" : ", ");
 		for (tries = 0; tries < 100000000; tries++)  // trial and error
 		{
 			magic = RKiss::rand64_sparse();

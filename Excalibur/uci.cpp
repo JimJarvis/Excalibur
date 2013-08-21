@@ -17,6 +17,8 @@ map<string, Option> OptMap;
 void changer_hash_size() { TT.set_size(OptMap["Hash"]); } // auto cast to int
 void changer_clear_hash() { TT.clear(); }
 void changer_eval_weights() { Eval::init(); } // refresh weights
+void changer_time_usage() 
+	{ Search::IterativeTimePercentThreshold = OptMap["Time Usage"] * 1.0 / 100; }
 void changer_contempt_factor()
 	{ Search::update_contempt_factor(); }
 void changer_book_load() // Also randomize Rkiss
@@ -40,8 +42,8 @@ void init_options()
 	OptMap["Clear Hash"] = Option(changer_clear_hash); // button. Not shown
 	OptMap["Ponder"] = Option(true); // checkbox. Not shown. Alloc more time if we're allowed to ponder
 
-	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
+	OptMap["Time Usage"] = Option(67, 1, 100, changer_time_usage); 
 
 	// Evaluation weights 
 	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
@@ -49,6 +51,7 @@ void init_options()
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
 
+	OptMap["Contempt Factor"] = Option(-1, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	// If not 10, plays handicap. 1 <= depth <= power * 2
 	OptMap["Power Level"] = Option(10, 0, 10, changer_power); 
 
@@ -346,10 +349,9 @@ do
 		sync_print(engine_id << options2str<true>() << "uciok");
 
 	/**********************************************/
-	// Starts a new game. Clears the hash.
+	// Starts a new game. Do nothing actually. 
 	else if (cmd == "ucinewgame")
-		TT.clear();
-
+		{ /* accomodate UCI protocol */ }
 	else if (cmd == "isready")
 		sync_print("readyok");
 

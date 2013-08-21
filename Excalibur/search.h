@@ -27,13 +27,14 @@ namespace Search
 		bool skipNullMv;
 		int futilityMvCnt;
 	};
-	typedef SearchInfo SearchStack[MAX_PLY + 3];
-	typedef StateInfo StateStack[MAX_PLY + 3];
+	typedef SearchInfo SearchStack[MAX_PLY + 6];
+	typedef StateInfo StateStack[MAX_PLY + 6];
 
 	
 	// If the remaining available time drops below this percentage 
 	// threshold, we don't start the next iteration. 
-	const double IterativeTimePercentThresh = 0.67; 
+	// Can be set by UCI option "Time Usage"
+	extern double IterativeTimePercentThreshold; 
 	void iterative_deepen(Position& pos); // called in think()
 
 	enum NodeType { ROOT, PV, NON_PV};
