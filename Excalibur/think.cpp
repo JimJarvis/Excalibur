@@ -47,7 +47,7 @@ namespace Search
 namespace SearchUtils
 {
 	// Instantiate extern'ed variables
-	int BestMoveChanges;
+	float BestMoveChanges;
 	Value DrawValue[COLOR_N]; // set by contempt factor
 	HistoryStats History;
 	GainStats Gains;
@@ -202,7 +202,6 @@ void Search::iterative_deepen(Position& pos)
 	memset(ss - 2, 0, 5 * sizeof(SearchInfo)); // from ss - 2 to ss + 2
 
 	Depth depth = 0;
-	int prevBestMoveChanges;
 	BestMoveChanges = 0;
 	Value best, alpha, beta, delta; // alpha's the lower limit and beta's the upper
 	best = alpha = delta = -VALUE_INFINITE;
@@ -219,13 +218,13 @@ void Search::iterative_deepen(Position& pos)
 	// Iterative deepening loop until requested to stop or target depth reached
 	while (++depth <= MAX_PLY && !Signal.stop && (!Limit.depth || depth <= Limit.depth))
 	{
+		// Exponential decay PV variability weight
+		BestMoveChanges *= 0.75f;
+
 		// Save last iteration's score
 		// RootMoveList won't be empty because that's already handled by Search::think()
 		for (int i = 0; i < RootMoveList.size(); i++)
 			RootMoveList[i].prevScore = RootMoveList[i].score;
-
-		prevBestMoveChanges = BestMoveChanges;
-		BestMoveChanges = 0;
 
 		// Reset aspiration window starting size, 
 		// centered on the score from the previous iteration (+-delta)
@@ -300,7 +299,7 @@ void Search::iterative_deepen(Position& pos)
 
 			// If PV is unstable, we need extra time
 			if (depth > 4 && depth < 50)
-				Timer.unstable_pv_adjust(BestMoveChanges, prevBestMoveChanges);
+				Timer.unstable_pv_adjust(BestMoveChanges);
 
 			// Stop searching if we seem to have insufficient time for the next iteration
 			// Global const threshold decides the percentage of remaining time below which
@@ -352,12 +351,14 @@ void Search::iterative_deepen(Position& pos)
 // Updates contempt factor collected by UCI OptMap
 // Contempt factor that determines when we should consider draw
 // unit: centi-pawn. Normally a good CF is 50 for opening, 25 general, and 0 engame.
+// Test position for contempt factor: 
+// 3rkb1r/pQ2nppp/2p5/8/3P4/q1p1R3/2P3PP/4R2K w k - 6 1
 void Search::update_contempt_factor()
 {
 	if (OptMap["Contempt Factor"])
 	{
-		int cf = OptMap["Contempt Factor"] * MG_PAWN / 100;
-		cf *= Material::game_phase(RootPos) / PHASE_MG;
+		double cf = OptMap["Contempt Factor"] * MG_PAWN / 100.0;
+		cf *= (double)Material::game_phase(RootPos) / PHASE_MG;
 		DrawValue[RootColor] = VALUE_DRAW - cf;
 		DrawValue[~RootColor] = VALUE_DRAW + cf;
 	}

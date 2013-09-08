@@ -51,7 +51,7 @@ void init_options()
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
 
-	OptMap["Contempt Factor"] = Option(-1, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
+	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	// If not 10, plays handicap. 1 <= depth <= power * 2
 	OptMap["Power Level"] = Option(10, 0, 10, changer_power); 
 

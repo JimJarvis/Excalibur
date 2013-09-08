@@ -518,7 +518,7 @@ Score evaluate_outposts(const Position& pos, EvalInfo& ei, Square sq)
 {
 	opp_us;
 	// Initial bonus based on square
-	Value bonus = Outpost[PT == BISHOP][relative_square(us, sq)];
+	Value bonus = Outpost[PT == BISHOP][relative_sq(us, sq)];
 
 	// Increase bonus if supported by pawn, especially if the opponent has
 	// no minor piece which can exchange the outpost piece.
@@ -700,7 +700,7 @@ Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[])
 		// king, and the quality of the pawn shelter.
 		attackUnits =  min(25, (ei.kingAttackersCount[opp] * ei.kingAttackersWeight[opp]) / 2)
 			+ 3 * (ei.kingAdjacentAttacksCount[opp] + bit_count(undefended))
-			+ KingExposed[relative_square(us, ksq)]
+			+ KingExposed[relative_sq(us, ksq)]
 		- mg_value(score) / 32;
 
 		// Analyze enemy's safe queen contact checks. First find undefended
@@ -845,12 +845,12 @@ Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei)
 			Square blockSq = forward_sq(us, sq);
 
 			// Adjust bonus based on kings proximity
-			ebonus += square_distance(pos.king_sq(opp), blockSq) * 5 * rr;
-			ebonus -= square_distance(pos.king_sq(us), blockSq) * 2 * rr;
+			ebonus += sq_distance(pos.king_sq(opp), blockSq) * 5 * rr;
+			ebonus -= sq_distance(pos.king_sq(us), blockSq) * 2 * rr;
 
 			// If blockSq is not the queening square then consider also a second push
 			if (relative_rank(us, blockSq) != RANK_8)
-				ebonus -= square_distance(pos.king_sq(us), forward_sq(us, blockSq)) * rr;
+				ebonus -= sq_distance(pos.king_sq(us), forward_sq(us, blockSq)) * rr;
 
 			// If the pawn is free to advance, increase bonus
 			if (pos.boardPiece[blockSq] == NON)
@@ -941,12 +941,12 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 		while (bpassed)
 		{
 			sq = pop_lsb(bpassed);
-			queeningSq = relative_square(c, fr2sq(sq2file(sq), RANK_8));
+			queeningSq = relative_sq(c, fr2sq(sq2file(sq), RANK_8));
 			queeningPath = forward_mask(c, sq);
 
 			// Compute plies to queening and check direct advancement
 			movesToGo = rank_distance(sq, queeningSq) - int(relative_rank(c, sq) == RANK_2);
-			oppMovesToGo = square_distance(pos.king_sq(~c), queeningSq) - int(c != pos.turn);
+			oppMovesToGo = sq_distance(pos.king_sq(~c), queeningSq) - int(c != pos.turn);
 			pathDefended = ((ei.attackedBy[c][ALL_PT] & queeningPath) == queeningPath);
 
 			if (movesToGo >= oppMovesToGo && !pathDefended)
@@ -982,7 +982,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 		sq = pop_lsb(bpassed);
 
 		// Compute plies from queening
-		queeningSq = relative_square(loserSide, fr2sq(sq2file(sq), RANK_8));
+		queeningSq = relative_sq(loserSide, fr2sq(sq2file(sq), RANK_8));
 		movesToGo = rank_distance(sq, queeningSq) - int(relative_rank(loserSide, sq) == RANK_2);
 		pliesToGo = 2 * movesToGo - int(loserSide == pos.turn);
 
@@ -1006,7 +1006,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 		minKingDist = kingptg = 256;
 
 		// Compute plies from queening
-		queeningSq = relative_square(loserSide, fr2sq(sq2file(sq), RANK_8));
+		queeningSq = relative_sq(loserSide, fr2sq(sq2file(sq), RANK_8));
 		movesToGo = rank_distance(sq, queeningSq) - int(relative_rank(loserSide, sq) == RANK_2);
 		pliesToGo = 2 * movesToGo - int(loserSide == pos.turn);
 
@@ -1029,7 +1029,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 
 				while (b2) // This while-loop could be replaced with LSB/MSB (depending on color)
 				{
-					d = square_distance(blockSq, pop_lsb(b2)) - 2;
+					d = sq_distance(blockSq, pop_lsb(b2)) - 2;
 					movesToGo = min(movesToGo, d);
 				}
 			}
@@ -1039,7 +1039,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 
 			while (b2) // This while-loop could be replaced with LSB/MSB (depending on color)
 			{
-				d = square_distance(blockSq, pop_lsb(b2)) - 2;
+				d = sq_distance(blockSq, pop_lsb(b2)) - 2;
 				movesToGo = min(movesToGo, d);
 			}
 
@@ -1053,7 +1053,7 @@ Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei)
 			blockersCount++;
 
 			// Plies needed for the king to capture all the blocking pawns
-			d = square_distance(pos.king_sq(loserSide), blockSq);
+			d = sq_distance(pos.king_sq(loserSide), blockSq);
 			minKingDist = min(minKingDist, d);
 			kingptg = (minKingDist + blockersCount) * 2;
 		}

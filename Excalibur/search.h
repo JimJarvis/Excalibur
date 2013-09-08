@@ -123,7 +123,7 @@ namespace Search
 namespace SearchUtils
 {
 	// Globals shared by search-related functions
-	extern int BestMoveChanges;
+	extern float BestMoveChanges;
 	extern Value DrawValue[COLOR_N]; // set by contempt factor
 	extern HistoryStats History;
 	extern GainStats Gains;

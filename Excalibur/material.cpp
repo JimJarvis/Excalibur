@@ -201,6 +201,7 @@ Entry* probe(const Position& pos)
 	}
 
 	// No pawns makes it difficult to win, even with a material advantage
+	// This catches trivial case like KK, KNK, KBK
 	if (pos.pieceCount[W][PAWN] == 0 && npm_w - npm_b <= MG_BISHOP)
 	{
 		ent->scalor[W] = (byte)

@@ -133,12 +133,12 @@ Move probe(const Position& pos)
 	Square to = get_to(mv);
 
 	for (Color c : COLORS)
-		if (  from == Board::relative_square(c, SQ_E1)
+		if (  from == Board::relative_sq(c, SQ_E1)
 			&& from == pos.king_sq(c))
 		{
-			if (to == Board::relative_square(c, SQ_H1))
+			if (to == Board::relative_sq(c, SQ_H1))
 				mv = CastleMoves[c][CASTLE_OO];
-			else if (to == Board::relative_square(c, SQ_A1))
+			else if (to == Board::relative_sq(c, SQ_A1))
 				mv = CastleMoves[c][CASTLE_OOO];
 		}
 

@@ -125,16 +125,12 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 			// We now know that there are no friendly pawns beside or behind this
 			// pawn on adjacent files. We now check whether the pawn is
 			// backward by looking in the forward direction on the adjacent
-			// files, and seeing whether we meet a friendly or an enemy pawn first.
-			b = pawn_attack(us, sq);
+			// files, and picking the closest pawn there.
+			b = pawn_attack_span(us, sq) & (ourPawns | oppPawns);
+			b = pawn_attack_span(us, sq) & rank_mask(sq2rank(backmost_sq(us, b)));
 
-			// Note that we are sure to find something because pawn is not passed
-			// nor isolated, so loop is potentially infinite, but it isn't.
-			while (!(b & (ourPawns | oppPawns)))
-				b = shift_board<UP>(b);
-
-			// The friendly pawn needs to be at least two ranks closer than the
-			// enemy pawn in order to help the potentially backward pawn advance.
+			// If we have an enemy pawn in the same or next rank, the pawn is
+			// backward because it cannot advance without being captured.
 			backward = (b | shift_board<UP>(b)) & oppPawns;
 		}
 
@@ -208,12 +204,12 @@ namespace Pawnshield
 		{
 			// Shield penalty is higher for the pawn in front of the king
 			b = ourPawns & file_mask(f);
-			rkUs = b ? relative_rank(us, us == W ? lsb(b) : msb(b)) : RANK_1;
+			rkUs = b ? relative_rank(us, backmost_sq(us, b)) : RANK_1;
 			safety -= ShieldWeakness[rkUs];
 
 			// Storm danger is smaller if enemy pawn is blocked
 			b  = oppPawns & file_mask(f);
-			rkOpp = b ? relative_rank(us, us == W ? lsb(b) : msb(b)) : RANK_1;
+			rkOpp = b ? relative_rank(us, backmost_sq(us, b)) : RANK_1;
 			safety -= StormDanger[rkUs == RANK_1 ? 0 : rkOpp == rkUs + 1 ? 2 : 1][rkOpp];
 		}
 
@@ -240,10 +236,10 @@ namespace Pawnshield
 
 			// If we can castle use the bonus after the castle if is bigger
 			if (can_castle<CASTLE_OO>(pos.castle_rights(us)))
-				bonus = max(bonus, shield_storm<us>(pos, relative_square(us, SQ_G1)));
+				bonus = max(bonus, shield_storm<us>(pos, relative_sq(us, SQ_G1)));
 
 			if (can_castle<CASTLE_OOO>(pos.castle_rights(us)))
-				bonus = max(bonus, shield_storm<us>(pos, relative_square(us, SQ_C1)));
+				bonus = max(bonus, shield_storm<us>(pos, relative_sq(us, SQ_C1)));
 
 			return kingSafety[us] = make_score(bonus, -16 * minKPdistance[us]);
 	}

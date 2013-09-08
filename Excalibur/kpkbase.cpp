@@ -63,7 +63,7 @@ int KPKPosition::classify_leaf(uint idx)
 		// Immediate win if pawn can be promoted without getting captured
 		if (   sq2rank(psq) == RANK_7
 			&& wksq != psq + DELTA_N
-			&& (  square_distance(bksq, psq + DELTA_N) > 1
+			&& (  sq_distance(bksq, psq + DELTA_N) > 1
 			|| (KingAtk(w) & setbit(psq + DELTA_N)) )  )
 			return res = WIN;
 	}

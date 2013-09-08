@@ -116,9 +116,7 @@ void TimeKeeper::talloc(Color us, int curPly)
 
 // If the PV is unstable (reflected by the 'BestMoveChanges' variable in search.cpp)
 // we need to alloc more time to compensate for our indecision
-void TimeKeeper::unstable_pv_adjust(int bestMoveChanges, int prevBestMoveChanges)
+void TimeKeeper::unstable_pv_adjust(float bestMoveChanges)
 {
-	tUnstablePV = bestMoveChanges * (tOptimal / 2)
-					+ prevBestMoveChanges * (tOptimal / 3);
-	DBG_DISP("Unstable extra time = " << setprecision(2) << tUnstablePV/1000.0 << " s");
+	tUnstablePV = int(bestMoveChanges * tOptimal);
 }

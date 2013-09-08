@@ -88,13 +88,13 @@ void init_castle_mask()
 
 		for (Square from = 0; from < SQ_N; from++)
 			for (Square to = 0; to < SQ_N; to++)
-				if ( from == relative_square(c, SQ_H1) // Rook itself moves
-					|| to == relative_square(c, SQ_H1) ) // Rook is captured
+				if ( from == relative_sq(c, SQ_H1) // Rook itself moves
+					|| to == relative_sq(c, SQ_H1) ) // Rook is captured
 					CastleRightMask[c][from][to] = 2; // castleRight &= 2 to kill kingside
-				else if (from == relative_square(c, SQ_A1) // Rook itself moves
-					|| to == relative_square(c, SQ_A1)) // Rook is captured
+				else if (from == relative_sq(c, SQ_A1) // Rook itself moves
+					|| to == relative_sq(c, SQ_A1)) // Rook is captured
 					CastleRightMask[c][from][to] = 1; // castleRight &= 1 to kill queenside
-				else if (from == relative_square(c, SQ_E1)) // King itself moves
+				else if (from == relative_sq(c, SQ_E1)) // King itself moves
 					CastleRightMask[c][from][to] = 0; // castleRight &= 0 to kill both king and queenside
 				else
 					CastleRightMask[c][from][to] = 3; // preserve whatever castle rights 

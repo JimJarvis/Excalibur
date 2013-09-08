@@ -23,7 +23,7 @@ public:
 	// Computes and allocates (like 'malloc') tOptimal and tMax at each Search::think()
 	void talloc(Color us, int curPly);
 	// compute on the fly and adjust tOptimal if PV is unstable
-	void unstable_pv_adjust(int bestMoveChanges, int prevBestMoveChanges);
+	void unstable_pv_adjust(float bestMoveChanges);
 	Msec optimum() { return tOptimal + tUnstablePV; }
 	Msec maximum() { return tMax; }
 

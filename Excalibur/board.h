@@ -84,7 +84,7 @@ namespace Board
 	{		return (  ( between_mask(sq1, sq2) | between_mask(sq1, sq3) | between_mask(sq2, sq3) )
 	& ( setbit(sq1) | setbit(sq2) | setbit(sq3) )   ) != 0;  }
 	// max(fileDistance, rankDistance)
-	inline int square_distance(Square sq1, Square sq2) { return squareDistanceTbl[sq1][sq2]; }
+	inline int sq_distance(Square sq1, Square sq2) { return squareDistanceTbl[sq1][sq2]; }
 	// all the squares that are d-unit square-distance away from a particular sq
 	inline Bit distance_ring_mask(Square sq, int dist) { return distanceRingMask[sq][dist]; }
 	// An entire file
@@ -104,13 +104,17 @@ namespace Board
 	{ return (LIGHT_SQUARES & setbit(sq)) ? LIGHT_SQUARES : DARK_SQUARES; }
 
 	// with respect to the reference frame of Color
-	inline Square relative_square(Color c, Square s) { return s ^ (c * 56); }
+	inline Square relative_sq(Color c, Square s) { return s ^ (c * 56); }
 	// relative rank of a square
 	template <int> inline int relative_rank(Color c, int sq_or_rank);
 	template<> inline int relative_rank<SQ_N>(Color c, int sq) { return (sq >> 3) ^ (c * 7); }
 	template<> inline int relative_rank<RANK_N>(Color c, int rank) { return rank ^ (c * 7); }
 		// default to relative rank of a square
 	inline int relative_rank(Color c, int sq) { return relative_rank<SQ_N>(c, sq); }
+
+	// Find the square of the most advanced bit w.r.t. a color
+	inline Square frontmost_sq(Color c, Bit bb) { return c == W ? msb(bb) : lsb(bb); }
+	inline Square backmost_sq(Color c, Bit bb) { return c == B ? msb(bb) : lsb(bb); }
 
 	// Shift the bitboard by a DELTA
 	template<int delta>

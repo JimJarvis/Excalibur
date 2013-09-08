@@ -1,5 +1,4 @@
-Jarvis Initiative :: Project Excalibur
-A pretty good chess engine.
+Jarvis Initiative :: Excalibur Chess Engine
 
 (c) 2013  Jim Fan
 
@@ -11,16 +10,14 @@ Let wisdom inspire us in the glorious test
 May Excalibur bless us on the lofty quest
 
 
-Hope you enjoy my thematic poem.
-
-
 ======================== Introduction =========================
 
 Excalibur is a chess engine that plays at grandmaster level. It is developed by Jim Fan, a college rising sophomore at the time of this writing. 
-The engine is implemented entirely in C++. It contains around 10,000 lines of source code, taking into account the platform differences. 
+The engine is implemented entirely in C++11. It contains around 10,000 lines of source code, taking into account the platform differences. 
 
 The position evaluator and search optimizations are loosely adapted from the top engine Stockfish. Because of the superior parameters and formulas contributed by the open source community, Excalibur is occasionally able to beat some of the strongest engines on the planet, including but not limited to Houdini 3 (CCRL rank #1), Critter 1.6, Deep Rybka 4 and Shredder 12, which in turn can easily beat the human champions. 
-Also my applause to the computer chess wiki (http://chessprogramming.wikispaces.com/) that armed me with all the theoretical knowledge. 
+
+Many thanks to the computer chess wiki (http://chessprogramming.wikispaces.com/) that armed me with all the theoretical knowledge. 
 
 The ELO of Excalibur hasn't yet been decided, but a conservative estimate should probably be 2600. 
 
@@ -66,7 +63,12 @@ Platform-specific files:
 
 -> Excalibur.exe: compiled by MSVC++ 12
 
--> Winboard-4.7-portable.zip: portable version of Winboard. The zip also includes other free/ open source engines like Crafty, Critter, Fruit, GNUchess, and Gull. You can play Excalibur against them and entertain with the breath-taking engine tournaments. 
+-> Excalibur-win8.exe: compiled by MSVC++ 13, on Win8 the above exe may or may not 
+work. If you the error message "XXX.dll is missing", please use the win8 version.
+
+-> Winboard-4.7-portable.zip: portable version of Winboard. The zip also includes 
+other free/ open source engines like Crafty, Critter, Fruit, GNUchess, and Gull. 
+You can play Excalibur against them and entertain with the breath-taking engine tournaments. If you're using win8 and have the above mentioned problem, please rename the win8 version to "Excalibur.exe" and replace the one under "xxx\Winboard-4.7-portable\Excalibur-1.0"
 
 
 [[[ Mac X: tested on 10.7 Mountain Lion ]]]
@@ -206,30 +208,35 @@ There's one more and leave it to your own discovery. ;)
 
 Notable techniques employed in Excalibur:
 
--> C++ object-oriented software design
+-> C++11 object-oriented software design
 -> Extensive use of template metaprogramming
 -> Extensive use of STL data structures and algorithms
+-> "Googletest" unit testing framework (TDD)
 -> Magic bitboard representation
+-> Magic hash keys generation
 -> Pre-calculated bit masks and bitboard maps
 -> LSB, MSB and bit-count assembly instruction
 -> Zobrist keys (chess position hashing)
--> Standard compliant FEN string conversion
+-> Standard compliant FEN conversion and ASCII display
 -> 16-bit move encoding
 -> Specialized move generation for different types
 -> Dedicated legal generator for fast perft and legality check
--> Perft hash
+-> Perft hash table
 -> Multi-step static evaluation
 -> Middle/ endgame score interpolation
--> Material and pawn hash table
+-> Material and pawn hash tables
 -> Specialized endgame evaluators (20+)
 -> User-defined evaluation weights
--> Multi-stage move ordering
--> Transposition table
+-> Multi-stage move sorting
+-> MVV/LVA move ordering
+-> Resizable transposition table
 -> Advanced alpha-beta tree searching
 -> Null move pruning
 -> Futility pruning and razoring
 -> Late move reduction
 -> Quiescence searching and static exchange evaluation
+-> History heuristics
+-> Killer move heuristics
 -> Iterative deepening
 -> Multithreading support
 -> Optimal dynamic time allocation, based on regression statistics
@@ -237,7 +244,7 @@ Notable techniques employed in Excalibur:
 -> Opening book and polyglot adaptor
 -> Handicap mode - power level
 -> Platform-dependent implementation
--> Compilation opimizations
+-> Compilation optimizations
 
 
 ========================== History ===========================
@@ -250,6 +257,6 @@ Unfortunately, however, I was perhaps one of the least talented chess players in
 
 That unfulfilled wish emerged from years of dust and finally secured my plan for the summer. In May 2013, I launched the project and set off on a journey to challenge myself with the "crown jewel" of artificial intelligence: chess.
 
-I named my engine after the sacred sword of King Arthur, the legendary British king who led his knights to countless victories against foreign invaders.
+I named my engine after the legendary sword of King Arthur, the great British king who led an impenetrable defense against foreign invaders.
 
 And that's how Excalibur was born. 
