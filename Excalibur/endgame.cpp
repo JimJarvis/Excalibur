@@ -39,7 +39,7 @@ const int ForceToCorner[SQ_N] =
 
 // Tables used to drive a king towards or away from another piece
 const int ForceClose[8] = { 0, 0, 100, 80, 60, 40, 20, 10 };
-const int ForceAway[8] = { 0, 10, 14, 20, 30, 42, 58, 80 }; // KRKN, KBBKN
+const int ForceAway[8] = { 0, 5, 20, 40, 60, 80, 90, 100 }; // KRKN, KBBKN
 
 // Get the material key of a Position out of the given endgame key code
 // like "KBPKN". The trick here is to first forge an ad-hoc fen string
@@ -181,7 +181,7 @@ Value EndEvaluator<KBNK>::operator()(const Position& pos) const
 
 	Value result =  VALUE_KNOWN_WIN
 		+ ForceClose[sq_distance(winnerKSq, loserKSq)]
-	+ ForceToCorner[loserKSq];
+		+ ForceToCorner[loserKSq];
 
 	return strongerSide == pos.turn ? result : -result;
 }
@@ -343,18 +343,20 @@ Value EndEvaluator<KQKR>::operator()(const Position& pos) const
 }
 
 /// KBB vs KN. Bishop pair vs lone knight.
+/// Test position:
+/// K7/8/8/3n4/4k3/8/8/B2B4 w - - 0 1
 template<>
 Value EndEvaluator<KBBKN>::operator()(const Position& pos) const 
 {
 	DBG_MSG(KBBKN);
-	Square wksq = pos.king_sq(strongerSide);
-	Square bksq = pos.king_sq(weakerSide);
-	Square nsq = pos.pieceList[weakerSide][KNIGHT][0];
+	Square winnerKSq = pos.king_sq(strongerSide);
+	Square loserKSq = pos.king_sq(weakerSide);
+	Square nSq = pos.pieceList[weakerSide][KNIGHT][0];
 
 	Value result = VALUE_KNOWN_WIN 
-					+ ForceToCorner[bksq]
-					+ ForceClose[sq_distance(wksq, bksq)]
-					+ ForceAway[sq_distance(bksq, nsq)];
+					+ ForceToCorner[loserKSq]
+					+ ForceClose[sq_distance(winnerKSq, loserKSq)]
+					+ ForceAway[sq_distance(loserKSq, nSq)];
 
 	return strongerSide == pos.turn ? result : -result;
 }

@@ -42,14 +42,16 @@ void init_options()
 	OptMap["Clear Hash"] = Option(changer_clear_hash); // button. Not shown
 	OptMap["Ponder"] = Option(true); // checkbox. Not shown. Alloc more time if we're allowed to ponder
 
-	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
-	OptMap["Time Usage"] = Option(67, 1, 100, changer_time_usage); 
-
 	// Evaluation weights 
 	OptMap["Mobility"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Pawn Shield"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["King Safety"] = Option(100, 0, 200, changer_eval_weights);
 	OptMap["Aggressiveness"] = Option(100, 0, 200, changer_eval_weights);
+
+	// Timing
+	OptMap["Time Allocation"] = Option(100, 1, 500);
+	OptMap["Time Usage"] = Option(64, 1, 100, changer_time_usage); 
+	OptMap["Min Thinking Time"] = Option(20, 0, 5000); // spinner. Measured in ms
 
 	OptMap["Contempt Factor"] = Option(0, -50, 50, changer_contempt_factor); // spinner. Measured in centipawn
 	// If not 10, plays handicap. 1 <= depth <= power * 2

@@ -117,10 +117,13 @@ Excalibur supports the following UCI time control types (and their combination):
 
 Excalibur specific timing parameters:
 
---> "Time Usage": default 67, min 1, max 100. Percentage. Determines how much percent of the internally allocated time for this move should be used. If this amount of time passed, the engine would decide not to search one level deeper. 
+--> "Time Usage": default 64, min 1, max 100. Percentage. Determines how much percent of the internally allocated time can be spent before the engine decides not to search one level deeper. 
 
 Though the automated Excalibur time keeper does a very good job, you might want the engine to move faster than the "optimal" time. Under bullet games with "sudden death", the recommended time usage is around 30-50. Otherwise the default 0.67 works well. 
 Lower the time usage at the risk of making hasty blunders. 
+
+--> "Time Allocation": default 100, min 1, max 500. Percentage. Determines how much percent of the "optimal time" (calculated by regression analysis) would be actually allocated for the engine to consider.
+In a rapid game, time allocation might be optimally set to 50, especially against aggressively strong opponents.
 
 --> "Min Thinking Time": default 20, min 0, max 5000. the minimum amount of thinking time before making a move. 
 

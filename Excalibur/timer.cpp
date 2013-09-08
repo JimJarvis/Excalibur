@@ -3,6 +3,7 @@
 #include "search.h"
 
 using namespace Search; // For "Limit" the Global LimitListener
+using UCI::OptMap;
 
 // This lookup table will be filled at Search::init() (program startup)
 // If the current ply has more weights, we'll decide to alloc more time for it.
@@ -43,7 +44,7 @@ Msec remainder(Msec total, int movesToGo, int curPly)
 	// of time from the remaining moves
 	const double reserveRatio = Optimal ? 0.0 : 0.33;
 
-	double curWeight = ply_weight(curPly);
+	double curWeight = ply_weight(curPly) * OptMap["Time Allocation"] / 100.0;
 	double remainWeightsSum = 0;
 	for (int ply = 1; ply < movesToGo; ply++)
 		remainWeightsSum += ply_weight(curPly + 2 * ply);
@@ -95,7 +96,7 @@ void TimeKeeper::talloc(Color us, int curPly)
 	Msec inc = Limit.increment[us];
 
 	// Read from UCI optionmap: minimum time
-	int tMin = UCI::OptMap["Min Thinking Time"];
+	int tMin = OptMap["Min Thinking Time"];
 
 	// Shouldn't cross the hard deadline
 	tOptimal = min(Limit.time[us], 
@@ -104,13 +105,12 @@ void TimeKeeper::talloc(Color us, int curPly)
 				tMin + min_total<false>(totalBase, inc, mtg, curPly));
 
 	// Read from UCI: give more time if we're allowed to ponder
-	if (UCI::OptMap["Ponder"])
+	if (OptMap["Ponder"])
 		tOptimal += tOptimal / 4;
 
 	// Final verification: assert(tOptimal < tMax)
 	tOptimal = min(tOptimal, tMax);
-
-	DBG_DISP("Optimal time = "<< setprecision(2) << tOptimal/1000.0 << " s");
+	//cout << "info string Opt "<< setprecision(2) << tOptimal/1000.0 << endl;
 }
 
 
