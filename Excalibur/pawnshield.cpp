@@ -112,15 +112,14 @@ Score evaluate_pawns(const Position& pos, Pawnshield::Entry* ent)
 		opposed = oppPawns & forward_mask(us, sq);
 		passed = !(oppPawns & passed_pawn_mask(us, sq));
 
-		// Test for backward pawn
-		backward = false;
-
 		// If the pawn is passed, isolated, or member of a pawn chain it cannot
 		// be backward. If there are friendly pawns behind on adjacent files
 		// or if can capture an enemy pawn it cannot be backward either.
-		if (   !(passed | isolated | chain)
-			&& !(ourPawns & pawn_attack_span(opp, sq))
-			&& !(pawn_attack(us, sq) & oppPawns))
+		if (   (passed | isolated | chain)
+			|| (ourPawns & pawn_attack_span(opp, sq))
+			|| (pawn_attack(us, sq) & oppPawns))
+			backward = false;
+		else
 		{
 			// We now know that there are no friendly pawns beside or behind this
 			// pawn on adjacent files. We now check whether the pawn is
