@@ -1,17 +1,12 @@
-# Jarvis Initiative :: Excalibur Chess Engine
+# Excalibur Chess Engine
 
 (c) 2013  Jim Fan
 
 The silent war storms the enchanted board
-
 The lonely warrior wields the sacred sword
-
 Behold! A symphony of black and white
-
 Echoes a millennium of masters' might
-
 Let wisdom inspire us in the glorious test
-
 May Excalibur bless us on the lofty quest
 
 
@@ -22,7 +17,7 @@ The engine is implemented entirely in C++11. It contains around 10,000 lines of 
 
 The position evaluator and search optimizations are loosely adapted from the top engine Stockfish. Because of the superior parameters and formulas contributed by the open source community, Excalibur is occasionally able to beat some of the strongest engines on the planet, including but not limited to Houdini 3 (CCRL rank #1), Critter 1.6, Deep Rybka 4 and Shredder 12, which in turn can easily beat the human champions. 
 
-Many thanks to the computer chess wiki (http://chessprogramming.wikispaces.com/) that armed me with all the theoretical knowledge. 
+Many thanks to the [computer chess wiki] (http://chessprogramming.wikispaces.com/) that armed me with all the theoretical knowledge. 
 
 The ELO of Excalibur hasn't yet been decided, but a conservative estimate should probably be 2600. 
 
@@ -45,8 +40,7 @@ If you're comfortable enough with command line interaction, you can refer to the
 
 For visually-inclined users: you can of course use commercial GUIs like Fritz or Shredder, but I highly recommend GNU Xboard, an excellent open source chessboards (totally free). The board graphics is a pleasure and the software functionality can satisfy the needs of either amateur or serious chessplayers.
 
-http://www.gnu.org/software/xboard/
-For your convenience, I have included the installers of Xboard for different operating systems you might have. 
+For your convenience, I have included the installers of [Xboard](http://www.gnu.org/software/xboard/) for different operating systems you might have. 
 
 After installation, start Xboard and go to menu => Engine => Load first/second engine => choose the Excalibur executable from your file system. Note that the "first engine" plays white and the "second" plays black. Or you can play against the engine yourself.
 
@@ -64,7 +58,7 @@ All three OS releases include a pdf copy of the UCI protocol reference, a perft 
 
 Platform-specific files:
 
-### Windows : tested on Windows 7 and 8
+### Windows: tested on Windows 7 and 8
 
 - Excalibur.exe: compiled by MSVC++ 12
 
@@ -181,27 +175,27 @@ Besides the standard UCI protocol commands outlined in the pdf document, Excalib
 stands for 'Perf'ormance 'T'est
 perft takes a position and depth 'd' as input, and gives the number of all legal move combinations up to 'd' as output. 
 
-    - Use the UCI 'position' command to setup a position, then 'perft' without argument to enter depth interactively - any non-number input means quit. 
+ - Use the UCI `position` command to setup a position, then 'perft' without argument to enter depth interactively - any non-number input means quit. 
 Or 'perft d' to return the result up to a depth. 
 
-    - 'perft filepath XXX': change the default "perftsuite.epd" to some other test suites.
+ - `perft filepath XXX`: change the default "perftsuite.epd" to some other test suites.
 
-    - 'perft suite' : run a mass perft on the default file or the one specified by 'perft filepath'. This suite is used both for move generation verification and speed monitoring. Provided by the Rookie chess team (6500 tests). 
+ - `perft suite` : run a mass perft on the default file or the one specified by `perft filepath`. This suite is used both for move generation verification and speed monitoring. Provided by the Rookie chess team (6500 tests). 
 
-    - 'perft suite XXX': run the mass perft in the file, starting at XXX instead of the beginning, which is 'initial'.
+ - `perft suite XXX`: run the mass perft in the file, starting at XXX instead of the beginning, which is 'initial'.
 
-    - Use 'stop' to quit the mass perft. Note that you must wait until the current position is done.
+ - Use `stop` to quit the mass perft. Note that you must wait until the current position is done.
 
-    - 'perft hash XXX': the perft speedometer can use a dedicated hash table to accelerate the test. Set hash size to XXX in megabytes. Max 4096 MB. 
+ - `perft hash XXX`: the perft speedometer can use a dedicated hash table to accelerate the test. Set hash size to XXX in megabytes. Max 4096 MB. 
 
-        - 'perft hash 0' to disable hash usage. 
-        - 'perft hash clear' to clear the hash table. 
+ - `perft hash 0` to disable hash usage. 
+ - `perft hash clear` to clear the hash table. 
 
 
-- 'd'/ 'disp'  and 'md'/ 'mdisp'
+- `d`/ `disp`  and `md`/ `mdisp`
 Display the internal board in ASCII graph. 'd' is the full pretty-print display and 'md' is the minimalist display.
 
-- 'magics'
+- `magics`
 Generate 64 magic keys for rook and bishop. The values are 64-bit hash keys used for "magic bitboard" technique, which calculates the rook/bishop attack map given a board occupancy. Excalibur's magic board allows it to generate moves fast.
 
 - Easter eggs
@@ -209,11 +203,11 @@ Now comes the tasty part. Easter eggs are definitely part of serious software en
 
 Try the following commands yourself:
 
-    - 'sword'
-    - 'chess'
-    - 'Jim'
-    - 'clock'
-    - There's one more and leave it to your own discovery. ;)
+ - `sword`
+ - `chess`
+ - `Jim`
+ - `clock`
+ - There's one more and leave it to your own discovery. ;)
 
 
 ## Technicality
