@@ -3,10 +3,15 @@
 (c) 2013  Jim Fan
 
 The silent war storms the enchanted board
+
 The lonely warrior wields the sacred sword
+
 Behold! A symphony of black and white
+
 Echoes a millennium of masters' might
+
 Let wisdom inspire us in the glorious test
+
 May Excalibur bless us on the lofty quest
 
 
@@ -15,7 +20,7 @@ May Excalibur bless us on the lofty quest
 Excalibur is a chess engine that plays at grandmaster level. It is developed by Jim Fan, a college rising sophomore at the time of this writing. 
 The engine is implemented entirely in C++11. It contains around 10,000 lines of source code, taking into account the platform differences. 
 
-The position evaluator and search optimizations are loosely adapted from the top engine Stockfish. Because of the superior parameters and formulas contributed by the open source community, Excalibur is occasionally able to beat some of the strongest engines on the planet, including but not limited to Houdini 3 (CCRL rank #1), Critter 1.6, Deep Rybka 4 and Shredder 12, which in turn can easily beat the human champions. 
+The position evaluator and search optimizations are adapted from the top engine Stockfish. Because of the superior parameters and formulas contributed by the open source community, Excalibur is occasionally able to beat some of the strongest engines on the planet, including but not limited to Houdini 3 (CCRL rank #1), Critter 1.6, Deep Rybka 4 and Shredder 12, which in turn can easily beat the human champions. 
 
 Many thanks to the [computer chess wiki] (http://chessprogramming.wikispaces.com/) that armed me with all the theoretical knowledge. 
 
@@ -191,6 +196,7 @@ Or 'perft d' to return the result up to a depth.
  - `perft hash 0` to disable hash usage. 
  - `perft hash clear` to clear the hash table. 
 
+#### Miscellaneous
 
 - `d`/ `disp`  and `md`/ `mdisp`
 Display the internal board in ASCII graph. 'd' is the full pretty-print display and 'md' is the minimalist display.
@@ -198,7 +204,8 @@ Display the internal board in ASCII graph. 'd' is the full pretty-print display 
 - `magics`
 Generate 64 magic keys for rook and bishop. The values are 64-bit hash keys used for "magic bitboard" technique, which calculates the rook/bishop attack map given a board occupancy. Excalibur's magic board allows it to generate moves fast.
 
-- Easter eggs
+#### Easter eggs
+
 Now comes the tasty part. Easter eggs are definitely part of serious software engineering! ;)
 
 Try the following commands yourself:
