@@ -170,9 +170,9 @@ The primary commands are case-insensitive.
 
 Besides the standard UCI protocol commands outlined in the pdf document, Excalibur supports a few more:
 
-- perft
+#### perft
 
-stands for 'Perf'ormance 'T'est
+Stands for 'Perf'ormance 'T'est
 perft takes a position and depth 'd' as input, and gives the number of all legal move combinations up to 'd' as output. 
 
  - Use the UCI `position` command to setup a position, then 'perft' without argument to enter depth interactively - any non-number input means quit. 
