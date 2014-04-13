@@ -1,16 +1,21 @@
-Jarvis Initiative :: Excalibur Chess Engine
+# Jarvis Initiative :: Excalibur Chess Engine
 
 (c) 2013  Jim Fan
 
 The silent war storms the enchanted board
+
 The lonely warrior wields the sacred sword
+
 Behold! A symphony of black and white
+
 Echoes a millennium of masters' might
+
 Let wisdom inspire us in the glorious test
+
 May Excalibur bless us on the lofty quest
 
 
-======================== Introduction =========================
+## Introduction
 
 Excalibur is a chess engine that plays at grandmaster level. It is developed by Jim Fan, a college rising sophomore at the time of this writing. 
 The engine is implemented entirely in C++11. It contains around 10,000 lines of source code, taking into account the platform differences. 
@@ -24,14 +29,14 @@ The ELO of Excalibur hasn't yet been decided, but a conservative estimate should
 Current version: 1.0 beta. 
 
 
-======================== Terms of Use =======================
+## Terms of Use
 
 Excalibur is intended to be a student project for educational purpose only, which means that any user can freely distribute and share it. The restriction is that any distribution should retain this README and file integrity. 
 
 Excalibur is released free of charge and should NOT be used for any commercial purposes without the author's explicit written permission. 
 
 
-========================= Installation =========================
+## Installation
 
 Excalibur is a portable console application available on 3 most common desktop operating systems: Windows, Mac OS X and Linux.
 
@@ -53,46 +58,47 @@ Ctrl + B == engine VS human, engine black
 Ctrl + M == force engine to stop thinking and move immediately
 
 
-========================= Distribution =========================
+## Distribution
 
 All three OS releases include a pdf copy of the UCI protocol reference, a perft test suite ("perftsuite.epd") and an Excalibur-style opening book ("Excalibur.book"), which I will explain later on. 
 
 Platform-specific files:
 
-[[[ Windows : tested on Windows 7 ]]]
+### Windows : tested on Windows 7 and 8
 
--> Excalibur.exe: compiled by MSVC++ 12
+- Excalibur.exe: compiled by MSVC++ 12
 
--> Excalibur-win8.exe: compiled by MSVC++ 13, on Win8 the above exe may or may not 
+- Excalibur-win8.exe: compiled by MSVC++ 13, on Win8 the above exe may or may not 
 work. If you the error message "XXX.dll is missing", please use the win8 version.
 
--> Winboard-4.7-portable.zip: portable version of Winboard. The zip also includes 
+- Winboard-4.7-portable.zip: portable version of Winboard. The zip also includes 
 other free/ open source engines like Crafty, Critter, Fruit, GNUchess, and Gull. 
+
 You can play Excalibur against them and entertain with the breath-taking engine tournaments. If you're using win8 and have the above mentioned problem, please rename the win8 version to "Excalibur.exe" and replace the one under "xxx\Winboard-4.7-portable\Excalibur-1.0"
 
 
-[[[ Mac X: tested on 10.7 Mountain Lion ]]]
+### Mac X: tested on 10.7 Mountain Lion
 
--> Excalibur-mac: compiled by clang++ 3.3
+- Excalibur-mac: compiled by clang++ 3.3
 
--> XQuartz-2.7.4.dmg: contains the X11 required by Mac xboard. If you haven't already installed x11 or don't know what x11 is, simply run the installer. 
+- XQuartz-2.7.4.dmg: contains the X11 required by Mac xboard. If you haven't already installed x11 or don't know what x11 is, simply run the installer. 
 
--> Xboard-4.6.2-mac.zip: after XQuartz, unzip and double click the ".pkg"  installer. Includes Fruit 2.1
+- Xboard-4.6.2-mac.zip: after XQuartz, unzip and double click the ".pkg"  installer. Includes Fruit 2.1
 
 
-[[[ Linux: tested on Ubuntu 12 ]]]
+### Linux: tested on Ubuntu 12
 
--> Excalibur-linux: compiled by g++ 4.7
+- Excalibur-linux: compiled by g++ 4.7
 
-You can choose to install by "apt-get" from the internet (recommended) or by the included installer "Xboard-4.7.1-amd64.deb". Includes Fruit 2.1
+- You can choose to install by "apt-get" from the internet (recommended) or by the included installer "Xboard-4.7.1-amd64.deb". Includes Fruit 2.1
 
-Internet: sudo apt-get install xboard
+- Internet: sudo apt-get install xboard
 	  sudo apt-get install polyglot (otherwise xboard won't have the UCI adaptor)
 
-Installer: sudo dpkg -i Xboard-4.7.1-amd64.deb
+- Installer: sudo dpkg -i Xboard-4.7.1-amd64.deb
 
 
-========================= Settings =========================
+## Settings
 
 Excalibur engine has a number of settings that would affect the game play. 
 The settings can be changed in Xboard menu 'Engine' => '#1/#2 Engine Settings'
@@ -101,150 +107,153 @@ Setting manual:
 
 [Note] 
 Material value is represented by "centipawn", which means that 100 units are one pawn worth of material.
+
 Time is counted in milliseconds.
 
-[1] Timing
+### Timing
 
 Generally handled by the GUI. You can change the time control of a game by menu 'Options' => 'Time Control'
 
 Excalibur supports the following UCI time control types (and their combination):
 
---> Sudden Death: finish all moves in a given amount of time
---> Moves To Go: finish x moves in a given amount of time before moving on to the next time control stage. 
---> Increment: gain a certain amount of time after making each move. 
---> Max Time per Move: fixed amount of time for each move.
+- Sudden Death: finish all moves in a given amount of time
+- Moves To Go: finish x moves in a given amount of time before moving on to the next time control stage. 
+- Increment: gain a certain amount of time after making each move. 
+- Max Time per Move: fixed amount of time for each move.
 
 
 Excalibur specific timing parameters:
 
---> "Time Usage": default 64, min 1, max 100. Percentage. Determines how much percent of the internally allocated time can be spent before the engine decides not to search one level deeper. 
+- "Time Usage": default 64, min 1, max 100. Percentage. Determines how much percent of the internally allocated time can be spent before the engine decides not to search one level deeper. 
 
 Though the automated Excalibur time keeper does a very good job, you might want the engine to move faster than the "optimal" time. Under bullet games with "sudden death", the recommended time usage is around 30-50. Otherwise the default 0.67 works well. 
 Lower the time usage at the risk of making hasty blunders. 
 
---> "Time Allocation": default 100, min 1, max 500. Percentage. Determines how much percent of the "optimal time" (calculated by regression analysis) would be actually allocated for the engine to consider.
+- "Time Allocation": default 100, min 1, max 500. Percentage. Determines how much percent of the "optimal time" (calculated by regression analysis) would be actually allocated for the engine to consider.
+
 In a rapid game, time allocation might be optimally set to 50, especially against aggressively strong opponents.
 
---> "Min Thinking Time": default 20, min 0, max 5000. the minimum amount of thinking time before making a move. 
+- "Min Thinking Time": default 20, min 0, max 5000. the minimum amount of thinking time before making a move. 
 
 
-[2] Evaluation
+### Evaluation
 Default 100, min 0, max 200
 
 The Evaluation parameters are percentage weights applied to various positional and tactical concerns.
 
---> Pawn Shield: how well are the pawns supporting each other
---> Mobility: knight, bishop, rook and queen mobility
---> Aggressiveness: maximize the threats to the opponent's king ring (the squares adjacent and semi-adjacent to the king)
---> King Safety: minimize the threats to our own king ring
+- Pawn Shield: how well are the pawns supporting each other
+- Mobility: knight, bishop, rook and queen mobility
+- Aggressiveness: maximize the threats to the opponent's king ring (the squares adjacent and semi-adjacent to the king)
+- King Safety: minimize the threats to our own king ring
 
 
-[3] Contempt Factor
+### Contempt Factor
 Default 0, min -50, max 50 (centipawn)
 
 Determines the draw value (how much "contempt" we treat our opponent). Normally the draw is 0. Set to a positive value when we face a weaker opponent and wish to avoid draw as much as possible. Set to a negative value when we face a stronger opponent and try hard to at least draw the game.
 Raise the contempt factor at the risk of losing. 
 
 
-[4] Power Level
+### Power Level
 Default 10, min 0, max 10
 
 Excalibur can play handicap. Level 10 means unlimited strength. Level 0 to 9 restrict the search depth/ time progressively. Lower power level means faster game play. 
 
 
-[5] Opening Book
+### Opening Book
 Excalibur has an opening book in its own format. 
 
---> "Use Opening Book": true/false
---> "Book Variation": true - we play a random opening line for the same position; 
-false - we always play the best move in the book.
---> "Book File": default "Excalibur.book". Change the file path. 
+- "Use Opening Book": true/false
+- "Book Variation":
+    - true: we play a random opening line for the same position; 
+    - false: we always play the best move in the book.
+- "Book File": default "Excalibur.book". Change the file path. 
 
 
-==================== Console Commands ======================
+## Console Commands
 
 The primary commands are case-insensitive. 
 
 Besides the standard UCI protocol commands outlined in the pdf document, Excalibur supports a few more:
 
----> perft
+- perft
+
 stands for 'Perf'ormance 'T'est
 perft takes a position and depth 'd' as input, and gives the number of all legal move combinations up to 'd' as output. 
 
-usage: (1) use the UCI 'position' command to setup a position, then 'perft' without argument to enter depth interactively - any non-number input means quit. 
+    - Use the UCI 'position' command to setup a position, then 'perft' without argument to enter depth interactively - any non-number input means quit. 
 Or 'perft d' to return the result up to a depth. 
 
-(2) 'perft filepath XXX': change the default "perftsuite.epd" to some other test suites.
+    - 'perft filepath XXX': change the default "perftsuite.epd" to some other test suites.
 
-'perft suite' : run a mass perft on the default file or the one specified by 'perft filepath'. This suite is used both for move generation verification and speed monitoring. Provided by the Rookie chess team (6500 tests). 
+    - 'perft suite' : run a mass perft on the default file or the one specified by 'perft filepath'. This suite is used both for move generation verification and speed monitoring. Provided by the Rookie chess team (6500 tests). 
 
-'perft suite XXX': run the mass perft in the file, starting at XXX instead of the beginning, which is 'initial'.
+    - 'perft suite XXX': run the mass perft in the file, starting at XXX instead of the beginning, which is 'initial'.
 
-Use 'stop' to quit the mass perft. Note that you must wait until the current position is done.
+    - Use 'stop' to quit the mass perft. Note that you must wait until the current position is done.
 
-(3) 'perft hash XXX': the perft speedometer can use a dedicated hash table to accelerate the test. Set hash size to XXX in megabytes. Max 4096 MB. 
+    - 'perft hash XXX': the perft speedometer can use a dedicated hash table to accelerate the test. Set hash size to XXX in megabytes. Max 4096 MB. 
 
-'perft hash 0' to disable hash usage. 
-'perft hash clear' to clear the hash table. 
+        - 'perft hash 0' to disable hash usage. 
+        - 'perft hash clear' to clear the hash table. 
 
 
----> 'd'/ 'disp'  and 'md'/ 'mdisp'
+- 'd'/ 'disp'  and 'md'/ 'mdisp'
 Display the internal board in ASCII graph. 'd' is the full pretty-print display and 'md' is the minimalist display.
 
----> 'magics'
+- 'magics'
 Generate 64 magic keys for rook and bishop. The values are 64-bit hash keys used for "magic bitboard" technique, which calculates the rook/bishop attack map given a board occupancy. Excalibur's magic board allows it to generate moves fast.
 
----> Easter eggs
+- Easter eggs
 Now comes the tasty part. Easter eggs are definitely part of serious software engineering! ;)
 
 Try the following commands yourself:
 
-'sword'
-'chess'
-'Jim'
-'clock'
+    - 'sword'
+    - 'chess'
+    - 'Jim'
+    - 'clock'
+    - There's one more and leave it to your own discovery. ;)
 
-There's one more and leave it to your own discovery. ;)
 
-
-======================= Technicality ==========================
+## Technicality
 
 Notable techniques employed in Excalibur:
 
--> C++11 object-oriented software design
--> Extensive use of template metaprogramming
--> Extensive use of STL data structures and algorithms
--> "Googletest" unit testing framework (TDD)
--> Magic bitboard representation
--> Magic hash keys generation
--> Pre-calculated bit masks and bitboard maps
--> LSB, MSB and bit-count assembly instruction
--> Zobrist keys (chess position hashing)
--> Standard compliant FEN conversion and ASCII display
--> 16-bit move encoding
--> Specialized move generation for different types
--> Dedicated legal generator for fast perft and legality check
--> Perft hash table
--> Multi-step static evaluation
--> Middle/ endgame score interpolation
--> Material and pawn hash tables
--> Specialized endgame evaluators (20+)
--> User-defined evaluation weights
--> Multi-stage move sorting
--> MVV/LVA move ordering
--> Resizable transposition table
--> Advanced alpha-beta tree searching
--> Null move pruning
--> Futility pruning and razoring
--> Late move reduction
--> Quiescence searching and static exchange evaluation
--> History heuristics
--> Killer move heuristics
--> Iterative deepening
--> Multithreading support
--> Optimal dynamic time allocation, based on regression statistics
--> Full UCI protocol support and I/O handling
--> Opening book and polyglot adaptor
--> Handicap mode - power level
--> Platform-dependent implementation
--> Compilation optimizations
+- C++11 object-oriented software design
+- Extensive use of template metaprogramming
+- Extensive use of STL data structures and algorithms
+- "Googletest" unit testing framework (TDD)
+- Magic bitboard representation
+- Magic hash keys generation
+- Pre-calculated bit masks and bitboard maps
+- LSB, MSB and bit-count assembly instruction
+- Zobrist keys (chess position hashing)
+- Standard compliant FEN conversion and ASCII display
+- 16-bit move encoding
+- Specialized move generation for different types
+- Dedicated legal generator for fast perft and legality check
+- Perft hash table
+- Multi-step static evaluation
+- Middle/ endgame score interpolation
+- Material and pawn hash tables
+- Specialized endgame evaluators (20+)
+- User-defined evaluation weights
+- Multi-stage move sorting
+- MVV/LVA move ordering
+- Resizable transposition table
+- Advanced alpha-beta tree searching
+- Null move pruning
+- Futility pruning and razoring
+- Late move reduction
+- Quiescence searching and static exchange evaluation
+- History heuristics
+- Killer move heuristics
+- Iterative deepening
+- Multithreading support
+- Optimal dynamic time allocation, based on regression statistics
+- Full UCI protocol support and I/O handling
+- Opening book and polyglot adaptor
+- Handicap mode - power level
+- Platform-dependent implementation
+- Compilation optimizations
