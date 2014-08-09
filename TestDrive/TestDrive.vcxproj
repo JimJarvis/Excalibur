@@ -112,8 +112,8 @@
     <LibraryPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\lib\Win64;E:\Dropbox\Programming\C\Google Test\gtest\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>E:\Dropbox\Programming\C\Google Test\gtest\include;C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\include;E:\Dropbox\Programming\C\JarvisC\Excalibur\Excalibur;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Dropbox\Programming\C\Google Test\gtest\x64\lib;C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\lib\Win64;$(LibraryPath)</LibraryPath>
+    <IncludePath>E:\Dropbox\Programming\C\GoogleTest\gtest\include;C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\include;E:\Dropbox\Programming\C\JarvisC\Excalibur\Excalibur;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Dropbox\Programming\C\GoogleTest\libs;C:\Program Files (x86)\Microsoft Visual Studio 11.0\Visual Leak Detector\lib\Win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -161,7 +161,7 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MinimalRebuild>true</MinimalRebuild>
     </ClCompile>
     <Link>
